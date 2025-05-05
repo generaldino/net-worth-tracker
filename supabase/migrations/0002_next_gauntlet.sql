@@ -1,0 +1,1 @@
+ALTER TABLE "license_plates" ALTER COLUMN "date_added" SET DATA TYPE date;

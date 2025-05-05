@@ -8,6 +8,20 @@
       "when": 1746477843081,
       "tag": "0000_dear_lockheed",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1746478018037,
+      "tag": "0001_thin_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746478604625,
+      "tag": "0002_next_gauntlet",
+      "breakpoints": true
     }
   ]
 }
