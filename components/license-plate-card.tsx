@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, Share2, ThumbsUp } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
+import Image from "next/image";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -51,10 +52,15 @@ export function LicensePlateCard({
           {/* Main image */}
           <div className="bg-muted aspect-video flex items-center justify-center">
             {licensePlate.imageUrls.length > 0 ? (
-              <div className="w-full h-full flex items-center justify-center bg-black/10">
-                <div className="text-center text-muted-foreground">
-                  <p>Image: {licensePlate.imageUrls[0]}</p>
-                </div>
+              <div className="w-full h-full relative">
+                <Image
+                  src={licensePlate.imageUrls[0]}
+                  alt={`License plate ${licensePlate.plateNumber}`}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
+                  priority={false}
+                />
               </div>
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-muted">
