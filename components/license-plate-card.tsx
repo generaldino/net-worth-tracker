@@ -1,8 +1,15 @@
-import { Eye, Share2 } from "lucide-react";
-import type { LicensePlate } from "../types/license-plate";
-import { Badge } from "./ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
-import { formatDate } from "../lib/utils";
+"use client";
+
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Eye, Share2, ThumbsUp } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import type { LicensePlate } from "@/types/license-plate";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -15,52 +22,95 @@ export function LicensePlateCard({
 }: LicensePlateCardProps) {
   return (
     <Card
-      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer max-w-2xl mx-auto"
       onClick={onClick}
     >
-      <div className="aspect-video relative bg-muted">
-        {licensePlate.imageUrls.length > 0 ? (
-          <div className="w-full h-full flex items-center justify-center bg-black/5">
-            <div className="bg-background border-4 border-muted p-2 px-4 rounded-md">
-              <p className="text-xl font-bold text-center">
-                {licensePlate.plateNumber}
+      <CardHeader className="pb-2 pt-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+              <span className="font-semibold text-xs">
+                {licensePlate.reporter.charAt(0)}
+              </span>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">{licensePlate.plateNumber}</h3>
+              <p className="text-xs text-muted-foreground">
+                Posted by {licensePlate.reporter}
               </p>
             </div>
           </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-muted">
-            <p className="text-muted-foreground">No image available</p>
-          </div>
-        )}
-      </div>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <h3 className="font-bold text-lg">{licensePlate.plateNumber}</h3>
           <div className="text-xs text-muted-foreground">
             {formatDate(licensePlate.dateAdded)}
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pb-2">
-        <div className="flex flex-wrap gap-1 mb-2">
+
+      <CardContent className="p-0">
+        <div className="relative">
+          {/* Main image */}
+          <div className="bg-muted aspect-video flex items-center justify-center">
+            {licensePlate.imageUrls.length > 0 ? (
+              <div className="w-full h-full flex items-center justify-center bg-black/10">
+                <div className="text-center text-muted-foreground">
+                  <p>Image: {licensePlate.imageUrls[0]}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-muted">
+                <p className="text-muted-foreground">No image available</p>
+              </div>
+            )}
+          </div>
+
+          {/* License plate overlay at bottom */}
+          <div className="absolute bottom-4 left-0 w-full flex justify-center">
+            <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-2 border-zinc-700 rounded-md p-2 px-6 shadow-lg max-w-[80%]">
+              <div className="absolute top-0 left-0 w-full flex justify-center">
+                <div className="bg-blue-600 text-white text-xs px-3 py-0.5 rounded-b-md">
+                  {licensePlate.tags[0] || "USA"}
+                </div>
+              </div>
+              <div className="flex justify-center items-center pt-2">
+                <p className="text-xl font-bold text-center text-white tracking-wider">
+                  {licensePlate.plateNumber}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex flex-col items-start pt-4 pb-4">
+        <div className="flex flex-wrap gap-1 mb-3 w-full">
           {licensePlate.tags.map((tag, index) => (
             <Badge key={index} variant="secondary" className="text-xs">
               {tag}
             </Badge>
           ))}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Reported by {licensePlate.reporter}
-        </p>
-      </CardContent>
-      <CardFooter className="pt-0 flex justify-between text-sm text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <Eye className="h-4 w-4" />
-          <span>{licensePlate.views.toLocaleString()}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Share2 className="h-4 w-4" />
-          <span>{licensePlate.shares.toLocaleString()}</span>
+
+        <div className="flex justify-between w-full border-t pt-3 mt-1">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-1">
+              <ThumbsUp className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm">
+                {Math.floor(licensePlate.views / 10)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm">
+                {licensePlate.views.toLocaleString()}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Share2 className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm">
+              {licensePlate.shares.toLocaleString()}
+            </span>
+          </div>
         </div>
       </CardFooter>
     </Card>

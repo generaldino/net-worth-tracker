@@ -1,16 +1,17 @@
 "use client";
+
 import { useState } from "react";
-import type { LicensePlate } from "../types/license-plate";
-import { Input } from "./ui/input";
+import { LicensePlateCard } from "@/components/license-plate-card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { LicensePlateCard } from "./license-plate-card";
-import { LicensePlateDialog } from "./license-plate-dialogie";
+} from "@/components/ui/select";
+import type { LicensePlate } from "@/types/license-plate";
+import { LicensePlateDialog } from "./license-plate-dialog";
 
 interface LicensePlateGalleryProps {
   licensePlates: LicensePlate[];
@@ -45,7 +46,7 @@ export function LicensePlateGallery({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto">
         <div className="flex-1">
           <Input
             placeholder="Search by plate number, tag, or reporter..."
@@ -61,14 +62,14 @@ export function LicensePlateGallery({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="dateAdded">Date Added</SelectItem>
-              <SelectItem value="views">Views</SelectItem>
-              <SelectItem value="shares">Shares</SelectItem>
+              <SelectItem value="views">Most Viewed</SelectItem>
+              <SelectItem value="shares">Most Shared</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="space-y-6">
         {sortedPlates.map((plate) => (
           <LicensePlateCard
             key={plate.id}
