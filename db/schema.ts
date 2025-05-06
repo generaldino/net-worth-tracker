@@ -1,3 +1,4 @@
+import { InferSelectModel } from "drizzle-orm";
 import { pgTable, text, integer, uuid, date } from "drizzle-orm/pg-core";
 
 export const licensePlates = pgTable("license_plates", {
@@ -10,3 +11,5 @@ export const licensePlates = pgTable("license_plates", {
   tags: text("tags").array().notNull(), // Correct array syntax
   reporter: text("reporter").notNull(),
 });
+
+export type DbLicensePlate = InferSelectModel<typeof licensePlates>;
