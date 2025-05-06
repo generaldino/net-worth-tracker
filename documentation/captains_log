@@ -1,2 +1,0 @@
-- use supabase as postgres db (f\*\*\* prisma)
-- get it so that you can read and write to supabase
