@@ -35,7 +35,9 @@ export function LicensePlateCard({
               </span>
             </div>
             <div>
-              <h3 className="font-bold text-lg">{licensePlate.plateNumber}</h3>
+              <h3 className="font-bold text-lg">
+                {licensePlate.caption || licensePlate.plateNumber}
+              </h3>
               <p className="text-xs text-muted-foreground">
                 Posted by {licensePlate.reporter}
               </p>

@@ -1,6 +1,7 @@
 export interface LicensePlate {
   id: string;
   plateNumber: string;
+  caption?: string;
   imageUrls: string[];
   dateAdded: string;
   views: number;
