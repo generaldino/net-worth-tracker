@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { LicensePlate } from "@/types/license-plate";
-import { LicensePlateDialog } from "./license-plate-dialog";
 
 interface LicensePlateGalleryProps {
   licensePlates: LicensePlate[];
@@ -85,14 +84,6 @@ export function LicensePlateGallery({
             No license plates found matching your search.
           </p>
         </div>
-      )}
-
-      {selectedPlate && (
-        <LicensePlateDialog
-          licensePlate={selectedPlate}
-          open={!!selectedPlate}
-          onOpenChange={() => setSelectedPlate(null)}
-        />
       )}
     </div>
   );
