@@ -59,7 +59,7 @@ export function LicensePlateCard({
               </div>
             </div>
           </div>
-          <div className="bg-muted px-3 py-1.5 rounded-md">
+          <div className="bg-muted px-3 py-1.5 rounded-md border-1">
             <span className="font-mono font-bold tracking-wider">
               {licensePlate.plateNumber}
             </span>
@@ -87,22 +87,6 @@ export function LicensePlateCard({
                 <p className="text-muted-foreground">No image available</p>
               </div>
             )}
-          </div>
-
-          {/* License plate overlay at bottom */}
-          <div className="absolute bottom-4 left-0 w-full flex justify-center">
-            <div className="bg-gradient-to-b from-zinc-800 to-zinc-900 border-2 border-zinc-700 rounded-md p-2 px-6 shadow-lg max-w-[80%]">
-              <div className="absolute top-0 left-0 w-full flex justify-center">
-                <div className="bg-blue-600 text-white text-xs px-3 py-0.5 rounded-b-md">
-                  {licensePlate.tags[0] || "USA"}
-                </div>
-              </div>
-              <div className="flex justify-center items-center pt-2">
-                <p className="text-xl font-bold text-center text-white tracking-wider">
-                  {licensePlate.plateNumber}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </CardContent>
