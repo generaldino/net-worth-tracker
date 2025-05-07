@@ -30,9 +30,19 @@ export function LicensePlateCard({
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <span className="font-semibold text-xs">
-                {licensePlate.reporter.charAt(0)}
-              </span>
+              {licensePlate.reporterProfilePicture ? (
+                <Image
+                  src={licensePlate.reporterProfilePicture}
+                  alt={`${licensePlate.reporter}'s profile`}
+                  width={32}
+                  height={32}
+                  className="object-cover w-full h-full rounded-4xl "
+                />
+              ) : (
+                <span className="font-semibold text-xs">
+                  {licensePlate.reporter.charAt(0)}
+                </span>
+              )}
             </div>
             <div>
               <h3 className="font-bold text-lg">

@@ -11,6 +11,7 @@ export const licensePlates = pgTable("license_plates", {
   shares: integer("shares").notNull().default(0),
   tags: text("tags").array().notNull(),
   reporter: text("reporter").notNull(),
+  reporterProfilePicture: text("reporter_profile_picture"),
 });
 
 export type DbLicensePlate = InferSelectModel<typeof licensePlates>;

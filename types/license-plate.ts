@@ -8,4 +8,5 @@ export interface LicensePlate {
   shares: number;
   tags: string[];
   reporter: string;
+  reporterProfilePicture?: string;
 }
