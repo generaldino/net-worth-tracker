@@ -48,13 +48,21 @@ export function LicensePlateCard({
               <h3 className="font-bold text-lg">
                 {licensePlate.caption || licensePlate.plateNumber}
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Posted by {licensePlate.reporter}
-              </p>
+              <div className="flex">
+                <p className="text-xs text-muted-foreground">
+                  Posted by {licensePlate.reporter} {"  · "}
+                </p>
+                <span className="text-xs text-muted-foreground">
+                  {" ‎   "}
+                  {formatDate(licensePlate.dateAdded)}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            {formatDate(licensePlate.dateAdded)}
+          <div className="bg-muted px-3 py-1.5 rounded-md">
+            <span className="font-mono font-bold tracking-wider">
+              {licensePlate.plateNumber}
+            </span>
           </div>
         </div>
       </CardHeader>
