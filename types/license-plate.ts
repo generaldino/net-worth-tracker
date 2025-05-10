@@ -10,4 +10,6 @@ export interface LicensePlate {
   tags: string[];
   reporter: string;
   reporterProfilePicture?: string;
+  carMake?: string;
+  carModel?: string;
 }

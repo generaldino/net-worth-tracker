@@ -11,6 +11,7 @@ import { Eye, Share2, ThumbsUp } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Image from "next/image";
+import { CarLogo } from "./car-logo";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -69,6 +70,17 @@ export function LicensePlateCard({
 
       <CardContent className="p-0">
         <div className="relative">
+          {/* Car make/model info overlay - your provided UI component */}
+          {(licensePlate.carMake || licensePlate.carModel) && (
+            <div className="absolute top-3 right-3 z-10">
+              <div className="bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm">
+                <CarLogo make={licensePlate.carMake || ""} size={20} />
+                <span className="text-xs font-medium">
+                  {licensePlate.carMake} {licensePlate.carModel}
+                </span>
+              </div>
+            </div>
+          )}
           {/* Main image */}
           <div className="bg-muted aspect-video flex items-center justify-center">
             {licensePlate.imageUrls.length > 0 ? (

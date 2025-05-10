@@ -13,6 +13,8 @@ export const licensePlates = pgTable("license_plates", {
   tags: text("tags").array().notNull(),
   reporter: text("reporter").notNull(),
   reporterProfilePicture: text("reporter_profile_picture"),
+  carMake: text("car_make"),
+  carModel: text("car_model"),
 });
 
 export type DbLicensePlate = InferSelectModel<typeof licensePlates>;
