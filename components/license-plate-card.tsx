@@ -1,14 +1,6 @@
 "use client";
-
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Eye, Share2, ThumbsUp } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { Share2, ThumbsUp, MessageSquare, Bookmark } from "lucide-react";
+import { formatDate, getCategoryEmoji } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Image from "next/image";
 import { CarLogo } from "./car-logo";
@@ -29,115 +21,125 @@ export function LicensePlateCard({
   licensePlate,
   onClick,
 }: LicensePlateCardProps) {
+  // Determine category based on first tag or default to "Cars"
+  const category = licensePlate.tags[0] || "Cars";
+  const categoryEmoji = getCategoryEmoji(category);
+
   return (
-    <Card
-      className="hover:shadow-md transition-shadow cursor-pointer max-w-2xl mx-auto"
+    <div
+      className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
       onClick={onClick}
     >
-      <CardHeader className="pb-2 pt-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div>
-              <h3 className="font-bold text-lg">
-                {licensePlate.caption || licensePlate.plateNumber}
-              </h3>
-              <div className="flex">
-                <p className="text-xs text-muted-foreground">
-                  Posted by {licensePlate.reporter} {"  · "}
-                </p>
-                <span className="text-xs text-muted-foreground">
-                  {" ‎   "}
-                  {formatDate(licensePlate.dateAdded)}
-                </span>
-              </div>
-            </div>
+      {/* Header section */}
+      <div className="px-4 pt-4 pb-2">
+        {/* Category, time and reporter line */}
+        <div className="flex items-center gap-2 mb-1.5">
+          <div className="w-8 h-8 rounded-md bg-amber-400 flex items-center justify-center text-white">
+            <span className="text-lg">{categoryEmoji}</span>
           </div>
-          <div className="bg-muted px-3 py-1.5 rounded-md border-1">
-            <span className="font-mono font-bold tracking-wider">
+          <span className="font-bold">{category}</span>
+          <span className="text-gray-500 text-sm">
+            {formatDate(licensePlate.dateAdded)}
+          </span>
+          <span className="text-gray-500 text-sm">·</span>
+          <span className="text-gray-500 text-sm">
+            Posted by {licensePlate.reporter}
+          </span>
+
+          {/* License plate badge on the right */}
+          <div className="ml-auto bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
+            <span className="font-mono font-bold tracking-wider text-sm">
               {licensePlate.plateNumber}
             </span>
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="p-0">
-        <div className="relative">
-          <div className="aspect-video bg-muted">
-            <Carousel
-              opts={{
-                loop: true,
-              }}
-            >
-              <CarouselContent className="-ml-0">
-                {licensePlate.imageUrls.map((imageUrl, index) => (
-                  <CarouselItem key={index} className="pl-0">
-                    <div className="relative aspect-video">
-                      <Image
-                        src={imageUrl}
-                        alt={`License plate ${
-                          licensePlate.plateNumber
-                        } - Image ${index + 1}`}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        className="object-cover"
-                        priority={index === 0}
-                      />
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="left-2" />
-              <CarouselNext className="right-2" />
-            </Carousel>
-          </div>
+        {/* Caption */}
+        <h2 className="text-xl font-bold mb-2">
+          {licensePlate.caption || licensePlate.plateNumber}
+        </h2>
+      </div>
+
+      {/* Image carousel */}
+      <div className="relative">
+        <div className="aspect-video bg-gray-100 dark:bg-gray-800">
+          <Carousel
+            opts={{
+              loop: true,
+            }}
+          >
+            <CarouselContent className="-ml-0">
+              {licensePlate.imageUrls.map((imageUrl, index) => (
+                <CarouselItem key={index} className="pl-0">
+                  <div className="relative aspect-video">
+                    <Image
+                      src={imageUrl || "/placeholder.svg"}
+                      alt={`License plate ${licensePlate.plateNumber} - Image ${
+                        index + 1
+                      }`}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                      priority={index === 0}
+                    />
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-2" />
+            <CarouselNext className="right-2" />
+          </Carousel>
         </div>
-      </CardContent>
+      </div>
 
-      <CardFooter className="flex flex-col items-start pt-4 pb-4">
-        <div className="flex flex-wrap gap-1 mb-3 w-full">
+      {/* Tags and engagement section */}
+      <div className="px-4 py-3">
+        {/* Tags in 9gag style */}
+        <div className="flex flex-wrap gap-2 mb-4">
           {(licensePlate.carMake || licensePlate.carModel) && (
-            <Badge
-              variant="secondary"
-              className="text-xs flex items-center gap-1.5"
-            >
-              <CarLogo make={licensePlate.carMake || ""} size={16} />
-              <span>
-                {licensePlate.carMake} {licensePlate.carModel}
+            <div className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
+              <span className="flex items-center gap-1.5">
+                <CarLogo make={licensePlate.carMake || ""} size={16} />
+                <span>
+                  {licensePlate.carMake} {licensePlate.carModel}
+                </span>
               </span>
-            </Badge>
+            </div>
           )}
 
           {/* Regular tags */}
           {licensePlate.tags.map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
+            <div
+              key={index}
+              className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm"
+            >
               {tag}
-            </Badge>
+            </div>
           ))}
         </div>
 
-        <div className="flex justify-between w-full border-t pt-3 mt-1">
+        {/* Engagement metrics */}
+        <div className="flex items-center justify-between text-gray-500">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-1">
-              <ThumbsUp className="h-5 w-5 text-muted-foreground" />
+              <ThumbsUp className="h-5 w-5" />
               <span className="text-sm">
                 {Math.floor(licensePlate.views / 10)}
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <Eye className="h-5 w-5 text-muted-foreground" />
+              <MessageSquare className="h-5 w-5" />
               <span className="text-sm">
-                {licensePlate.views.toLocaleString()}
+                {Math.floor(licensePlate.shares / 3)}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Share2 className="h-5 w-5 text-muted-foreground" />
-            <span className="text-sm">
-              {licensePlate.shares.toLocaleString()}
-            </span>
+          <div className="flex items-center gap-4">
+            <Bookmark className="h-5 w-5" />
+            <Share2 className="h-5 w-5" />
           </div>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

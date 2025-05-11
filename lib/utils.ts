@@ -48,3 +48,43 @@ export function formatDate(dateString: string): string {
     }).format(date);
   }
 }
+
+export function getCategoryEmoji(category: string): string {
+  const categoryMap: Record<string, string> = {
+    Cars: "🚗",
+    Gaming: "🎮",
+    California: "🌴",
+    "New York": "🗽",
+    Texas: "🤠",
+    Florida: "🌊",
+    Hawaii: "🌺",
+    Nevada: "🎰",
+    Arizona: "🌵",
+    Tennessee: "🎵",
+    Kentucky: "🐎",
+    Louisiana: "🎺",
+    Vintage: "🕰️",
+    Modern: "🔷",
+    Custom: "🔧",
+    Vanity: "✨",
+    "Special Edition": "🏆",
+    Commemorative: "🏛️",
+    "Sunset Design": "🌅",
+    Rainbow: "🌈",
+    Orange: "🍊",
+    Space: "🚀",
+    Music: "🎵",
+    Jazz: "🎷",
+    Derby: "🏇",
+    Horses: "🐴",
+    "Las Vegas": "🎲",
+    "Grand Canyon": "🏞️",
+    "Statue of Liberty": "🗽",
+    "Sunshine State": "☀️",
+    "Empire State": "🏙️",
+    nice: "👍",
+    fish: "🐟",
+  };
+
+  return categoryMap[category] || "🚗";
+}
