@@ -41,7 +41,7 @@ export const licensePlates: LicensePlate[] = [
   },
   {
     id: "3",
-    plateNumber: "TOK 123",
+    plateNumber: "TOK_123",
     imageUrls: [
       "https://media.wired.com/photos/5e2b52d1097df7000896da19/16:9/w_2399,h_1349,c_limit/Transpo-licenseplates-502111737.jpg",
     ],
@@ -77,7 +77,7 @@ export const licensePlates: LicensePlate[] = [
   },
   {
     id: "5",
-    plateNumber: "NSW 007",
+    plateNumber: "NSW_007",
     imageUrls: [
       "https://media.wired.com/photos/5e2b52d1097df7000896da19/16:9/w_2399,h_1349,c_limit/Transpo-licenseplates-502111737.jpg",
       "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/1200px-Walking_tiger_female.jpg",
