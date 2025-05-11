@@ -12,12 +12,39 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "./ui/carousel";
+import { Button } from "./ui/button";
+import { toast } from "sonner";
 
 export function LicensePlateCard({
   licensePlate,
 }: {
   licensePlate: LicensePlate;
 }) {
+  const handleShare = async () => {
+    // Construct the full URL for the license plate
+    const plateUrl = `${window.location.origin}/${encodeURIComponent(
+      licensePlate.plateNumber
+    )}`;
+
+    try {
+      await navigator.clipboard.writeText(plateUrl);
+
+      // Show success toast
+      toast.success("Copied Link", {
+        description: `Share ${licensePlate.plateNumber} plate with friends`,
+        duration: 3000,
+      });
+
+      // Increment share count (you might want to call an API to update this)
+      // This is a placeholder for future implementation
+    } catch (error) {
+      // Show error toast if clipboard write fails
+      toast.error("Failed to copy link", {
+        description: "Please try again",
+      });
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors">
       {/* Header section */}
@@ -111,25 +138,10 @@ export function LicensePlateCard({
         </div>
 
         {/* Engagement metrics */}
-        <div className="flex items-center justify-between text-gray-500">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-1">
-              <ThumbsUp className="h-5 w-5" />
-              <span className="text-sm">
-                {Math.floor(licensePlate.views / 10)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MessageSquare className="h-5 w-5" />
-              <span className="text-sm">
-                {Math.floor(licensePlate.shares / 3)}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Bookmark className="h-5 w-5" />
-            <Share2 className="h-5 w-5" />
-          </div>
+        <div className="flex items-center justify-center gap-4">
+          <Button onClick={handleShare}>
+            <Share2 className="mr-2" size={16} /> Share
+          </Button>
         </div>
       </div>
     </div>
