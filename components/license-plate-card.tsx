@@ -1,6 +1,6 @@
 "use client";
 import { Share2, ThumbsUp, MessageSquare, Bookmark } from "lucide-react";
-import { formatDate, getCategoryEmoji } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Image from "next/image";
 import { CarLogo } from "./car-logo";
@@ -21,10 +21,6 @@ export function LicensePlateCard({
   licensePlate,
   onClick,
 }: LicensePlateCardProps) {
-  // Determine category based on first tag or default to "Cars"
-  const category = licensePlate.tags[0] || "Cars";
-  const categoryEmoji = getCategoryEmoji(category);
-
   return (
     <div
       className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
@@ -35,9 +31,9 @@ export function LicensePlateCard({
         {/* Category, time and reporter line */}
         <div className="flex items-center gap-2 mb-1.5">
           <div className="w-8 h-8 rounded-md bg-amber-400 flex items-center justify-center text-white">
-            <span className="text-lg">{categoryEmoji}</span>
+            <span className="text-lg">{licensePlate.categoryEmoji}</span>
           </div>
-          <span className="font-bold">{category}</span>
+          <span className="font-bold">{licensePlate.category || "Cars"}</span>
           <span className="text-gray-500 text-sm">
             {formatDate(licensePlate.dateAdded)}
           </span>

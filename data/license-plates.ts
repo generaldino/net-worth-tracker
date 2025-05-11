@@ -17,6 +17,8 @@ export const licensePlates: LicensePlate[] = [
     shares: 87,
     tags: ["California", "Modern", "Sunset Design"],
     reporter: "Maria Johnson",
+    category: "California",
+    categoryEmoji: "🌴",
   },
   {
     id: "2",
@@ -25,7 +27,7 @@ export const licensePlates: LicensePlate[] = [
       "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/1200px-Walking_tiger_female.jpg",
       "https://media.wired.com/photos/5e2b52d1097df7000896da19/16:9/w_2399,h_1349,c_limit/Transpo-licenseplates-502111737.jpg",
     ],
-    dateAdded: "2024-03-22T09:15:00Z",
+    dateAdded: "2025-05-10T09:15:00Z",
     country: "France",
     caption: "Classic Parisian Style",
     carMake: "Peugeot",
@@ -34,6 +36,8 @@ export const licensePlates: LicensePlate[] = [
     shares: 43,
     tags: ["Paris", "Classic", "French Standard"],
     reporter: "Jean Dupont",
+    category: "France",
+    categoryEmoji: "🇫🇷",
   },
   {
     id: "3",
@@ -50,6 +54,8 @@ export const licensePlates: LicensePlate[] = [
     shares: 178,
     tags: ["Tokyo", "Metropolitan", "JDM", "Hybrid"],
     reporter: "Yuki Tanaka",
+    category: "Japan",
+    categoryEmoji: "🇯🇵",
   },
   {
     id: "4",
@@ -66,6 +72,8 @@ export const licensePlates: LicensePlate[] = [
     shares: 95,
     tags: ["Berlin", "Special Edition", "Bavarian"],
     reporter: "Hans Mueller",
+    category: "Germany",
+    categoryEmoji: "🇩🇪",
   },
   {
     id: "5",
@@ -83,5 +91,7 @@ export const licensePlates: LicensePlate[] = [
     shares: 267,
     tags: ["Sydney", "Custom", "Aussie Classic", "007"],
     reporter: "Sarah Thompson",
+    category: "Australia",
+    categoryEmoji: "🇦🇺",
   },
 ];

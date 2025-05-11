@@ -12,4 +12,6 @@ export interface LicensePlate {
   reporterProfilePicture?: string;
   carMake: string;
   carModel: string;
+  category: string;
+  categoryEmoji: string;
 }
