@@ -12,20 +12,13 @@ import {
   CarouselPrevious,
 } from "./ui/carousel";
 
-interface LicensePlateCardProps {
-  licensePlate: LicensePlate;
-  onClick: () => void;
-}
-
 export function LicensePlateCard({
   licensePlate,
-  onClick,
-}: LicensePlateCardProps) {
+}: {
+  licensePlate: LicensePlate;
+}) {
   return (
-    <div
-      className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors cursor-pointer"
-      onClick={onClick}
-    >
+    <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors cursor-pointer">
       {/* Header section */}
       <div className="px-4 pt-4 pb-2">
         {/* Category, time and reporter line */}

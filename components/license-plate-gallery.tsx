@@ -12,36 +12,9 @@ import {
 } from "@/components/ui/select";
 import type { LicensePlate } from "@/types/license-plate";
 
-interface LicensePlateGalleryProps {
-  licensePlates: LicensePlate[];
-}
-
-export function LicensePlateGallery({
-  licensePlates,
-}: LicensePlateGalleryProps) {
-  const [selectedPlate, setSelectedPlate] = useState<LicensePlate | null>(null);
+export function LicensePlateGallery(licensePlates: LicensePlate[]) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("dateAdded");
-
-  const filteredPlates = licensePlates.filter(
-    (plate) =>
-      plate.plateNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plate.tags.some((tag) =>
-        tag.toLowerCase().includes(searchTerm.toLowerCase())
-      ) ||
-      plate.reporter.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const sortedPlates = [...filteredPlates].sort((a, b) => {
-    if (sortBy === "dateAdded") {
-      return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
-    } else if (sortBy === "views") {
-      return b.views - a.views;
-    } else if (sortBy === "shares") {
-      return b.shares - a.shares;
-    }
-    return 0;
-  });
 
   return (
     <div className="space-y-6">
@@ -69,16 +42,12 @@ export function LicensePlateGallery({
       </div>
 
       <div className="space-y-6">
-        {sortedPlates.map((plate) => (
-          <LicensePlateCard
-            key={plate.id}
-            licensePlate={plate}
-            onClick={() => setSelectedPlate(plate)}
-          />
+        {licensePlates.map((plate) => (
+          <LicensePlateCard key={plate.id} licensePlate={plate} />
         ))}
       </div>
 
-      {sortedPlates.length === 0 && (
+      {licensePlates.length === 0 && (
         <div className="text-center py-10">
           <p className="text-muted-foreground">
             No license plates found matching your search.
