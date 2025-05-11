@@ -82,20 +82,25 @@ export function LicensePlateCard({
   return (
     <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors">
       {/* Header section */}
-      <div className="px-4 pt-4 pb-2">
+      <div className=" pt-4 pb-2">
         {/* Category, time and reporter line */}
         <div className="flex items-center gap-2 mb-1.5">
           <div className="w-8 h-8 rounded-md bg-amber-400 flex items-center justify-center text-white">
             <span className="text-lg">{licensePlate.categoryEmoji}</span>
           </div>
-          <span className="font-bold">{licensePlate.category || "Cars"}</span>
-          <span className="text-gray-500 text-sm">
-            {formatDate(licensePlate.dateAdded)}
-          </span>
-          <span className="text-gray-500 text-sm">·</span>
-          <span className="text-gray-500 text-sm">
-            Posted by {licensePlate.reporter}
-          </span>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm">
+              {licensePlate.category || "Cars"}
+            </span>
+            <div className="flex">
+              <span className="text-gray-500 text-xs">
+                Posted by {licensePlate.reporter}
+              </span>
+              <span className="text-gray-500 text-xs">
+                ‎ · {formatDate(licensePlate.dateAdded)}
+              </span>
+            </div>
+          </div>
 
           {/* License plate badge on the right */}
           <div className="ml-auto bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
@@ -146,7 +151,7 @@ export function LicensePlateCard({
       </div>
 
       {/* Tags and engagement section */}
-      <div className="px-4 py-3">
+      <div className=" py-3">
         {/* Tags in 9gag style */}
         <div className="flex flex-wrap gap-2 mb-4">
           {(licensePlate.carMake || licensePlate.carModel) && (
