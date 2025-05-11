@@ -94,7 +94,7 @@ export function LicensePlateCard({
             </span>
             <div className="flex">
               <span className="text-gray-500 text-xs">
-                Posted by {licensePlate.reporter}
+                {licensePlate.reporter}
               </span>
               <span className="text-gray-500 text-xs">
                 ‎ · {formatDate(licensePlate.dateAdded)}

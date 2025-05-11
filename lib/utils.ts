@@ -44,7 +44,6 @@ export function formatDate(dateString: string): string {
     return new Intl.DateTimeFormat("en-UK", {
       year: "numeric",
       month: "short",
-      day: "numeric",
     }).format(date);
   }
 }
