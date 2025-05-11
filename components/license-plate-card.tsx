@@ -26,22 +26,56 @@ export function LicensePlateCard({
       licensePlate.plateNumber
     )}`;
 
-    try {
-      await navigator.clipboard.writeText(plateUrl);
+    // Prepare share data
+    const shareData = {
+      title:
+        licensePlate.caption || `License Plate ${licensePlate.plateNumber}`,
+      text: `Check out this license plate: ${licensePlate.plateNumber} from ${licensePlate.country}`,
+      url: plateUrl,
+    };
 
-      // Show success toast
-      toast.success("Copied Link", {
-        description: `Share ${licensePlate.plateNumber} plate with friends`,
-        duration: 3000,
-      });
+    // Check if user is on a mobile device
+    const isMobile =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
 
-      // Increment share count (you might want to call an API to update this)
-      // This is a placeholder for future implementation
-    } catch (error) {
-      // Show error toast if clipboard write fails
-      toast.error("Failed to copy link", {
-        description: "Please try again",
-      });
+    // If user is on mobile AND Web Share API is available, use native share
+    if (isMobile && navigator.share && navigator.canShare(shareData)) {
+      try {
+        // Use native share sheet
+        await navigator.share(shareData);
+
+        // Increment share count (placeholder for future implementation)
+      } catch (error) {
+        // User probably canceled sharing or another error occurred
+        console.log("Sharing was canceled or failed");
+
+        // Fallback to clipboard if sharing fails for some reason
+        fallbackToClipboard();
+      }
+    } else {
+      // Desktop or mobile without share support - fallback to clipboard
+      fallbackToClipboard();
+    }
+
+    // Helper function for clipboard fallback
+    function fallbackToClipboard() {
+      navigator.clipboard
+        .writeText(plateUrl)
+        .then(() => {
+          // Show success toast
+          toast.success("Copied Link", {
+            description: `Share ${licensePlate.plateNumber} plate with friends`,
+            duration: 3000,
+          });
+        })
+        .catch(() => {
+          // Show error toast if clipboard write fails
+          toast.error("Failed to copy link", {
+            description: "Please try again",
+          });
+        });
     }
   };
 
