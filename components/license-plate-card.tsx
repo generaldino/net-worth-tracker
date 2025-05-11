@@ -70,17 +70,6 @@ export function LicensePlateCard({
 
       <CardContent className="p-0">
         <div className="relative">
-          {/* Car make/model info overlay - your provided UI component */}
-          {(licensePlate.carMake || licensePlate.carModel) && (
-            <div className="absolute top-3 right-3 z-10">
-              <div className="bg-background/80 backdrop-blur-sm rounded-full px-3 py-1 flex items-center gap-1.5 shadow-sm">
-                <CarLogo make={licensePlate.carMake || ""} size={20} />
-                <span className="text-xs font-medium">
-                  {licensePlate.carMake} {licensePlate.carModel}
-                </span>
-              </div>
-            </div>
-          )}
           {/* Main image */}
           <div className="bg-muted aspect-video flex items-center justify-center">
             {licensePlate.imageUrls.length > 0 ? (
@@ -105,6 +94,19 @@ export function LicensePlateCard({
 
       <CardFooter className="flex flex-col items-start pt-4 pb-4">
         <div className="flex flex-wrap gap-1 mb-3 w-full">
+          {(licensePlate.carMake || licensePlate.carModel) && (
+            <Badge
+              variant="secondary"
+              className="text-xs flex items-center gap-1.5"
+            >
+              <CarLogo make={licensePlate.carMake || ""} size={16} />
+              <span>
+                {licensePlate.carMake} {licensePlate.carModel}
+              </span>
+            </Badge>
+          )}
+
+          {/* Regular tags */}
           {licensePlate.tags.map((tag, index) => (
             <Badge key={index} variant="secondary" className="text-xs">
               {tag}
