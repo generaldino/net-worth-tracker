@@ -12,7 +12,11 @@ import {
 } from "@/components/ui/select";
 import type { LicensePlate } from "@/types/license-plate";
 
-export function LicensePlateGallery(licensePlates: LicensePlate[]) {
+export function LicensePlateGallery({
+  licensePlates,
+}: {
+  licensePlates: LicensePlate[];
+}) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("dateAdded");
 
