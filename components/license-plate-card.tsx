@@ -12,6 +12,13 @@ import { formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Image from "next/image";
 import { CarLogo } from "./car-logo";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "./ui/carousel";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -24,7 +31,7 @@ export function LicensePlateCard({
 }: LicensePlateCardProps) {
   return (
     <Card
-      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer max-w-2xl mx-auto"
+      className="hover:shadow-md transition-shadow cursor-pointer max-w-2xl mx-auto"
       onClick={onClick}
     >
       <CardHeader className="pb-2 pt-4">
@@ -55,24 +62,33 @@ export function LicensePlateCard({
 
       <CardContent className="p-0">
         <div className="relative">
-          {/* Main image */}
-          <div className="bg-muted aspect-video flex items-center justify-center">
-            {licensePlate.imageUrls.length > 0 ? (
-              <div className="w-full h-full relative">
-                <Image
-                  src={licensePlate.imageUrls[0]}
-                  alt={`License plate ${licensePlate.plateNumber}`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
-                  priority={false}
-                />
-              </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-muted">
-                <p className="text-muted-foreground">No image available</p>
-              </div>
-            )}
+          <div className="aspect-video bg-muted">
+            <Carousel
+              opts={{
+                loop: true,
+              }}
+            >
+              <CarouselContent className="-ml-0">
+                {licensePlate.imageUrls.map((imageUrl, index) => (
+                  <CarouselItem key={index} className="pl-0">
+                    <div className="relative aspect-video">
+                      <Image
+                        src={imageUrl}
+                        alt={`License plate ${
+                          licensePlate.plateNumber
+                        } - Image ${index + 1}`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover"
+                        priority={index === 0}
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-2" />
+              <CarouselNext className="right-2" />
+            </Carousel>
           </div>
         </div>
       </CardContent>
