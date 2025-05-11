@@ -3,6 +3,7 @@ import { Share2, ThumbsUp, MessageSquare, Bookmark } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Image from "next/image";
+import Link from "next/link";
 import { CarLogo } from "./car-logo";
 import {
   Carousel,
@@ -18,7 +19,7 @@ export function LicensePlateCard({
   licensePlate: LicensePlate;
 }) {
   return (
-    <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors cursor-pointer">
+    <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors">
       {/* Header section */}
       <div className="px-4 pt-4 pb-2">
         {/* Category, time and reporter line */}
@@ -43,10 +44,12 @@ export function LicensePlateCard({
           </div>
         </div>
 
-        {/* Caption */}
-        <h2 className="text-xl font-bold mb-2">
-          {licensePlate.caption || licensePlate.plateNumber}
-        </h2>
+        {/* Caption with link */}
+        <Link href={`/${encodeURIComponent(licensePlate.plateNumber)}`}>
+          <h2 className="text-xl font-bold mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
+            {licensePlate.caption || licensePlate.plateNumber}
+          </h2>
+        </Link>
       </div>
 
       {/* Image carousel */}
