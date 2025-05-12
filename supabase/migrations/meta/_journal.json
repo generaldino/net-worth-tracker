@@ -71,6 +71,34 @@
       "when": 1747076856169,
       "tag": "0009_volatile_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1747078698614,
+      "tag": "0010_worthless_hedge_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1747078893478,
+      "tag": "0011_needy_silver_centurion",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1747079399596,
+      "tag": "0012_known_omega_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1747079550454,
+      "tag": "0013_broad_rogue",
+      "breakpoints": true
     }
   ]
 }
