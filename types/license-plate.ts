@@ -4,7 +4,7 @@ export interface LicensePlate {
   country: string;
   caption: string;
   imageUrls: string[];
-  dateAdded: string;
+  createdAt: Date | null;
   tags: string[];
   reporter: string;
   carMake: string;

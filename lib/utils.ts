@@ -5,8 +5,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+// lib/utils.ts
+export function formatDate(dateString: string | Date | null): string {
+  if (!dateString) return "Unknown date";
+
+  // Try to create a valid date object
+  let date: Date;
+  try {
+    // If it's already a Date object
+    if (dateString instanceof Date) {
+      date = dateString;
+    } else {
+      // Try to parse it as a string
+      date = new Date(dateString);
+    }
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+  } catch (error) {
+    console.error("Error parsing date:", error);
+    return "Invalid date";
+  }
+
   const now = new Date();
 
   // Calculate time difference in milliseconds
