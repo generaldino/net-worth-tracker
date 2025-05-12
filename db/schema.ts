@@ -8,11 +8,8 @@ export const licensePlates = pgTable("license_plates", {
   caption: text("caption").notNull(),
   imageUrls: text("image_urls").array().notNull(),
   dateAdded: date("date_added").notNull(),
-  views: integer("views").notNull().default(0),
-  shares: integer("shares").notNull().default(0),
   tags: text("tags").array().notNull(),
   reporter: text("reporter").notNull(),
-  reporterProfilePicture: text("reporter_profile_picture").notNull(),
   carMake: text("car_make").notNull(),
   carModel: text("car_model").notNull(),
 });
