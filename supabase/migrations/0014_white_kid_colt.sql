@@ -1,0 +1,1 @@
+ALTER TABLE "license_plates" DROP COLUMN "car_model";

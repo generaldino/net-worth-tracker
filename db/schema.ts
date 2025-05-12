@@ -10,7 +10,6 @@ export const licensePlates = pgTable("license_plates", {
   tags: text("tags").array().notNull(),
   reporter: text("reporter").notNull(),
   carMake: text("car_make").notNull(),
-  carModel: text("car_model").notNull(),
   category: text("category").notNull(),
   categoryEmoji: text("category_emoji").notNull(),
   userId: uuid("user_id"),

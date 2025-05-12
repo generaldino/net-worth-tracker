@@ -8,7 +8,6 @@ export interface LicensePlate {
   tags: string[];
   reporter: string;
   carMake: string;
-  carModel: string;
   category: string;
   categoryEmoji: string;
 }

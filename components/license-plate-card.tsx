@@ -169,13 +169,10 @@ export function LicensePlateCard({
                 <span>{licensePlate.country}</span>
               </span>
             </div>
-            {(licensePlate.carMake || licensePlate.carModel) && (
+            {licensePlate.carMake && (
               <div className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
                 <span className="flex items-center gap-1.5">
                   <CarLogo make={licensePlate.carMake || ""} size={16} />
-                  <span>
-                    {licensePlate.carMake} {licensePlate.carModel}
-                  </span>
                 </span>
               </div>
             )}
