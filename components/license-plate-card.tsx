@@ -1,5 +1,7 @@
 "use client";
-import { Share2, ThumbsUp, MessageSquare, Bookmark } from "lucide-react";
+import { Share2 } from "lucide-react";
+import { countryToAlpha2 } from "country-to-iso";
+import countryCodeEmoji from "country-code-emoji";
 import { formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Image from "next/image";
@@ -155,7 +157,18 @@ export function LicensePlateCard({
       <ScrollArea className="whitespace-nowrap">
         <div className=" py-3">
           {/* Tags in 9gag style */}
+
           <div className="flex gap-2">
+            <div className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
+              <span className="flex items-center gap-1.5">
+                <span className="text-[13px]">
+                  {countryCodeEmoji(
+                    countryToAlpha2(licensePlate.country) || ""
+                  )}
+                </span>
+                <span>{licensePlate.country}</span>
+              </span>
+            </div>
             {(licensePlate.carMake || licensePlate.carModel) && (
               <div className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
                 <span className="flex items-center gap-1.5">

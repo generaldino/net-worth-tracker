@@ -9,7 +9,7 @@ export const licensePlates: LicensePlate[] = [
       "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/1200px-Walking_tiger_female.jpg",
     ],
     dateAdded: "2023-08-15T14:30:00Z",
-    country: "USA",
+    country: "United States",
     caption: "California Sunset Design",
     carMake: "Tesla",
     carModel: "Model S",
