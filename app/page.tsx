@@ -5,6 +5,7 @@ import { licensePlates } from "@/db/schema";
 
 export default async function Home() {
   const plates = await db.select().from(licensePlates);
+  console.log("Fetched plates:", plates);
 
   return (
     <main className="container mx-auto py-10 px-4">
