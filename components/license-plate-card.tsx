@@ -100,7 +100,7 @@ export function LicensePlateCard({
                 {licensePlate.reporter}
               </span>
               <span className="text-gray-500 text-xs">
-                ‎ · {formatDate(licensePlate.dateAdded)}
+                ‎ · {formatDate(licensePlate.createdAt)}
               </span>
             </div>
           </div>
