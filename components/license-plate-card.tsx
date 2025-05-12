@@ -14,6 +14,7 @@ import {
 } from "./ui/carousel";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 
 export function LicensePlateCard({
   licensePlate,
@@ -151,37 +152,39 @@ export function LicensePlateCard({
       </div>
 
       {/* Tags and engagement section */}
-      <div className=" py-3">
-        {/* Tags in 9gag style */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {(licensePlate.carMake || licensePlate.carModel) && (
-            <div className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
-              <span className="flex items-center gap-1.5">
-                <CarLogo make={licensePlate.carMake || ""} size={16} />
-                <span>
-                  {licensePlate.carMake} {licensePlate.carModel}
+      <ScrollArea className="whitespace-nowrap">
+        <div className=" py-3">
+          {/* Tags in 9gag style */}
+          <div className="flex gap-2">
+            {(licensePlate.carMake || licensePlate.carModel) && (
+              <div className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
+                <span className="flex items-center gap-1.5">
+                  <CarLogo make={licensePlate.carMake || ""} size={16} />
+                  <span>
+                    {licensePlate.carMake} {licensePlate.carModel}
+                  </span>
                 </span>
-              </span>
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* Regular tags */}
-          {licensePlate.tags.map((tag, index) => (
-            <div
-              key={index}
-              className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm"
-            >
-              {tag}
-            </div>
-          ))}
+            {/* Regular tags */}
+            {licensePlate.tags.map((tag, index) => (
+              <div
+                key={index}
+                className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm"
+              >
+                {tag}
+              </div>
+            ))}
+          </div>
         </div>
-
-        {/* Engagement metrics */}
-        <div className="flex items-center justify-center gap-4">
-          <Button onClick={handleShare}>
-            <Share2 className="mr-2" size={16} /> Share
-          </Button>
-        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+      {/* Engagement metrics */}
+      <div className="flex items-center justify-center gap-4">
+        <Button onClick={handleShare}>
+          <Share2 className="mr-2" size={16} /> Share
+        </Button>
       </div>
     </div>
   );
