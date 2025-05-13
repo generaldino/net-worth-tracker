@@ -123,7 +123,7 @@ export function LicensePlateCard({
 
       {/* Image carousel */}
       <div className="relative">
-        <div className="aspect-video bg-gray-100 dark:bg-gray-800">
+        <div className="h-[400px] bg-gray-50 dark:bg-gray-950">
           <Carousel
             opts={{
               loop: true,
@@ -132,15 +132,15 @@ export function LicensePlateCard({
             <CarouselContent className="-ml-0">
               {licensePlate.imageUrls.map((imageUrl, index) => (
                 <CarouselItem key={index} className="pl-0">
-                  <div className="relative aspect-video">
+                  <div className="relative h-[400px] w-full flex items-center justify-center">
                     <Image
                       src={imageUrl || "/placeholder.svg"}
                       alt={`License plate ${licensePlate.plateNumber} - Image ${
                         index + 1
                       }`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover"
+                      width={800}
+                      height={600}
+                      className="object-contain max-h-full max-w-full"
                       priority={index === 0}
                     />
                   </div>
