@@ -104,7 +104,7 @@ export default async function FilterPage({ params }: FilterPageProps) {
       <h1 className="text-3xl font-bold mb-2 text-center">{title}</h1>
       <p className="text-muted-foreground mb-8 text-center">{description}</p>
 
-      <LicensePlateGallery licensePlates={plates} />
+      <LicensePlateGallery initialLicensePlates={plates} />
     </main>
   );
 }
