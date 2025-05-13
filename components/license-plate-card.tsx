@@ -2,7 +2,7 @@
 import { Share2 } from "lucide-react";
 import { countryToAlpha2 } from "country-to-iso";
 import countryCodeEmoji from "country-code-emoji";
-import { formatDate } from "@/lib/utils";
+import { formatCarMake, formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Image from "next/image";
 import Link from "next/link";
@@ -190,7 +190,7 @@ export function LicensePlateCard({
               >
                 <span className="flex items-center gap-1.5">
                   <CarLogo make={licensePlate.carMake || ""} />
-                  <span>{licensePlate.carMake}</span>
+                  <span>{formatCarMake(licensePlate.carMake)}</span>
                 </span>
               </Link>
             )}

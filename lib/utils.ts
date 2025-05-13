@@ -69,3 +69,13 @@ export function formatDate(dateString: string | Date | null): string {
     }).format(date);
   }
 }
+
+export function formatCarMake(carMake: string): string {
+  if (!carMake) return "";
+
+  // Split by underscore and capitalize each word
+  return carMake
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
