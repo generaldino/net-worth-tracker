@@ -39,8 +39,8 @@ export function CarLogo({ make }: CarLogoProps) {
         alt={`${make} logo`}
         loading="lazy"
         unoptimized
-        width={16}
-        height={16}
+        width={20}
+        height={20}
       />
     </div>
   );

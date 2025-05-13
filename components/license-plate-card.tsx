@@ -83,9 +83,9 @@ export function LicensePlateCard({
   };
 
   return (
-    <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800  dark:hover:bg-gray-900/50 transition-colors">
+    <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
       {/* Header section */}
-      <div className=" pt-4 pb-2">
+      <div className="pt-4 pb-2">
         {/* Category, time and reporter line */}
         <div className="flex items-center gap-2 mb-1.5">
           <div className="w-8 h-8 rounded-md bg-amber-400 flex items-center justify-center text-white">
@@ -165,11 +165,14 @@ export function LicensePlateCard({
 
       {/* Tags and engagement section */}
       <ScrollArea className="whitespace-nowrap">
-        <div className=" py-3">
+        <div className="py-3">
           {/* Tags in 9gag style */}
 
           <div className="flex gap-2">
-            <div className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
+            <Link
+              href={`/filter/tag/${encodeURIComponent(licensePlate.country)}`}
+              className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
               <span className="flex items-center gap-1.5">
                 <span className="text-[13px]">
                   {countryCodeEmoji(
@@ -178,23 +181,28 @@ export function LicensePlateCard({
                 </span>
                 <span>{licensePlate.country}</span>
               </span>
-            </div>
+            </Link>
+
             {licensePlate.carMake && (
-              <div className="flex bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm">
+              <Link
+                href={`/filter/tag/${encodeURIComponent(licensePlate.carMake)}`}
+                className="flex bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
                 <span className="flex items-center gap-1.5">
                   <CarLogo make={licensePlate.carMake || ""} />
+                  <span>{licensePlate.carMake}</span>
                 </span>
-              </div>
+              </Link>
             )}
 
-            {/* Regular tags */}
             {licensePlate.tags.map((tag, index) => (
-              <div
+              <Link
                 key={index}
-                className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm"
+                href={`/filter/tag/${encodeURIComponent(tag)}`}
+                className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 {tag}
-              </div>
+              </Link>
             ))}
           </div>
         </div>

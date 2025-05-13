@@ -35,10 +35,39 @@ export default async function FilterPage({ params }: FilterPageProps) {
       case "tag":
         title = `#${decodedValue}`;
         description = `License plates tagged with #${decodedValue}`;
-        plates = await db
+
+        // Check if it's a car make
+        const carMakePlates = await db
+          .select()
+          .from(licensePlates)
+          .where(eq(licensePlates.carMake, decodedValue));
+
+        // Check if it's a country
+        const countryPlates = await db
+          .select()
+          .from(licensePlates)
+          .where(eq(licensePlates.country, decodedValue));
+
+        // Check if it's a regular tag
+        const tagPlates = await db
           .select()
           .from(licensePlates)
           .where(arrayContains(licensePlates.tags, [decodedValue]));
+
+        // Combine results (removing duplicates will happen in the UI component)
+        plates = [...carMakePlates, ...countryPlates, ...tagPlates];
+
+        // If it's a car make and we found results, update the title and description
+        if (carMakePlates.length > 0) {
+          title = decodedValue;
+          description = `License plates with ${decodedValue} vehicles`;
+        }
+
+        // If it's a country and we found results, update the title and description
+        if (countryPlates.length > 0 && carMakePlates.length === 0) {
+          title = decodedValue;
+          description = `License plates from ${decodedValue}`;
+        }
         break;
 
       case "category":
