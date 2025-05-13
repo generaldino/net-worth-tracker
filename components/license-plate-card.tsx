@@ -17,12 +17,17 @@ import {
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
+import { HighlightText } from "./highlight-text";
+
+interface LicensePlateCardProps {
+  licensePlate: LicensePlate;
+  searchTerm?: string;
+}
 
 export function LicensePlateCard({
   licensePlate,
-}: {
-  licensePlate: LicensePlate;
-}) {
+  searchTerm = "",
+}: LicensePlateCardProps) {
   const handleShare = async () => {
     // Construct the full URL for the license plate
     const plateUrl = `${window.location.origin}/${encodeURIComponent(
@@ -98,7 +103,10 @@ export function LicensePlateCard({
               )}`}
               className="font-bold text-sm hover:text-blue-600 hover:underline"
             >
-              {licensePlate.category || "Cars"}
+              <HighlightText
+                text={licensePlate.category || "Cars"}
+                searchTerm={searchTerm}
+              />
             </Link>
             <div className="flex">
               <Link
@@ -107,7 +115,10 @@ export function LicensePlateCard({
                 )}`}
                 className="text-gray-500 text-xs hover:text-blue-600 hover:underline"
               >
-                {licensePlate.reporter}
+                <HighlightText
+                  text={licensePlate.reporter}
+                  searchTerm={searchTerm}
+                />
               </Link>
               <span className="text-gray-500 text-xs">
                 ‎ · {formatDate(licensePlate.createdAt)}
@@ -118,7 +129,10 @@ export function LicensePlateCard({
           {/* License plate badge on the right */}
           <div className="ml-auto bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-md">
             <span className="font-mono font-bold tracking-wider text-sm">
-              {licensePlate.plateNumber}
+              <HighlightText
+                text={licensePlate.plateNumber}
+                searchTerm={searchTerm}
+              />
             </span>
           </div>
         </div>
@@ -126,7 +140,10 @@ export function LicensePlateCard({
         {/* Caption with link */}
         <Link href={`/${encodeURIComponent(licensePlate.plateNumber)}`}>
           <h2 className="text-xl font-bold mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer">
-            {licensePlate.caption || licensePlate.plateNumber}
+            <HighlightText
+              text={licensePlate.caption || licensePlate.plateNumber}
+              searchTerm={searchTerm}
+            />
           </h2>
         </Link>
       </div>
@@ -179,7 +196,10 @@ export function LicensePlateCard({
                     countryToAlpha2(licensePlate.country) || ""
                   )}
                 </span>
-                <span>{licensePlate.country}</span>
+                <HighlightText
+                  text={licensePlate.country}
+                  searchTerm={searchTerm}
+                />
               </span>
             </Link>
 
@@ -190,7 +210,10 @@ export function LicensePlateCard({
               >
                 <span className="flex items-center gap-1.5">
                   <CarLogo make={licensePlate.carMake || ""} />
-                  <span>{formatCarMake(licensePlate.carMake)}</span>
+                  <HighlightText
+                    text={formatCarMake(licensePlate.carMake)}
+                    searchTerm={searchTerm}
+                  />
                 </span>
               </Link>
             )}
@@ -201,7 +224,7 @@ export function LicensePlateCard({
                 href={`/filter/tag/${encodeURIComponent(tag)}`}
                 className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
-                {tag}
+                <HighlightText text={tag} searchTerm={searchTerm} />
               </Link>
             ))}
           </div>

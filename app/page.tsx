@@ -14,7 +14,7 @@ export default async function Home() {
         Browse our collection of unique license plates from across the country
       </p>
       {/* <LicensePlateGallery licensePlates={licensePlates} /> */}
-      <LicensePlateGallery licensePlates={plates} />
+      <LicensePlateGallery initialLicensePlates={plates} />
     </main>
   );
 }
