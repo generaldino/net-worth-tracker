@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
           ilike(licensePlates.reporter, searchPattern),
           ilike(licensePlates.category, searchPattern),
           ilike(licensePlates.caption, searchPattern),
+          ilike(licensePlates.country, searchPattern), // Added country search
+          ilike(licensePlates.carMake, searchPattern), // Added carMake search
           // Using PostgreSQL array operator to check if any tag contains the search term
           sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
         )
