@@ -1,12 +1,13 @@
-import type { NextConfig } from "next";
+// import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   images: {
-    domains: [
-      "supabase.com",
-      "media.wired.com",
-      "upload.wikimedia.org",
-      "zooptngndmpliglbuydz.supabase.co",
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "storage.googleapis.com",
+        pathname: "/rate-my-plate/**",
+      },
     ],
   },
 };
