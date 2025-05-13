@@ -92,13 +92,23 @@ export function LicensePlateCard({
             <span className="text-lg">{licensePlate.categoryEmoji}</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-sm">
+            <Link
+              href={`/filter/category/${encodeURIComponent(
+                licensePlate.category
+              )}`}
+              className="font-bold text-sm hover:text-blue-600 hover:underline"
+            >
               {licensePlate.category || "Cars"}
-            </span>
+            </Link>
             <div className="flex">
-              <span className="text-gray-500 text-xs">
+              <Link
+                href={`/filter/reporter/${encodeURIComponent(
+                  licensePlate.reporter
+                )}`}
+                className="text-gray-500 text-xs hover:text-blue-600 hover:underline"
+              >
                 {licensePlate.reporter}
-              </span>
+              </Link>
               <span className="text-gray-500 text-xs">
                 ‎ · {formatDate(licensePlate.createdAt)}
               </span>
