@@ -2,9 +2,13 @@ import { LicensePlateGallery } from "@/components/license-plate-gallery";
 //import { licensePlates } from "@/data/license-plates";
 import { db } from "@/db";
 import { licensePlates } from "@/db/schema";
+import { desc } from "drizzle-orm";
 
 export default async function Home() {
-  const plates = await db.select().from(licensePlates);
+  const plates = await db
+    .select()
+    .from(licensePlates)
+    .orderBy(desc(licensePlates.createdAt));
   return (
     <main className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-2 text-center">

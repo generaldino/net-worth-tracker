@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { LicensePlate, licensePlates } from "@/db/schema";
-import { eq, arrayContains } from "drizzle-orm";
+import { eq, arrayContains, desc } from "drizzle-orm";
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 
 interface FilterPageProps {
@@ -29,7 +29,8 @@ export default async function FilterPage({ params }: FilterPageProps) {
         plates = await db
           .select()
           .from(licensePlates)
-          .where(eq(licensePlates.reporter, decodedValue));
+          .where(eq(licensePlates.reporter, decodedValue))
+          .orderBy(desc(licensePlates.createdAt));
         break;
 
       case "tag":
@@ -40,19 +41,22 @@ export default async function FilterPage({ params }: FilterPageProps) {
         const carMakePlates = await db
           .select()
           .from(licensePlates)
-          .where(eq(licensePlates.carMake, decodedValue));
+          .where(eq(licensePlates.carMake, decodedValue))
+          .orderBy(desc(licensePlates.createdAt));
 
         // Check if it's a country
         const countryPlates = await db
           .select()
           .from(licensePlates)
-          .where(eq(licensePlates.country, decodedValue));
+          .where(eq(licensePlates.country, decodedValue))
+          .orderBy(desc(licensePlates.createdAt));
 
         // Check if it's a regular tag
         const tagPlates = await db
           .select()
           .from(licensePlates)
-          .where(arrayContains(licensePlates.tags, [decodedValue]));
+          .where(arrayContains(licensePlates.tags, [decodedValue]))
+          .orderBy(desc(licensePlates.createdAt));
 
         // Combine results (removing duplicates will happen in the UI component)
         plates = [...carMakePlates, ...countryPlates, ...tagPlates];
@@ -76,7 +80,8 @@ export default async function FilterPage({ params }: FilterPageProps) {
         plates = await db
           .select()
           .from(licensePlates)
-          .where(eq(licensePlates.category, decodedValue));
+          .where(eq(licensePlates.category, decodedValue))
+          .orderBy(desc(licensePlates.createdAt));
         break;
 
       default:

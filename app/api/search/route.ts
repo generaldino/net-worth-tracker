@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { licensePlates } from "@/db/schema";
-import { ilike, or, sql } from "drizzle-orm";
+import { desc, ilike, or, sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
           sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
         )
       )
-      .limit(20);
+      .orderBy(desc(licensePlates.createdAt));
 
     return NextResponse.json({ plates: searchResults });
   } catch (error) {
