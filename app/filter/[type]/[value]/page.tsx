@@ -5,23 +5,28 @@ import { eq, arrayContains, desc, sql } from "drizzle-orm";
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 
+// Define the props type, correctly typing both params and searchParams as Promises
 interface FilterPageProps {
   params: Promise<{
     type: string;
     value: string;
   }>;
-  searchParams: { page?: string };
+  searchParams: Promise<{ page?: string }>; // searchParams is now a Promise
 }
 
 export default async function FilterPage({
   params,
   searchParams,
 }: FilterPageProps) {
-  const { type, value } = await params;
+  // Await both params and searchParams
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+
+  const { type, value } = resolvedParams; // Destructure from awaited params
   const decodedValue = decodeURIComponent(value);
 
-  // Get page from query params
-  const page = parseInt(searchParams.page || "1", 10);
+  // Get page from query params from awaited searchParams
+  const page = parseInt(resolvedSearchParams.page || "1", 10);
   const validPage = page > 0 ? page : 1;
   const offset = (validPage - 1) * ITEMS_PER_PAGE;
 
