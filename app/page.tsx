@@ -4,14 +4,17 @@ import { licensePlates } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 
+// Update the type definition for searchParams to be a Promise
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  searchParams: Promise<{ page?: string }>; // searchParams is now a Promise
 }) {
-  // Get page from query params
-  const params = await searchParams;
-  const pageString = params.page || "1";
+  // Await searchParams to access its properties
+  const resolvedSearchParams = await searchParams;
+
+  // Get page from query params using the resolved searchParams
+  const pageString = resolvedSearchParams.page || "1";
   const page = parseInt(pageString, 10);
   const validPage = page > 0 ? page : 1;
   const offset = (validPage - 1) * ITEMS_PER_PAGE;
