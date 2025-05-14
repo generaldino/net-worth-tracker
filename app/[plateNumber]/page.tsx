@@ -3,6 +3,7 @@ import { licensePlates } from "@/db/schema";
 import { LicensePlateCard } from "@/components/license-plate-card";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { BackButton } from "@/components/back-button";
 
 interface PageProps {
   params: {
@@ -30,13 +31,7 @@ export default async function LicensePlatePage({ params }: PageProps) {
     return (
       <main className="container mx-auto py-10 px-4">
         <div className="max-w-2xl mx-auto">
-          {/* Back button */}
-          <div className="mb-4">
-            <a href="/" className="text-blue-600 hover:underline">
-              ← Back to Gallery
-            </a>
-          </div>
-
+          <BackButton />
           {/* Reuse the existing LicensePlateCard component */}
           <LicensePlateCard licensePlate={licensePlate} />
         </div>

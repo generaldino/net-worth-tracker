@@ -4,6 +4,7 @@ import { LicensePlate, licensePlates } from "@/db/schema";
 import { eq, arrayContains, desc, sql } from "drizzle-orm";
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
+import { BackButton } from "@/components/back-button";
 
 // Define the props type, correctly typing both params and searchParams as Promises
 interface FilterPageProps {
@@ -182,12 +183,7 @@ export default async function FilterPage({
   return (
     <main className="container mx-auto py-10 px-4">
       <div className="max-w-2xl mx-auto mb-8">
-        {/* Back button */}
-        <div className="mb-4">
-          <a href="/" className="text-blue-600 hover:underline">
-            ← Back to Gallery
-          </a>
-        </div>
+        <BackButton />
       </div>
 
       <h1 className="text-3xl font-bold mb-2 text-center">{title}</h1>
