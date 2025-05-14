@@ -1,14 +1,44 @@
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
-//import { licensePlates } from "@/data/license-plates";
 import { db } from "@/db";
 import { licensePlates } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
+import { ITEMS_PER_PAGE } from "@/lib/constants";
 
-export default async function Home() {
-  const plates = await db
-    .select()
-    .from(licensePlates)
-    .orderBy(desc(licensePlates.createdAt));
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  // Get page from query params
+  const params = await searchParams;
+  const pageString = params.page || "1";
+  const page = parseInt(pageString, 10);
+  const validPage = page > 0 ? page : 1;
+  const offset = (validPage - 1) * ITEMS_PER_PAGE;
+
+  // Get plates with pagination
+  const [plates, totalCount] = await Promise.all([
+    db
+      .select()
+      .from(licensePlates)
+      .orderBy(desc(licensePlates.createdAt))
+      .limit(ITEMS_PER_PAGE)
+      .offset(offset),
+
+    db
+      .select({ count: sql`count(*)` })
+      .from(licensePlates)
+      .then((result) => Number(result[0]?.count || 0)),
+  ]);
+
+  // Create pagination object
+  const pagination = {
+    total: totalCount,
+    page: validPage,
+    pageSize: ITEMS_PER_PAGE,
+    pageCount: Math.ceil(totalCount / ITEMS_PER_PAGE),
+  };
+
   return (
     <main className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-2 text-center">
@@ -17,8 +47,10 @@ export default async function Home() {
       <p className="text-muted-foreground mb-8 text-center">
         Browse our collection of unique license plates from across the country
       </p>
-      {/* <LicensePlateGallery licensePlates={licensePlates} /> */}
-      <LicensePlateGallery initialLicensePlates={plates} />
+      <LicensePlateGallery
+        initialLicensePlates={plates}
+        initialPagination={pagination}
+      />
     </main>
   );
 }
