@@ -1,9 +1,9 @@
-// components/navbar.tsx
 "use client";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { CameraIcon } from "lucide-react";
+import { ShuffleButton } from "./shuffle-button";
 
 export function Navbar() {
   return (
@@ -23,6 +23,11 @@ export function Navbar() {
               License Plate Gallery
             </span>
           </Link>
+        </div>
+
+        {/* Add shuffle button */}
+        <div className="mr-4">
+          <ShuffleButton />
         </div>
 
         {/* Spacer to push submit button to the right */}
