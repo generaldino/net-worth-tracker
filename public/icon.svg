@@ -1,6 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="600" height="600">
+  <!-- Rounded rectangle background -->
   <rect x="0" y="0" width="24" height="24" rx="6" ry="6" fill="black" />
-  <g fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+  <!-- Car icon with white strokes, scaled and centered -->
+  <g fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+    transform="translate(3.7, 3.7) scale(0.74)">
     <path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8" />
     <path d="M7 14h.01" />
     <path d="M17 14h.01" />
