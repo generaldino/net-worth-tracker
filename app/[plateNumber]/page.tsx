@@ -6,14 +6,15 @@ import { eq } from "drizzle-orm";
 import { BackButton } from "@/components/back-button";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     plateNumber: string;
-  };
+  }>;
 }
 
 export default async function LicensePlatePage({ params }: PageProps) {
+  const resolvedParams = await params;
   // Decode the plate number from URL (spaces and special characters are URL encoded)
-  const plateNumber = decodeURIComponent(params.plateNumber);
+  const plateNumber = decodeURIComponent(resolvedParams.plateNumber);
 
   try {
     // Query the database for the license plate
