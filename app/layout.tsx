@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,11 @@ export default function RootLayout({
         <Navbar />
         {children}
         <Toaster />
+        <Script
+          src="https://scripts.simpleanalyticscdn.com/latest.js"
+          strategy="lazyOnload"
+          data-skip-dnt="true"
+        />
       </body>
     </html>
   );
