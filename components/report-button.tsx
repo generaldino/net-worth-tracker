@@ -85,10 +85,9 @@ export function ReportButton({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Report License Plate Issue</DialogTitle>
+          <DialogTitle>Report an issue with {plateNumber}</DialogTitle>
           <DialogDescription>
-            Report an issue with license plate {plateNumber}. This will be
-            reviewed by our team.
+            This will be reviewed by our team.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -100,9 +99,6 @@ export function ReportButton({
               <SelectContent>
                 <SelectItem value="mismatch">
                   Plate number doesn't match photo
-                </SelectItem>
-                <SelectItem value="inappropriate">
-                  Inappropriate content
                 </SelectItem>
                 <SelectItem value="duplicate">Duplicate entry</SelectItem>
                 <SelectItem value="other">Other issue</SelectItem>
