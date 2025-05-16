@@ -18,6 +18,7 @@ import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { HighlightText } from "./highlight-text";
+import { ReportButton } from "./report-button";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -236,10 +237,22 @@ export function LicensePlateCard({
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
       {/* Engagement metrics */}
-      <div className="flex items-center justify-center gap-4">
-        <Button onClick={handleShare}>
-          <Share2 className="mr-2" size={16} /> Share
-        </Button>
+      <div className="flex items-center justify-between pt-4">
+        <div className="flex items-center space-x-2">
+          <Button
+            onClick={handleShare}
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+          <ReportButton
+            licensePlateId={licensePlate.id}
+            plateNumber={licensePlate.plateNumber}
+          />
+        </div>
       </div>
     </div>
   );

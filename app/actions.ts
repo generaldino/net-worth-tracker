@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { licensePlates } from "@/db/schema";
+import { licensePlates, reports } from "@/db/schema";
 import { sql } from "drizzle-orm";
 
 /**
@@ -28,5 +28,39 @@ export async function getRandomLicensePlate() {
   } catch (error) {
     console.error("Error fetching random license plate:", error);
     return { success: false, error: "Failed to fetch random plate" };
+  }
+}
+
+export async function submitReport(formData: {
+  licensePlateId: string;
+  reportType: string;
+  description?: string;
+}) {
+  try {
+    const { licensePlateId, reportType, description } = formData;
+
+    // Validate required fields
+    if (!licensePlateId || !reportType) {
+      return {
+        error: "Missing required fields",
+      };
+    }
+
+    // Create the report
+    await db.insert(reports).values({
+      licensePlateId,
+      reportType,
+      description: description || null,
+    });
+
+    return {
+      success: true,
+      message: "Report submitted successfully",
+    };
+  } catch (error) {
+    console.error("Error creating report:", error);
+    return {
+      error: "Failed to create report",
+    };
   }
 }
