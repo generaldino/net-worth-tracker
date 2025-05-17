@@ -9,8 +9,15 @@ export default async function SearchPage({
   searchParams: { q?: string; page?: string };
 }) {
   return (
-    <main className="container py-8">
-      <h1 className="text-3xl font-bold mb-8">Search License Plates</h1>
+    <main className="container mx-auto py-10 px-4">
+      <div className="mb-8 py-6 px-4 mx-auto max-w-2xl bg-primary/5 rounded-lg">
+        <h1 className="text-3xl font-bold mb-2 text-center text-primary">
+          Search License Plates
+        </h1>
+        <p className="text-muted-foreground text-center">
+          Find license plates by plate number, description, or tags
+        </p>
+      </div>
       <div className="mb-8">
         <SearchBar />
       </div>
