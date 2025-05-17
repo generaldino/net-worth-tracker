@@ -4,6 +4,11 @@ import { LicensePlate, licensePlates } from "@/db/schema";
 import { eq, arrayContains, desc, sql } from "drizzle-orm";
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
+import {
+  colorVariantsHeading,
+  colorVariantsParagraph,
+  colorVariantsBackground,
+} from "@/lib/color-variants";
 
 // Define the props type, correctly typing both params and searchParams as Promises
 interface FilterPageProps {
@@ -181,8 +186,42 @@ export default async function FilterPage({
 
   return (
     <main className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-2 text-center">{title}</h1>
-      <p className="text-muted-foreground mb-8 text-center">{description}</p>
+      {type === "category" && plates.length > 0 ? (
+        <div
+          className={`mb-8 py-6 px-4 mx-auto max-w-2xl ${
+            colorVariantsBackground[
+              plates[0].categoryColor as keyof typeof colorVariantsBackground
+            ] || "text-amber-800"
+          }`}
+        >
+          <h1
+            className={`text-3xl font-bold mb-2 text-center ${
+              colorVariantsHeading[
+                plates[0].categoryColor as keyof typeof colorVariantsHeading
+              ] || "text-amber-800"
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <span>{plates[0].categoryEmoji}</span>
+              <span>{title}</span>
+            </span>
+          </h1>
+          <p
+            className={`text-center ${
+              colorVariantsParagraph[
+                plates[0].categoryColor as keyof typeof colorVariantsParagraph
+              ] || "text-amber-800"
+            }`}
+          >
+            {description}
+          </p>
+        </div>
+      ) : (
+        <>
+          <h1 className="text-3xl font-bold mb-2 text-center">{title}</h1>
+          <p className="text-muted-foreground text-center">{description}</p>
+        </>
+      )}
 
       <LicensePlateGallery
         initialLicensePlates={plates}

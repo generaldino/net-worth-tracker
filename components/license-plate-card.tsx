@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { HighlightText } from "./highlight-text";
 import { ReportButton } from "./report-button";
+import { colorVariantsBackground } from "@/lib/color-variants";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -87,7 +88,6 @@ export function LicensePlateCard({
         });
     }
   };
-  console.log(licensePlate.categoryColor);
 
   return (
     <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
@@ -97,7 +97,9 @@ export function LicensePlateCard({
         <div className="flex items-center gap-2 mb-1.5">
           <div
             className={`w-8 h-8 rounded-md ${
-              licensePlate.categoryColor || "bg-amber-400"
+              colorVariantsBackground[
+                licensePlate.categoryColor as keyof typeof colorVariantsBackground
+              ] || "bg-amber-300"
             } flex items-center justify-center`}
           >
             <span className="text-lg">{licensePlate.categoryEmoji}</span>
