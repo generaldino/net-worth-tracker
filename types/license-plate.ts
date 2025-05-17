@@ -10,4 +10,5 @@ export interface LicensePlate {
   carMake: string;
   category: string;
   categoryEmoji: string;
+  categoryColor: string;
 }

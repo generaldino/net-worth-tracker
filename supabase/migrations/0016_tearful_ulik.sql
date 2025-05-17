@@ -1,0 +1,1 @@
+ALTER TABLE "license_plates" ADD COLUMN "category_color" text DEFAULT 'bg-amber-400' NOT NULL;

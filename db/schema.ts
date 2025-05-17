@@ -12,6 +12,7 @@ export const licensePlates = pgTable("license_plates", {
   carMake: text("car_make").notNull(),
   category: text("category").notNull(),
   categoryEmoji: text("category_emoji").notNull(),
+  categoryColor: text("category_color").notNull().default("bg-amber-400"),
   userId: uuid("user_id"),
 });
 

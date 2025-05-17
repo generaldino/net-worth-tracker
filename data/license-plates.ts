@@ -16,6 +16,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Maria Johnson",
     category: "California",
     categoryEmoji: "🌴",
+    categoryColor: "bg-amber-400",
   },
   {
     id: "2",
@@ -32,6 +33,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Jean Dupont",
     category: "France",
     categoryEmoji: "🇫🇷",
+    categoryColor: "bg-amber-400",
   },
   {
     id: "3",
@@ -47,6 +49,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Yuki Tanaka",
     category: "Japan",
     categoryEmoji: "🇯🇵",
+    categoryColor: "bg-amber-400",
   },
   {
     id: "4",
@@ -62,6 +65,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Hans Mueller",
     category: "Germany",
     categoryEmoji: "🇩🇪",
+    categoryColor: "bg-amber-400",
   },
   {
     id: "5",
@@ -78,5 +82,6 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Sarah Thompson",
     category: "Australia",
     categoryEmoji: "🇦🇺",
+    categoryColor: "bg-amber-400",
   },
 ];

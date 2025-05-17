@@ -87,6 +87,7 @@ export function LicensePlateCard({
         });
     }
   };
+  console.log(licensePlate.categoryColor);
 
   return (
     <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
@@ -94,7 +95,11 @@ export function LicensePlateCard({
       <div className="pt-4 pb-2">
         {/* Category, time and reporter line */}
         <div className="flex items-center gap-2 mb-1.5">
-          <div className="w-8 h-8 rounded-md bg-amber-400 flex items-center justify-center text-white">
+          <div
+            className={`w-8 h-8 rounded-md ${
+              licensePlate.categoryColor || "bg-amber-400"
+            } flex items-center justify-center`}
+          >
             <span className="text-lg">{licensePlate.categoryEmoji}</span>
           </div>
           <div className="flex flex-col">
