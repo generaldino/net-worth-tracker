@@ -6,31 +6,57 @@ import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "License Plate Gallery",
+  title: "WeSpotNumberPlates | Share & Discover Unique License Plates",
   description:
-    "Browse our collection of unique license plates from across the country",
+    "Browse the largest collection of unique license plates. Submit your own sightings and join our community of passionate plate spotters!",
+  keywords: [
+    "license plates",
+    "number plates",
+    "plate spotting",
+    "license plate photos",
+    "submit license plates",
+    "plate collection",
+    "rare plates",
+    "plate gallery",
+  ],
+  creator: "WeSpotNumberPlates",
+  publisher: "WeSpotNumberPlates",
+  robots: "index, follow",
+  alternates: {
+    canonical: "https://wespotnumberplates.com",
+  },
   openGraph: {
-    title: "Spotted! Rare & Unique License Plates from Around the World 🔍",
+    title: "WeSpotNumberPlates | Share & Discover Unique License Plates",
     description:
-      "Join thousands of enthusiasts exploring extraordinary license plates from vintage classics to modern exotics. Discover, share, and connect with the world's largest plate-spotting community!",
+      "Browse the largest collection of unique license plates. Submit your own sightings and see them featured in our gallery!",
+    url: "https://wespotnumberplates.com",
+    siteName: "WeSpotNumberPlates",
     images: [
       {
-        // You can use a representative image from your collection or a branded image
-        url: "/og-image.jpg", // Replace with your actual OG image path
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "License Plate Gallery - Collection of unique and rare license plates",
+        alt: "WeSpotNumberPlates - Community gallery of unique license plates",
       },
     ],
+    locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Spotted! Rare & Unique License Plates from Around the World 🔍",
+    title: "📸 Share & Discover Unique License Plates | WeSpotNumberPlates",
     description:
-      "Join thousands of enthusiasts exploring extraordinary license plates from vintage classics to modern exotics. Discover, share, and connect with the world's largest plate-spotting community!",
-    images: ["/og-image.jpg"], // Replace with your actual OG image path
+      "See our collection of user-submitted license plates from around the world. Submit your own sightings and join our community of plate spotters!",
+    images: ["/og-image.jpg"],
+    creator: "@WeSpotPlates",
+    site: "@WeSpotPlates",
   },
+  metadataBase: new URL("https://wespotnumberplates.com"),
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+  },
+  category: "License Plate Gallery",
 };
 
 // Update the type definition for searchParams to be a Promise

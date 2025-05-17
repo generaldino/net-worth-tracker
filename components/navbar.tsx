@@ -13,15 +13,13 @@ export function Navbar() {
         <div className="mr-4 flex">
           <Link href="/" className="flex items-center space-x-2">
             <Image
-              src="/icon.svg" // Replace with your actual logo
-              alt="License Plate Gallery"
+              src="/icon.svg"
+              alt="We Spot Number Plates"
               width={32}
               height={32}
               className="h-8 w-auto"
             />
-            <span className="hidden font-bold sm:inline-block">
-              License Plate Gallery
-            </span>
+            <span className="hidden font-bold sm:inline-block">WSNP</span>
           </Link>
         </div>
 
