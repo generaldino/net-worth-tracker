@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { CameraIcon } from "lucide-react";
+import { CameraIcon, SearchIcon } from "lucide-react";
 import { ShuffleButton } from "./shuffle-button";
 
 export function Navbar() {
@@ -30,6 +30,16 @@ export function Navbar() {
 
         {/* Spacer to push submit button to the right */}
         <div className="flex-1"></div>
+
+        {/* Search button */}
+        <div className="mr-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/search">
+              <SearchIcon className="h-5 w-5" />
+              <span className="sr-only">Search</span>
+            </Link>
+          </Button>
+        </div>
 
         {/* Submit button */}
         <div>

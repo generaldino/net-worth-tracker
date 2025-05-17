@@ -1,11 +1,8 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import { useDebouncedCallback } from "use-debounce";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { LicensePlateCard } from "@/components/license-plate-card";
-import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
@@ -32,18 +29,19 @@ interface LicensePlateGalleryProps {
     type: string;
     value: string;
   };
+  searchTerm?: string;
 }
 
 export function LicensePlateGallery({
   initialLicensePlates,
   initialPagination,
   filterParams,
+  searchTerm = "",
 }: LicensePlateGalleryProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [licensePlates, setLicensePlates] = useState<LicensePlate[]>(
     initialLicensePlates || []
   );
@@ -62,66 +60,6 @@ export function LicensePlateGallery({
     const params = new URLSearchParams(searchParams);
     params.set("page", pageNumber.toString());
     return `${pathname}?${params.toString()}`;
-  };
-
-  // Create a debounced search function
-  const debouncedSearch = useDebouncedCallback(async (term: string) => {
-    if (!term.trim()) {
-      // Reset to initial state if search term is empty
-      if (filterParams) {
-        // If we're on a filter page, reload with the current filter
-        fetchFilteredPlates(1);
-      } else {
-        // If we're on the home page, reload first page
-        const queryParams = new URLSearchParams(searchParams);
-        queryParams.delete("q");
-        queryParams.set("page", "1");
-        router.push(`${pathname}?${queryParams.toString()}`);
-      }
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      // Always search from page 1 when searching
-      const response = await fetch(
-        `/api/search?q=${encodeURIComponent(term)}&page=1`
-      );
-      if (!response.ok) throw new Error("Search failed");
-
-      const data = await response.json();
-
-      // Update plates and pagination
-      setLicensePlates(Array.isArray(data.plates) ? data.plates : []);
-      if (data.pagination) {
-        setPagination(data.pagination);
-      }
-
-      // Update URL to reflect search
-      const queryParams = new URLSearchParams(searchParams);
-      queryParams.set("q", term);
-      queryParams.set("page", "1");
-      router.push(`${pathname}?${queryParams.toString()}`, { scroll: false });
-    } catch (error) {
-      console.error("Search error:", error);
-      setLicensePlates([]);
-      setPagination({
-        total: 0,
-        page: 1,
-        pageSize: ITEMS_PER_PAGE,
-        pageCount: 0,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, 350); // 350ms debounce time
-
-  // Handle input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    setIsLoading(true);
-    debouncedSearch(value);
   };
 
   // Function to fetch filtered plates (for filter pages)
@@ -267,22 +205,6 @@ export function LicensePlateGallery({
 
   return (
     <div className="space-y-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="relative">
-          <Input
-            placeholder="Search by plate number, tag, or reporter..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            className="w-full"
-          />
-          {isLoading && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
-            </div>
-          )}
-        </div>
-      </div>
-
       <div className="space-y-6">
         {licensePlates.map((plate) => (
           <LicensePlateCard
@@ -295,17 +217,13 @@ export function LicensePlateGallery({
 
       {licensePlates.length === 0 && !isLoading && (
         <div className="text-center py-10">
-          <p className="text-muted-foreground">
-            No license plates found matching your search.
-          </p>
+          <p className="text-muted-foreground">No license plates found.</p>
         </div>
       )}
 
       {isLoading && licensePlates.length === 0 && (
         <div className="text-center py-10">
-          <p className="text-muted-foreground">
-            Searching for license plates...
-          </p>
+          <p className="text-muted-foreground">Loading license plates...</p>
         </div>
       )}
 
