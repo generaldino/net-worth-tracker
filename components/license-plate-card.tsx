@@ -90,9 +90,9 @@ export function LicensePlateCard({
   };
 
   return (
-    <div className="max-w-2xl mx-auto border-t border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
+    <div className="max-w-2xl mx-auto border-b pb-4 border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
       {/* Header section */}
-      <div className="pt-4 pb-2">
+      <div className=" pb-2">
         {/* Category, time and reporter line */}
         <div className="flex items-center gap-2 mb-1.5">
           <div
