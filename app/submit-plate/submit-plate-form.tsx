@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { Check, ChevronsUpDown, Upload } from "lucide-react";
 import Image from "next/image";
+import imageCompression from "browser-image-compression";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +74,7 @@ export default function SubmitPlateForm({
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [previewUrls, setPreviewUrls] = React.useState<string[]>([]);
+  const [isCompressing, setIsCompressing] = React.useState(false);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
@@ -89,21 +91,70 @@ export default function SubmitPlateForm({
   });
 
   // Handle file upload
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
 
     if (files.length > 0) {
-      // Update form value
-      form.setValue("images", files, { shouldValidate: true });
-
-      // Create preview URLs
-      const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
-
       // Clean up previous preview URLs to avoid memory leaks
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
 
-      // Set new preview URLs
-      setPreviewUrls(newPreviewUrls);
+      // Compression options
+      const options = {
+        maxSizeMB: 0.8, // Set max size to 0.8MB to ensure it stays under 1MB
+        maxWidthOrHeight: 1920, // Resize if larger than 1920px
+        useWebWorker: true, // Use web workers for better performance
+      };
+
+      setIsCompressing(true);
+
+      try {
+        // Compress all images
+        const compressedFiles = await Promise.all(
+          files.map(async (file) => {
+            // Log original file size
+            console.log(
+              `Original image: ${file.name}, Size: ${(
+                file.size /
+                1024 /
+                1024
+              ).toFixed(2)} MB`
+            );
+
+            // Compress the file
+            const compressedFile = await imageCompression(file, options);
+
+            // Log compressed file size
+            console.log(
+              `Compressed image: ${file.name}, Size: ${(
+                compressedFile.size /
+                1024 /
+                1024
+              ).toFixed(2)} MB`
+            );
+
+            return compressedFile;
+          })
+        );
+
+        // Create preview URLs
+        const newPreviewUrls = compressedFiles.map((file) =>
+          URL.createObjectURL(file)
+        );
+
+        // Update form value
+        form.setValue("images", compressedFiles, { shouldValidate: true });
+
+        // Set new preview URLs
+        setPreviewUrls(newPreviewUrls);
+      } catch (error) {
+        console.error("Error compressing images:", error);
+        // Fall back to original files if compression fails
+        const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
+        form.setValue("images", files, { shouldValidate: true });
+        setPreviewUrls(newPreviewUrls);
+      } finally {
+        setIsCompressing(false);
+      }
     }
   };
 
@@ -471,8 +522,14 @@ export default function SubmitPlateForm({
                         multiple
                         className="mt-4 w-full max-w-xs"
                         onChange={handleFileChange}
+                        disabled={isCompressing}
                         {...rest}
                       />
+                      {isCompressing && (
+                        <p className="mt-2 text-sm text-amber-600 animate-pulse">
+                          Optimizing images for upload...
+                        </p>
+                      )}
                     </div>
 
                     {/* Image Previews */}
