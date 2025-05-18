@@ -10,10 +10,11 @@ export const dynamic = "force-dynamic";
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { q?: string; page?: string };
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const searchTerm = searchParams.q || "";
-  const page = parseInt(searchParams.page || "1", 10);
+  const resolvedSearchParams = await searchParams;
+  const searchTerm = resolvedSearchParams.q || "";
+  const page = parseInt(resolvedSearchParams.page || "1", 10);
   const validPage = page > 0 ? page : 1;
 
   let searchResults = {
@@ -42,7 +43,7 @@ export default async function SearchPage({
           caption: licensePlates.caption,
           imageUrls: licensePlates.imageUrls,
           tags: licensePlates.tags,
-          reporter: licensePlates.reporter,
+          reporter: licensePlates.userId,
           carMake: licensePlates.carMake,
           categoryId: licensePlates.categoryId,
           category: {
@@ -58,7 +59,7 @@ export default async function SearchPage({
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
-            ilike(licensePlates.reporter, searchPattern),
+            ilike(licensePlates.userId, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
@@ -77,7 +78,7 @@ export default async function SearchPage({
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
-            ilike(licensePlates.reporter, searchPattern),
+            ilike(licensePlates.userId, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
@@ -98,9 +99,10 @@ export default async function SearchPage({
       caption: result.caption,
       imageUrls: result.imageUrls,
       tags: result.tags,
-      reporter: result.reporter,
+      userId: result.userId,
       carMake: result.carMake,
       categoryId: result.categoryId,
+      reporter: result.userId,
     }));
 
     searchResults = {
@@ -124,7 +126,10 @@ export default async function SearchPage({
           Find license plates by plate number, description, or tags
         </p>
       </div>
-      <SearchBar searchParams={searchParams} initialData={searchResults} />
+      <SearchBar
+        searchParams={resolvedSearchParams}
+        initialData={searchResults}
+      />
     </main>
   );
 }
