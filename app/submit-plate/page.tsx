@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function SubmitPlatePage() {
   return (
-    <div className="container max-w-3xl py-10">
+    <div className="container mx-auto max-w-3xl py-10">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">
           Submit a License Plate
