@@ -1,8 +1,8 @@
 import SubmitPlateForm from "@/app/submit-plate/submit-plate-form";
-import { GoogleSignInButton } from "@/components/auth/google-signin-button";
 import { Metadata } from "next";
 import { getCategories, getCountries, getCarMakes } from "./actions";
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Submit License Plate",
@@ -13,6 +13,12 @@ export default async function SubmitPlatePage() {
   // Check if user is authenticated
   const session = await auth();
   const isAuthenticated = !!session?.user;
+
+  // If not authenticated, redirect to homepage
+  // (the modal is shown from the SubmitPlateButton component)
+  if (!isAuthenticated) {
+    redirect("/");
+  }
 
   // Fetch data using server actions
   const { categories } = await getCategories();
@@ -30,26 +36,11 @@ export default async function SubmitPlatePage() {
         </p>
       </div>
 
-      {isAuthenticated ? (
-        <SubmitPlateForm
-          categories={categories}
-          countries={countries}
-          carMakes={carMakes}
-        />
-      ) : (
-        <div className="p-6 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">
-            Authentication Required
-          </h2>
-          <p className="mb-6">
-            You need to sign in before you can submit a license plate. Click the
-            button below to sign in with your Google account.
-          </p>
-          <div className="flex justify-center">
-            <GoogleSignInButton />
-          </div>
-        </div>
-      )}
+      <SubmitPlateForm
+        categories={categories}
+        countries={countries}
+        carMakes={carMakes}
+      />
     </div>
   );
 }
