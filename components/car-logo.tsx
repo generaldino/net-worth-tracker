@@ -3,9 +3,10 @@ import Image from "next/image";
 
 interface CarLogoProps {
   make: string;
+  logoUrl?: string;
 }
 
-// Car logo mapping - you'll place SVGs in public/car-logos/
+// Fallback car logo mapping for backward compatibility
 const carLogoMap: Record<string, string> = {
   toyota: "/car-logos/toyota.svg",
   honda: "/car-logos/honda.svg",
@@ -27,8 +28,10 @@ const carLogoMap: Record<string, string> = {
   default: "/car-logos/default.svg",
 };
 
-export function CarLogo({ make }: CarLogoProps) {
-  const logoPath = carLogoMap[make.toLowerCase()] || carLogoMap.default;
+export function CarLogo({ make, logoUrl }: CarLogoProps) {
+  // If logoUrl is provided (from database), use it, otherwise fallback to mapping
+  const logoPath =
+    logoUrl || carLogoMap[make.toLowerCase()] || carLogoMap.default;
 
   // https://www.svgrepo.com/collection/car-labels-flat-logos/
 

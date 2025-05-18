@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { Check, ChevronsUpDown, Upload } from "lucide-react";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,67 +34,42 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-// Mock categories for front-end demo
-const CATEGORIES = [
-  {
-    id: "1",
-    name: "Funny",
-    emoji: "😂",
-    color: "amber",
-    description: "Humorous and witty license plates",
-  },
-  {
-    id: "2",
-    name: "Creative",
-    emoji: "🎨",
-    color: "blue",
-    description: "Uniquely designed license plates",
-  },
-  {
-    id: "3",
-    name: "Inspirational",
-    emoji: "✨",
-    color: "purple",
-    description: "Uplifting and motivational plates",
-  },
-  {
-    id: "4",
-    name: "Sports",
-    emoji: "🏈",
-    color: "green",
-    description: "Sports-related license plates",
-  },
-  {
-    id: "5",
-    name: "Geeky",
-    emoji: "🤓",
-    color: "red",
-    description: "Tech and pop culture references",
-  },
-];
+import { Category, Country, CarMake } from "@/db/schema";
+import { submitLicensePlate } from "./actions";
 
 // Form schema for validation
 const formSchema = z.object({
   plateNumber: z.string().min(2, {
     message: "License plate number must be at least 2 characters.",
   }),
-  country: z.string().min(2, {
-    message: "Country must be at least 2 characters.",
+  countryId: z.string().uuid({
+    message: "Please select a country.",
   }),
-  carMake: z.string().min(1, {
-    message: "Car make is required.",
+  carMakeId: z.string().uuid().optional(),
+  categoryId: z.string().uuid({
+    message: "Please select a category.",
   }),
-  categoryId: z.string({
-    required_error: "Please select a category.",
+  caption: z.string().min(5, {
+    message: "Caption must be at least 5 characters.",
   }),
+  tags: z.array(z.string()).optional(),
   images: z
     .array(z.instanceof(File))
     .min(1, { message: "At least one image is required." })
     .max(5, { message: "Maximum 5 images allowed." }),
 });
 
-export default function SubmitPlateForm() {
+interface SubmitPlateFormProps {
+  categories: Category[];
+  countries: Country[];
+  carMakes: CarMake[];
+}
+
+export default function SubmitPlateForm({
+  categories,
+  countries,
+  carMakes,
+}: SubmitPlateFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [previewUrls, setPreviewUrls] = React.useState<string[]>([]);
@@ -103,9 +79,11 @@ export default function SubmitPlateForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       plateNumber: "",
-      country: "",
-      carMake: "",
+      countryId: "",
+      carMakeId: "",
       categoryId: "",
+      caption: "",
+      tags: [],
       images: [],
     },
   });
@@ -134,13 +112,39 @@ export default function SubmitPlateForm() {
     setIsSubmitting(true);
 
     try {
-      // This is where you would normally handle the actual form submission
-      // For demo purposes, we'll just simulate a submission
-      console.log("Form values:", values);
+      // Create FormData object for the server action
+      const formData = new FormData();
+      formData.append("plateNumber", values.plateNumber);
+      formData.append("countryId", values.countryId);
+      if (values.carMakeId) {
+        formData.append("carMakeId", values.carMakeId);
+      }
+      formData.append("categoryId", values.categoryId);
+      formData.append("caption", values.caption);
 
-      toast.success("License plate submitted successfully!");
-      // In a real implementation, this would redirect after successful submission
-      // router.push("/");
+      // Add tags if available
+      if (values.tags && values.tags.length > 0) {
+        values.tags.forEach((tag) => {
+          formData.append("tags", tag);
+        });
+      }
+
+      // Add images
+      values.images.forEach((file, index) => {
+        formData.append(`images`, file);
+      });
+
+      // Call the server action
+      const result = await submitLicensePlate(formData);
+
+      if (result.success) {
+        toast.success("License plate submitted successfully!");
+        // Redirect to home page
+        router.push("/");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Failed to submit license plate.");
+      }
     } catch (error) {
       toast.error("Failed to submit license plate.");
       console.error(error);
@@ -171,41 +175,181 @@ export default function SubmitPlateForm() {
             )}
           />
 
-          {/* Country */}
+          {/* Country Dropdown */}
           <FormField
             control={form.control}
-            name="country"
+            name="countryId"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <Input placeholder="USA" {...field} />
-                </FormControl>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          <>
+                            <span className="mr-2">
+                              {countries.find(
+                                (country) => country.id === field.value
+                              )?.flag || "🏳️"}
+                            </span>
+                            {
+                              countries.find(
+                                (country) => country.id === field.value
+                              )?.name
+                            }
+                          </>
+                        ) : (
+                          "Select country"
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search country..." />
+                      <CommandList>
+                        <CommandEmpty>No country found.</CommandEmpty>
+                        <CommandGroup>
+                          {countries.map((country) => (
+                            <CommandItem
+                              value={country.name}
+                              key={country.id}
+                              onSelect={() => {
+                                form.setValue("countryId", country.id);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  country.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              <span className="mr-2">{country.flag}</span>
+                              {country.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormDescription>
-                  Enter the country of the license plate.
+                  Select the country of the license plate.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Car Make */}
+          {/* Car Make Dropdown */}
           <FormField
             control={form.control}
-            name="carMake"
+            name="carMakeId"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Car Make</FormLabel>
-                <FormControl>
-                  <Input placeholder="Toyota" {...field} />
-                </FormControl>
-                <FormDescription>Enter the make of the car.</FormDescription>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          <>
+                            <span className="mr-2 flex items-center">
+                              <Image
+                                src={
+                                  carMakes.find(
+                                    (carMake) => carMake.id === field.value
+                                  )?.logoUrl || "/car-logos/default.svg"
+                                }
+                                alt="Car logo"
+                                width={20}
+                                height={20}
+                                className="h-5 w-5"
+                                unoptimized
+                              />
+                            </span>
+                            {
+                              carMakes.find(
+                                (carMake) => carMake.id === field.value
+                              )?.name
+                            }
+                          </>
+                        ) : (
+                          "Select car make"
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search car make..." />
+                      <CommandList>
+                        <CommandEmpty>No car make found.</CommandEmpty>
+                        <CommandGroup>
+                          {carMakes.map((carMake) => (
+                            <CommandItem
+                              value={carMake.name}
+                              key={carMake.id}
+                              onSelect={() => {
+                                form.setValue("carMakeId", carMake.id);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  carMake.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              <span className="mr-2 flex items-center">
+                                <Image
+                                  src={
+                                    carMake.logoUrl || "/car-logos/default.svg"
+                                  }
+                                  alt={`${carMake.name} logo`}
+                                  width={20}
+                                  height={20}
+                                  className="h-5 w-5"
+                                  unoptimized
+                                />
+                              </span>
+                              {carMake.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormDescription>
+                  Select the make of the car (optional).
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Category Combobox */}
+          {/* Category Dropdown */}
           <FormField
             control={form.control}
             name="categoryId"
@@ -223,11 +367,24 @@ export default function SubmitPlateForm() {
                           !field.value && "text-muted-foreground"
                         )}
                       >
-                        {field.value
-                          ? CATEGORIES.find(
-                              (category) => category.id === field.value
-                            )?.name
-                          : "Select category"}
+                        {field.value ? (
+                          <>
+                            <span className="mr-2">
+                              {
+                                categories.find(
+                                  (category) => category.id === field.value
+                                )?.emoji
+                              }
+                            </span>
+                            {
+                              categories.find(
+                                (category) => category.id === field.value
+                              )?.name
+                            }
+                          </>
+                        ) : (
+                          "Select category"
+                        )}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </FormControl>
@@ -238,7 +395,7 @@ export default function SubmitPlateForm() {
                       <CommandList>
                         <CommandEmpty>No category found.</CommandEmpty>
                         <CommandGroup>
-                          {CATEGORIES.map((category) => (
+                          {categories.map((category) => (
                             <CommandItem
                               value={category.name}
                               key={category.id}
@@ -265,6 +422,27 @@ export default function SubmitPlateForm() {
                 </Popover>
                 <FormDescription>
                   Select a category for the license plate.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Caption */}
+          <FormField
+            control={form.control}
+            name="caption"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Caption</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Write a caption for this license plate"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Add a caption to describe the license plate.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

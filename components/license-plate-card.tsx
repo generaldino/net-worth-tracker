@@ -1,5 +1,3 @@
-import { countryToAlpha2 } from "country-to-iso";
-import countryCodeEmoji from "country-code-emoji";
 import { formatCarMake, formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
 import Link from "next/link";
@@ -33,22 +31,26 @@ export async function LicensePlateCard({
   // Fetch country on the server
   let country: Country | null = null;
   let countryName = "Unknown";
+  let countryFlag = "🏳️";
 
   if (licensePlate.countryId) {
     country = await getCountryById(licensePlate.countryId);
     if (country) {
       countryName = country.name;
+      countryFlag = country.flag;
     }
   }
 
   // Fetch car make on the server
   let carMake: CarMake | null = null;
   let carMakeName = licensePlate.carMake || "Unknown";
+  let carMakeLogoUrl = "/car-logos/default.svg";
 
   if (licensePlate.carMakeId) {
     carMake = await getCarMakeById(licensePlate.carMakeId);
     if (carMake) {
       carMakeName = carMake.name;
+      carMakeLogoUrl = carMake.logoUrl;
     }
   }
 
@@ -140,9 +142,7 @@ export async function LicensePlateCard({
               className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               <span className="flex items-center gap-1.5">
-                <span className="text-[13px]">
-                  {countryCodeEmoji(countryToAlpha2(countryName) || "")}
-                </span>
+                <span className="text-[13px]">{countryFlag}</span>
                 <HighlightText text={countryName} searchTerm={searchTerm} />
               </span>
             </Link>
@@ -153,7 +153,7 @@ export async function LicensePlateCard({
                 className="flex bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 <span className="flex items-center gap-1.5">
-                  <CarLogo make={carMakeName} />
+                  <CarLogo make={carMakeName} logoUrl={carMakeLogoUrl} />
                   <HighlightText
                     text={formatCarMake(carMakeName)}
                     searchTerm={searchTerm}

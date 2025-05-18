@@ -19,12 +19,14 @@ export const categories = pgTable("categories", {
 export const countries = pgTable("countries", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull().unique(),
+  flag: text("flag").notNull().default("🏳️"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const carMakes = pgTable("car_makes", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull().unique(),
+  logoUrl: text("logo_url").notNull().default("🚗"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

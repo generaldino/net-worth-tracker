@@ -1,12 +1,18 @@
 import SubmitPlateForm from "@/app/submit-plate/submit-plate-form";
 import { Metadata } from "next";
+import { getCategories, getCountries, getCarMakes } from "./actions";
 
 export const metadata: Metadata = {
   title: "Submit License Plate",
   description: "Upload photos of license plates you've spotted",
 };
 
-export default function SubmitPlatePage() {
+export default async function SubmitPlatePage() {
+  // Fetch data using server actions
+  const { categories } = await getCategories();
+  const { countries } = await getCountries();
+  const { carMakes } = await getCarMakes();
+
   return (
     <div className="container mx-auto max-w-3xl py-10">
       <div className="mb-8">
@@ -17,7 +23,11 @@ export default function SubmitPlatePage() {
           Share interesting license plates you've spotted with the community.
         </p>
       </div>
-      <SubmitPlateForm />
+      <SubmitPlateForm
+        categories={categories}
+        countries={countries}
+        carMakes={carMakes}
+      />
     </div>
   );
 }
