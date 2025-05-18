@@ -1,5 +1,12 @@
 import { pgTable, text, uuid, timestamp } from "drizzle-orm/pg-core";
 
+export const users = pgTable("users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  createdAt: timestamp("created_at").defaultNow(),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+});
+
 export const categories = pgTable("categories", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -17,7 +24,9 @@ export const licensePlates = pgTable("license_plates", {
   caption: text("caption").notNull(),
   imageUrls: text("image_urls").array().notNull(),
   tags: text("tags").array().notNull(),
-  reporter: text("reporter").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id),
   carMake: text("car_make").notNull(),
   categoryId: uuid("category_id")
     .notNull()
@@ -37,7 +46,11 @@ export const reports = pgTable("reports", {
 });
 
 // Export types for use in application code
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type LicensePlate = typeof licensePlates.$inferSelect;
 export type NewLicensePlate = typeof licensePlates.$inferInsert;
+export type Report = typeof reports.$inferSelect;
+export type NewReport = typeof reports.$inferInsert;

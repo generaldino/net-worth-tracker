@@ -1,0 +1,1 @@
+ALTER TABLE "license_plates" DROP COLUMN "user_id";

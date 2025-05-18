@@ -141,6 +141,20 @@
       "when": 1747564556131,
       "tag": "0019_lively_shen",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1747576342106,
+      "tag": "0020_slow_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1747576578495,
+      "tag": "0021_tiny_silver_sable",
+      "breakpoints": true
     }
   ]
 }
