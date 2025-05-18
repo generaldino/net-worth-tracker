@@ -20,6 +20,9 @@ import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { HighlightText } from "./highlight-text";
 import { ReportButton } from "./report-button";
 import { colorVariantsBackground } from "@/lib/color-variants";
+import { useEffect, useState } from "react";
+import { getCategoryById } from "@/lib/actions/categories";
+import type { Category } from "@/db/schema";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -30,6 +33,18 @@ export function LicensePlateCard({
   licensePlate,
   searchTerm = "",
 }: LicensePlateCardProps) {
+  const [category, setCategory] = useState<Category | null>(null);
+
+  useEffect(() => {
+    async function fetchCategory() {
+      if (licensePlate.categoryId) {
+        const categoryData = await getCategoryById(licensePlate.categoryId);
+        setCategory(categoryData);
+      }
+    }
+    fetchCategory();
+  }, [licensePlate.categoryId]);
+
   const handleShare = async () => {
     // Construct the full URL for the license plate
     const plateUrl = `${window.location.origin}/${encodeURIComponent(
@@ -98,21 +113,21 @@ export function LicensePlateCard({
           <div
             className={`w-8 h-8 rounded-md ${
               colorVariantsBackground[
-                licensePlate.categoryColor as keyof typeof colorVariantsBackground
+                category?.color as keyof typeof colorVariantsBackground
               ] || "bg-amber-300"
             } flex items-center justify-center`}
           >
-            <span className="text-lg">{licensePlate.categoryEmoji}</span>
+            <span className="text-lg">{category?.emoji}</span>
           </div>
           <div className="flex flex-col">
             <Link
               href={`/filter/category/${encodeURIComponent(
-                licensePlate.category
+                category?.name || "Cars"
               )}`}
               className="font-bold text-sm hover:text-blue-600 hover:underline"
             >
               <HighlightText
-                text={licensePlate.category || "Cars"}
+                text={category?.name || "Cars"}
                 searchTerm={searchTerm}
               />
             </Link>

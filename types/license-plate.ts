@@ -1,14 +1,12 @@
 export interface LicensePlate {
   id: string;
   plateNumber: string;
+  imageUrls: string[];
+  createdAt: Date;
   country: string;
   caption: string;
-  imageUrls: string[];
-  createdAt: Date | null;
+  carMake: string;
   tags: string[];
   reporter: string;
-  carMake: string;
-  category: string;
-  categoryEmoji: string;
-  categoryColor: string;
+  categoryId: string;
 }
