@@ -1,5 +1,14 @@
 import { pgTable, text, uuid, timestamp } from "drizzle-orm/pg-core";
 
+export const categories = pgTable("categories", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  emoji: text("emoji").notNull(),
+  color: text("color").notNull().default("amber"),
+  description: text("description").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const licensePlates = pgTable("license_plates", {
   id: uuid("id").defaultRandom().primaryKey(),
   plateNumber: text("plate_number").notNull(),
@@ -10,10 +19,9 @@ export const licensePlates = pgTable("license_plates", {
   tags: text("tags").array().notNull(),
   reporter: text("reporter").notNull(),
   carMake: text("car_make").notNull(),
-  category: text("category").notNull(),
-  categoryEmoji: text("category_emoji").notNull(),
-  categoryColor: text("category_color").notNull().default("bg-amber-400"),
-  userId: uuid("user_id"),
+  categoryId: uuid("category_id")
+    .notNull()
+    .references(() => categories.id),
 });
 
 export const reports = pgTable("reports", {
@@ -28,6 +36,8 @@ export const reports = pgTable("reports", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Export type for use in application code
+// Export types for use in application code
+export type Category = typeof categories.$inferSelect;
+export type NewCategory = typeof categories.$inferInsert;
 export type LicensePlate = typeof licensePlates.$inferSelect;
 export type NewLicensePlate = typeof licensePlates.$inferInsert;

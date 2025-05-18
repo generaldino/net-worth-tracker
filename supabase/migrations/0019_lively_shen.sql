@@ -1,0 +1,1 @@
+ALTER TABLE "license_plates" ALTER COLUMN "category_id" SET NOT NULL;
