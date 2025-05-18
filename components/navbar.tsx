@@ -42,7 +42,7 @@ export async function Navbar() {
         <div className="flex-1"></div>
 
         {/* Search button */}
-        <div className="mr-4">
+        <div className="">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/search">
               <SearchIcon className="h-5 w-5" />

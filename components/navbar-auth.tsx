@@ -9,18 +9,16 @@ type NavbarAuthProps = {
   dbUser: DbUser | null;
 };
 
-export function NavbarAuth({ isAuthenticated, dbUser }: NavbarAuthProps) {
-  // Log all dbUser properties
-  console.log("NavbarAuth dbUser:", dbUser);
-  console.log("Avatar URL from dbUser:", dbUser?.avatarUrl);
+export function NavbarAuth({ dbUser }: NavbarAuthProps) {
+  if (!dbUser) {
+    return;
+  }
 
-  return isAuthenticated && dbUser ? (
+  return (
     <ProfileDropdown
       name={dbUser.name || "User"}
       email={dbUser.email}
       avatarUrl={dbUser.avatarUrl}
     />
-  ) : (
-    <GoogleSignInButton />
   );
 }
