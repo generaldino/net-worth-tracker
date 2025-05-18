@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
           or(
             ilike(licensePlates.plateNumber, searchPattern),
             ilike(licensePlates.reporter, searchPattern),
-            ilike(licensePlates.category, searchPattern),
+            ilike(licensePlates.categoryId, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
           or(
             ilike(licensePlates.plateNumber, searchPattern),
             ilike(licensePlates.reporter, searchPattern),
-            ilike(licensePlates.category, searchPattern),
+            ilike(licensePlates.categoryId, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),

@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic";
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { q?: string; page?: string };
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
+  const resolvedSearchParams = await searchParams;
+
   return (
     <main className="container mx-auto py-10 px-4">
       <div className="mb-8 py-6 px-4 mx-auto max-w-2xl bg-primary/5 rounded-lg">
@@ -21,12 +23,14 @@ export default async function SearchPage({
       <div className="mb-8">
         <SearchBar />
       </div>
-      {searchParams.q ? (
+      {resolvedSearchParams.q ? (
         <LicensePlateGallery
           initialLicensePlates={[]}
           initialPagination={{
             total: 0,
-            page: searchParams.page ? parseInt(searchParams.page) : 1,
+            page: resolvedSearchParams.page
+              ? parseInt(resolvedSearchParams.page)
+              : 1,
             pageSize: 10,
             pageCount: 0,
           }}

@@ -14,9 +14,7 @@ export const licensePlates: LicensePlate[] = [
     carMake: "Tesla",
     tags: ["California", "Modern", "Sunset Design"],
     reporter: "Maria Johnson",
-    category: "California",
-    categoryEmoji: "🌴",
-    categoryColor: "bg-amber-400",
+    categoryId: "1",
   },
   {
     id: "2",
@@ -31,9 +29,7 @@ export const licensePlates: LicensePlate[] = [
     carMake: "Peugeot",
     tags: ["Paris", "Classic", "French Standard"],
     reporter: "Jean Dupont",
-    category: "France",
-    categoryEmoji: "🇫🇷",
-    categoryColor: "bg-amber-400",
+    categoryId: "2",
   },
   {
     id: "3",
@@ -47,9 +43,7 @@ export const licensePlates: LicensePlate[] = [
     carMake: "Toyota",
     tags: ["Tokyo", "Metropolitan", "JDM", "Hybrid"],
     reporter: "Yuki Tanaka",
-    category: "Japan",
-    categoryEmoji: "🇯🇵",
-    categoryColor: "bg-amber-400",
+    categoryId: "3",
   },
   {
     id: "4",
@@ -63,9 +57,7 @@ export const licensePlates: LicensePlate[] = [
     carMake: "BMW",
     tags: ["Berlin", "Special Edition", "Bavarian"],
     reporter: "Hans Mueller",
-    category: "Germany",
-    categoryEmoji: "🇩🇪",
-    categoryColor: "bg-amber-400",
+    categoryId: "4",
   },
   {
     id: "5",
@@ -80,8 +72,6 @@ export const licensePlates: LicensePlate[] = [
     carMake: "Holden",
     tags: ["Sydney", "Custom", "Aussie Classic", "007"],
     reporter: "Sarah Thompson",
-    category: "Australia",
-    categoryEmoji: "🇦🇺",
-    categoryColor: "bg-amber-400",
+    categoryId: "5",
   },
 ];
