@@ -36,7 +36,7 @@ export const licensePlates = pgTable("license_plates", {
   plateNumber: text("plate_number").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   countryId: uuid("country_id").references(() => countries.id),
-  caption: text("caption").notNull(),
+  caption: text("caption"),
   imageUrls: text("image_urls").array().notNull(),
   tags: text("tags").array().notNull(),
   userId: uuid("user_id")

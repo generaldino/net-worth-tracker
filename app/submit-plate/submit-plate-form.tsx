@@ -50,9 +50,12 @@ const formSchema = z.object({
   categoryId: z.string().uuid({
     message: "Please select a category.",
   }),
-  caption: z.string().min(5, {
-    message: "Caption must be at least 5 characters.",
-  }),
+  caption: z
+    .string()
+    .min(5, {
+      message: "Caption must be at least 5 characters.",
+    })
+    .optional(),
   tags: z.array(z.string()).default([]),
   images: z.any(), // Using z.any() to avoid type issues with File objects
 });
@@ -178,7 +181,7 @@ export default function SubmitPlateForm({
       formData.append("plateNumber", values.plateNumber);
       formData.append("countryId", values.countryId);
       formData.append("categoryId", values.categoryId);
-      formData.append("caption", values.caption);
+      formData.append("caption", values.caption || "");
 
       if (values.carMakeId) {
         formData.append("carMakeId", values.carMakeId);

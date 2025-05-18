@@ -52,16 +52,6 @@ export async function submitLicensePlate(formData: FormData) {
     };
   }
 
-  const schema = z.object({
-    plateNumber: z.string().min(2),
-    countryId: z.string().uuid(),
-    carMakeId: z.string().uuid().optional(),
-    categoryId: z.string().uuid(),
-    caption: z.string().min(5),
-    images: z.array(z.any()).min(1).max(5),
-    tags: z.array(z.string()).default([]),
-  });
-
   try {
     // Extract form data
     const plateNumber = formData.get("plateNumber") as string;
@@ -98,7 +88,7 @@ export async function submitLicensePlate(formData: FormData) {
       countryId,
       carMakeId: carMakeId || null,
       categoryId,
-      caption,
+      caption: caption || null,
       tags,
       imageUrls,
       userId: session.user.id,
