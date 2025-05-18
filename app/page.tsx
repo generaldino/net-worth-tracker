@@ -4,6 +4,7 @@ import { licensePlates } from "@/db/schema";
 import { desc, sql } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { Metadata } from "next";
+import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
   title: "WeSpotNumberPlates | Share & Discover Unique License Plates",
@@ -81,7 +82,13 @@ export default async function Home({
       .from(licensePlates)
       .orderBy(desc(licensePlates.createdAt))
       .limit(ITEMS_PER_PAGE)
-      .offset(offset),
+      .offset(offset)
+      .then((results) =>
+        results.map((plate) => ({
+          ...plate,
+          reporter: plate.userId, // Add reporter field from userId
+        }))
+      ),
 
     db
       .select({ count: sql`count(*)` })
@@ -96,6 +103,10 @@ export default async function Home({
     pageSize: ITEMS_PER_PAGE,
     pageCount: Math.ceil(totalCount / ITEMS_PER_PAGE),
   };
+
+  const supabase = await createClient();
+  const { data: user } = await supabase.auth.getUser();
+  console.log("user", user);
 
   return (
     <main className="container mx-auto py-10 px-4">
