@@ -1,7 +1,4 @@
-"use client";
-
-import { ReactNode, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ReactNode } from "react";
 import { LicensePlateCard } from "@/components/license-plate-card";
 import {
   Pagination,
@@ -30,86 +27,28 @@ interface LicensePlateGalleryProps {
     value: string;
   };
   searchTerm?: string;
+  currentPath: string; // Pass the current path from server component
 }
 
 export function LicensePlateGallery({
   initialLicensePlates,
   initialPagination,
-  filterParams,
   searchTerm = "",
+  currentPath,
 }: LicensePlateGalleryProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const [licensePlates, setLicensePlates] = useState<LicensePlate[]>(
-    initialLicensePlates || []
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [pagination, setPagination] = useState<PaginationData>(
-    initialPagination || {
-      total: initialLicensePlates.length,
-      page: 1,
-      pageSize: ITEMS_PER_PAGE,
-      pageCount: Math.ceil(initialLicensePlates.length / ITEMS_PER_PAGE),
-    }
-  );
+  const pagination = initialPagination || {
+    total: initialLicensePlates.length,
+    page: 1,
+    pageSize: ITEMS_PER_PAGE,
+    pageCount: Math.ceil(initialLicensePlates.length / ITEMS_PER_PAGE),
+  };
 
   // Create a URL for pagination
   const createPageURL = (pageNumber: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set("page", pageNumber.toString());
-    return `${pathname}?${params.toString()}`;
-  };
-
-  // Function to fetch filtered plates (for filter pages)
-  const fetchFilteredPlates = async (page: number) => {
-    if (!filterParams) return;
-
-    setIsLoading(true);
-    try {
-      const { type, value } = filterParams;
-
-      let endpoint = "";
-      switch (type) {
-        case "reporter":
-          endpoint = `/api/filter/reporter?reporter=${encodeURIComponent(
-            value
-          )}&page=${page}`;
-          break;
-        case "tag":
-          endpoint = `/api/filter/tag?tag=${encodeURIComponent(
-            value
-          )}&page=${page}`;
-          break;
-        case "category":
-          endpoint = `/api/filter/category?category=${encodeURIComponent(
-            value
-          )}&page=${page}`;
-          break;
-        default:
-          throw new Error("Invalid filter type");
-      }
-
-      const response = await fetch(endpoint);
-      if (!response.ok) throw new Error("Filter failed");
-
-      const data = await response.json();
-      setLicensePlates(Array.isArray(data.plates) ? data.plates : []);
-      if (data.pagination) {
-        setPagination(data.pagination);
-      }
-
-      // Update URL
-      const queryParams = new URLSearchParams(searchParams);
-      queryParams.set("page", page.toString());
-      router.push(`${pathname}?${queryParams.toString()}`, { scroll: false });
-    } catch (error) {
-      console.error("Filter error:", error);
-      setLicensePlates([]);
-    } finally {
-      setIsLoading(false);
-    }
+    // Create URL on the server-side
+    const searchParams = new URLSearchParams();
+    searchParams.set("page", pageNumber.toString());
+    return `${currentPath}?${searchParams.toString()}`;
   };
 
   // Generate pagination items
@@ -206,7 +145,7 @@ export function LicensePlateGallery({
   return (
     <div className="space-y-6">
       <div className="space-y-6">
-        {licensePlates.map((plate) => (
+        {initialLicensePlates.map((plate) => (
           <LicensePlateCard
             key={plate.id}
             licensePlate={plate}
@@ -215,15 +154,9 @@ export function LicensePlateGallery({
         ))}
       </div>
 
-      {licensePlates.length === 0 && !isLoading && (
+      {initialLicensePlates.length === 0 && (
         <div className="text-center py-10">
           <p className="text-muted-foreground">No license plates found.</p>
-        </div>
-      )}
-
-      {isLoading && licensePlates.length === 0 && (
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">Loading license plates...</p>
         </div>
       )}
 

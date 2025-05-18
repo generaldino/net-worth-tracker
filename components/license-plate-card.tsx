@@ -1,108 +1,32 @@
-"use client";
-import { Share2 } from "lucide-react";
 import { countryToAlpha2 } from "country-to-iso";
 import countryCodeEmoji from "country-code-emoji";
 import { formatCarMake, formatDate } from "@/lib/utils";
 import type { LicensePlate } from "@/types/license-plate";
-import Image from "next/image";
 import Link from "next/link";
 import { CarLogo } from "./car-logo";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "./ui/carousel";
-import { Button } from "./ui/button";
-import { toast } from "sonner";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 import { HighlightText } from "./highlight-text";
 import { ReportButton } from "./report-button";
 import { colorVariantsBackground } from "@/lib/color-variants";
-import { useEffect, useState } from "react";
 import { getCategoryById } from "@/lib/actions/categories";
 import type { Category } from "@/db/schema";
+import { ShareButton } from "@/components/share-button";
+import { ImageCarousel } from "@/components/image-carousel";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
   searchTerm?: string;
 }
 
-export function LicensePlateCard({
+export async function LicensePlateCard({
   licensePlate,
   searchTerm = "",
 }: LicensePlateCardProps) {
-  const [category, setCategory] = useState<Category | null>(null);
-
-  useEffect(() => {
-    async function fetchCategory() {
-      if (licensePlate.categoryId) {
-        const categoryData = await getCategoryById(licensePlate.categoryId);
-        setCategory(categoryData);
-      }
-    }
-    fetchCategory();
-  }, [licensePlate.categoryId]);
-
-  const handleShare = async () => {
-    // Construct the full URL for the license plate
-    const plateUrl = `${window.location.origin}/${encodeURIComponent(
-      licensePlate.plateNumber
-    )}`;
-
-    // Prepare share data
-    const shareData = {
-      title:
-        licensePlate.caption || `License Plate ${licensePlate.plateNumber}`,
-      text: `Check out this license plate: ${licensePlate.plateNumber} from ${licensePlate.country}`,
-      url: plateUrl,
-    };
-
-    // Check if user is on a mobile device
-    const isMobile =
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
-
-    // If user is on mobile AND Web Share API is available, use native share
-    if (isMobile && navigator.share && navigator.canShare(shareData)) {
-      try {
-        // Use native share sheet
-        await navigator.share(shareData);
-
-        // Increment share count (placeholder for future implementation)
-      } catch (error) {
-        // User probably canceled sharing or another error occurred
-        console.log("Sharing was canceled or failed");
-
-        // Fallback to clipboard if sharing fails for some reason
-        fallbackToClipboard();
-      }
-    } else {
-      // Desktop or mobile without share support - fallback to clipboard
-      fallbackToClipboard();
-    }
-
-    // Helper function for clipboard fallback
-    function fallbackToClipboard() {
-      navigator.clipboard
-        .writeText(plateUrl)
-        .then(() => {
-          // Show success toast
-          toast.success("Copied Link", {
-            description: `Share ${licensePlate.plateNumber} plate with friends`,
-            duration: 3000,
-          });
-        })
-        .catch(() => {
-          // Show error toast if clipboard write fails
-          toast.error("Failed to copy link", {
-            description: "Please try again",
-          });
-        });
-    }
-  };
+  // Fetch category on the server instead of using useEffect
+  let category: Category | null = null;
+  if (licensePlate.categoryId) {
+    category = await getCategoryById(licensePlate.categoryId);
+  }
 
   return (
     <div className="max-w-2xl mx-auto border-b pb-4 border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
@@ -174,36 +98,10 @@ export function LicensePlateCard({
       {/* Image carousel */}
       <div className="relative">
         <div className="h-[400px] bg-gray-50 dark:bg-gray-950">
-          <Carousel
-            opts={{
-              loop: true,
-            }}
-          >
-            <CarouselContent className="-ml-0">
-              {licensePlate.imageUrls.map((imageUrl, index) => (
-                <CarouselItem key={index} className="pl-0">
-                  <div className="relative h-[400px] w-full flex items-center justify-center">
-                    <Image
-                      src={imageUrl || "/placeholder.svg"}
-                      alt={`License plate ${licensePlate.plateNumber} - Image ${
-                        index + 1
-                      }`}
-                      width={800}
-                      height={600}
-                      className="object-contain max-h-full max-w-full"
-                      priority={index === 0}
-                    />
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            {licensePlate.imageUrls.length > 1 && (
-              <>
-                <CarouselPrevious className="left-2" />
-                <CarouselNext className="right-2" />
-              </>
-            )}
-          </Carousel>
+          <ImageCarousel
+            imageUrls={licensePlate.imageUrls}
+            plateNumber={licensePlate.plateNumber}
+          />
         </div>
       </div>
 
@@ -261,15 +159,11 @@ export function LicensePlateCard({
       {/* Engagement metrics */}
       <div className="flex items-center justify-between pt-4">
         <div className="flex items-center space-x-2">
-          <Button
-            onClick={handleShare}
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
+          <ShareButton
+            plateNumber={licensePlate.plateNumber}
+            caption={licensePlate.caption}
+            country={licensePlate.country}
+          />
           <ReportButton
             licensePlateId={licensePlate.id}
             plateNumber={licensePlate.plateNumber}

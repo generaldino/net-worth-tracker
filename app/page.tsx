@@ -102,6 +102,7 @@ export default async function Home({
       <LicensePlateGallery
         initialLicensePlates={plates}
         initialPagination={pagination}
+        currentPath="/"
       />
     </main>
   );
