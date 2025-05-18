@@ -169,6 +169,13 @@
       "when": 1747583057028,
       "tag": "0023_peaceful_leper_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1747584479443,
+      "tag": "0024_parched_valkyrie",
+      "breakpoints": true
     }
   ]
 }

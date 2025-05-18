@@ -22,6 +22,12 @@ export const countries = pgTable("countries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const carMakes = pgTable("car_makes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const licensePlates = pgTable("license_plates", {
   id: uuid("id").defaultRandom().primaryKey(),
   plateNumber: text("plate_number").notNull(),
@@ -33,7 +39,7 @@ export const licensePlates = pgTable("license_plates", {
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
-  carMake: text("car_make").notNull(),
+  carMakeId: uuid("car_make_id").references(() => carMakes.id),
   categoryId: uuid("category_id")
     .notNull()
     .references(() => categories.id),
@@ -58,6 +64,8 @@ export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
 export type Country = typeof countries.$inferSelect;
 export type NewCountry = typeof countries.$inferInsert;
+export type CarMake = typeof carMakes.$inferSelect;
+export type NewCarMake = typeof carMakes.$inferInsert;
 export type LicensePlate = typeof licensePlates.$inferSelect;
 export type NewLicensePlate = typeof licensePlates.$inferInsert;
 export type Report = typeof reports.$inferSelect;

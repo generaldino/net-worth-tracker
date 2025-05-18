@@ -1,6 +1,6 @@
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 import { db } from "@/db";
-import { licensePlates, users } from "@/db/schema";
+import { licensePlates, users, countries, carMakes } from "@/db/schema";
 import { desc, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { Metadata } from "next";
@@ -82,16 +82,20 @@ export default async function Home({
         plateNumber: licensePlates.plateNumber,
         createdAt: licensePlates.createdAt,
         countryId: licensePlates.countryId,
+        country: countries.name,
         caption: licensePlates.caption,
         imageUrls: licensePlates.imageUrls,
         tags: licensePlates.tags,
         userId: licensePlates.userId,
-        carMake: licensePlates.carMake,
+        carMakeId: licensePlates.carMakeId,
+        carMake: carMakes.name,
         categoryId: licensePlates.categoryId,
         reporter: users.name,
       })
       .from(licensePlates)
       .leftJoin(users, eq(licensePlates.userId, users.id))
+      .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+      .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
       .orderBy(desc(licensePlates.createdAt))
       .limit(ITEMS_PER_PAGE)
       .offset(offset)

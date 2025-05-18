@@ -6,7 +6,8 @@ export interface LicensePlate {
   countryId: string | null;
   country?: string | null; // From database joins - populated by queries
   caption: string;
-  carMake: string;
+  carMakeId: string | null;
+  carMake?: string | null; // From database joins - populated by queries
   tags: string[];
   reporter: string;
   userId: string;

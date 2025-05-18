@@ -1,6 +1,12 @@
 import { SearchBar } from "@/components/search-bar";
 import { db } from "@/db";
-import { licensePlates, categories, users } from "@/db/schema";
+import {
+  licensePlates,
+  categories,
+  users,
+  countries,
+  carMakes,
+} from "@/db/schema";
 import { desc, ilike, or, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import type { LicensePlate } from "@/types/license-plate";
@@ -39,12 +45,14 @@ export default async function SearchPage({
           id: licensePlates.id,
           plateNumber: licensePlates.plateNumber,
           createdAt: licensePlates.createdAt,
-          country: licensePlates.country,
+          countryId: licensePlates.countryId,
+          country: countries.name,
           caption: licensePlates.caption,
           imageUrls: licensePlates.imageUrls,
           tags: licensePlates.tags,
           userId: licensePlates.userId,
-          carMake: licensePlates.carMake,
+          carMakeId: licensePlates.carMakeId,
+          carMake: carMakes.name,
           categoryId: licensePlates.categoryId,
           reporter: users.name,
           category: {
@@ -58,13 +66,15 @@ export default async function SearchPage({
         .from(licensePlates)
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
         .leftJoin(users, eq(licensePlates.userId, users.id))
+        .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+        .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
             ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
-            ilike(licensePlates.country, searchPattern),
-            ilike(licensePlates.carMake, searchPattern),
+            ilike(countries.name, searchPattern),
+            ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
             sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
           )
@@ -78,13 +88,15 @@ export default async function SearchPage({
         .from(licensePlates)
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
         .leftJoin(users, eq(licensePlates.userId, users.id))
+        .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+        .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
             ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
-            ilike(licensePlates.country, searchPattern),
-            ilike(licensePlates.carMake, searchPattern),
+            ilike(countries.name, searchPattern),
+            ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
             sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
           )
@@ -98,11 +110,13 @@ export default async function SearchPage({
       id: result.id,
       plateNumber: result.plateNumber,
       createdAt: result.createdAt,
+      countryId: result.countryId,
       country: result.country,
       caption: result.caption,
       imageUrls: result.imageUrls,
       tags: result.tags,
       userId: result.userId,
+      carMakeId: result.carMakeId,
       carMake: result.carMake,
       categoryId: result.categoryId,
       reporter: result.reporter || "Unknown",

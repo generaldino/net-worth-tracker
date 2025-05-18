@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { licensePlates, countries, users } from "@/db/schema";
+import { licensePlates, countries, users, carMakes } from "@/db/schema";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { desc, eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
@@ -25,13 +25,15 @@ export async function getLicensePlates(page = 1) {
       imageUrls: licensePlates.imageUrls,
       tags: licensePlates.tags,
       userId: licensePlates.userId,
-      carMake: licensePlates.carMake,
+      carMakeId: licensePlates.carMakeId,
+      carMake: carMakes.name, // Join with car_makes table
       categoryId: licensePlates.categoryId,
       reporter: users.name,
     })
     .from(licensePlates)
     .leftJoin(users, eq(licensePlates.userId, users.id))
-    .leftJoin(countries, eq(licensePlates.countryId, countries.id)) // Left join to get country info
+    .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+    .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
     .orderBy(desc(licensePlates.createdAt))
     .limit(ITEMS_PER_PAGE)
     .offset(from)

@@ -16,6 +16,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Maria Johnson",
     categoryId: "1",
     userId: "1",
+    carMakeId: "1",
   },
   {
     id: "2",
@@ -32,6 +33,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Jean Dupont",
     categoryId: "2",
     userId: "2",
+    carMakeId: "4",
   },
   {
     id: "3",
@@ -47,6 +49,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Yuki Tanaka",
     categoryId: "3",
     userId: "3",
+    carMakeId: "1",
   },
   {
     id: "4",
@@ -62,6 +65,7 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Hans Mueller",
     categoryId: "4",
     userId: "4",
+    carMakeId: "2",
   },
   {
     id: "5",
@@ -78,5 +82,6 @@ export const licensePlates: LicensePlate[] = [
     reporter: "Sarah Thompson",
     categoryId: "5",
     userId: "5",
+    carMakeId: "3",
   },
 ];

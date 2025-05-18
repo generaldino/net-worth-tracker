@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { licensePlates, users, countries } from "@/db/schema";
+import { licensePlates, users, countries, carMakes } from "@/db/schema";
 import { LicensePlateCard } from "@/components/license-plate-card";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
@@ -27,9 +27,11 @@ export async function generateMetadata({
         plateNumber: licensePlates.plateNumber,
         caption: licensePlates.caption,
         country: countries.name,
+        carMake: carMakes.name,
       })
       .from(licensePlates)
       .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+      .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
       .where(eq(licensePlates.plateNumber, plateNumber))
       .limit(1);
 
@@ -44,9 +46,13 @@ export async function generateMetadata({
       ? ` from ${licensePlate.country}`
       : "";
 
+    const carMakeText = licensePlate.carMake
+      ? ` (${licensePlate.carMake})`
+      : "";
+
     return {
       title: `${licensePlate.plateNumber} - ${licensePlate.caption}`,
-      description: `View details about license plate ${licensePlate.plateNumber}${countryText}`,
+      description: `View details about license plate ${licensePlate.plateNumber}${countryText}${carMakeText}`,
     };
   } catch (error) {
     console.error("Error generating metadata:", error);
@@ -70,18 +76,20 @@ export default async function LicensePlatePage({ params }: PageProps) {
         plateNumber: licensePlates.plateNumber,
         createdAt: licensePlates.createdAt,
         countryId: licensePlates.countryId,
-        country: countries.name, // Join with countries table
+        country: countries.name,
         caption: licensePlates.caption,
         imageUrls: licensePlates.imageUrls,
         tags: licensePlates.tags,
         userId: licensePlates.userId,
-        carMake: licensePlates.carMake,
+        carMakeId: licensePlates.carMakeId,
+        carMake: carMakes.name,
         categoryId: licensePlates.categoryId,
         reporter: users.name,
       })
       .from(licensePlates)
       .leftJoin(users, eq(licensePlates.userId, users.id))
-      .leftJoin(countries, eq(licensePlates.countryId, countries.id)) // Left join to get country data
+      .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+      .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
       .where(eq(licensePlates.plateNumber, plateNumber))
       .limit(1)
       .then((results) =>

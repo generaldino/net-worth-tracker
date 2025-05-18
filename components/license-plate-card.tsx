@@ -10,7 +10,8 @@ import { ReportButton } from "./report-button";
 import { colorVariantsBackground } from "@/lib/color-variants";
 import { getCategoryById } from "@/lib/actions/categories";
 import { getCountryById } from "@/lib/actions/countries";
-import type { Category, Country } from "@/db/schema";
+import { getCarMakeById } from "@/lib/actions/car-makes";
+import type { Category, Country, CarMake } from "@/db/schema";
 import { ShareButton } from "@/components/share-button";
 import { ImageCarousel } from "@/components/image-carousel";
 
@@ -37,6 +38,17 @@ export async function LicensePlateCard({
     country = await getCountryById(licensePlate.countryId);
     if (country) {
       countryName = country.name;
+    }
+  }
+
+  // Fetch car make on the server
+  let carMake: CarMake | null = null;
+  let carMakeName = licensePlate.carMake || "Unknown";
+
+  if (licensePlate.carMakeId) {
+    carMake = await getCarMakeById(licensePlate.carMakeId);
+    if (carMake) {
+      carMakeName = carMake.name;
     }
   }
 
@@ -135,15 +147,15 @@ export async function LicensePlateCard({
               </span>
             </Link>
 
-            {licensePlate.carMake && (
+            {carMakeName && (
               <Link
-                href={`/filter/tag/${encodeURIComponent(licensePlate.carMake)}`}
+                href={`/filter/tag/${encodeURIComponent(carMakeName)}`}
                 className="flex bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 <span className="flex items-center gap-1.5">
-                  <CarLogo make={licensePlate.carMake || ""} />
+                  <CarLogo make={carMakeName} />
                   <HighlightText
-                    text={formatCarMake(licensePlate.carMake)}
+                    text={formatCarMake(carMakeName)}
                     searchTerm={searchTerm}
                   />
                 </span>

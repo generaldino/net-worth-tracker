@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { licensePlates, categories, users, countries } from "@/db/schema";
+import {
+  licensePlates,
+  categories,
+  users,
+  countries,
+  carMakes,
+} from "@/db/schema";
 import { desc, ilike, or, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 
@@ -31,13 +37,15 @@ export async function GET(request: NextRequest) {
             imageUrls: licensePlates.imageUrls,
             tags: licensePlates.tags,
             userId: licensePlates.userId,
-            carMake: licensePlates.carMake,
+            carMakeId: licensePlates.carMakeId,
+            carMake: carMakes.name,
             categoryId: licensePlates.categoryId,
             reporter: users.name,
           })
           .from(licensePlates)
           .leftJoin(users, eq(licensePlates.userId, users.id))
           .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+          .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
           .orderBy(desc(licensePlates.createdAt))
           .limit(ITEMS_PER_PAGE)
           .offset(offset)
@@ -81,7 +89,8 @@ export async function GET(request: NextRequest) {
           imageUrls: licensePlates.imageUrls,
           tags: licensePlates.tags,
           userId: licensePlates.userId,
-          carMake: licensePlates.carMake,
+          carMakeId: licensePlates.carMakeId,
+          carMake: carMakes.name,
           categoryId: licensePlates.categoryId,
           reporter: users.name,
           category: {
@@ -96,13 +105,14 @@ export async function GET(request: NextRequest) {
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
         .leftJoin(users, eq(licensePlates.userId, users.id))
         .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+        .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
             ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(countries.name, searchPattern),
-            ilike(licensePlates.carMake, searchPattern),
+            ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
             sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
           )
@@ -123,13 +133,14 @@ export async function GET(request: NextRequest) {
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
         .leftJoin(users, eq(licensePlates.userId, users.id))
         .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+        .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
             ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(countries.name, searchPattern),
-            ilike(licensePlates.carMake, searchPattern),
+            ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
             sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
           )
