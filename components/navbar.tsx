@@ -4,12 +4,8 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { CameraIcon, SearchIcon } from "lucide-react";
 import { ShuffleButton } from "./shuffle-button";
-import { ButtonSignIn } from "./ButtonSignIn";
-import { useSession } from "next-auth/react";
 
 export function Navbar() {
-  const { data: session } = useSession();
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4">
@@ -43,17 +39,6 @@ export function Navbar() {
               <span className="sr-only">Search</span>
             </Link>
           </Button>
-        </div>
-
-        {/* Auth button */}
-        <div className="mr-4">
-          {session ? (
-            <Button variant="ghost">
-              {session.user?.name || session.user?.email}
-            </Button>
-          ) : (
-            <ButtonSignIn />
-          )}
         </div>
 
         {/* Submit button */}

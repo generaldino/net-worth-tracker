@@ -4,7 +4,6 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/navbar";
 import Script from "next/script";
-import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,16 +30,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers>
-          <Navbar />
-          {children}
-          <Toaster />
-          <Script
-            src="https://scripts.simpleanalyticscdn.com/latest.js"
-            strategy="lazyOnload"
-            data-skip-dnt="true"
-          />
-        </Providers>
+        <Navbar />
+        {children}
+        <Toaster />
+        <Script
+          src="https://scripts.simpleanalyticscdn.com/latest.js"
+          strategy="lazyOnload"
+          data-skip-dnt="true"
+        />
       </body>
     </html>
   );
