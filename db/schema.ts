@@ -5,6 +5,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   email: text("email").notNull().unique(),
   name: text("name"),
+  avatarUrl: text("avatar_url"),
 });
 
 export const categories = pgTable("categories", {

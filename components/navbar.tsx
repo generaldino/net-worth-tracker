@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -5,8 +7,41 @@ import { SearchIcon } from "lucide-react";
 import { ShuffleButton } from "./shuffle-button";
 import { GoogleSignInButton } from "./auth/google-signin-button";
 import { SubmitPlateButton } from "./submit-plate-button";
+import { ProfileDropdown } from "./auth/profile-dropdown";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { useRouter } from "next/navigation";
+import { User } from "@supabase/supabase-js";
 
 export function Navbar() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    async function getUser() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+      setLoading(false);
+
+      // Set up auth state listener
+      const {
+        data: { subscription },
+      } = await supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user || null);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+
+    getUser();
+  }, [supabase]);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center px-4">
@@ -42,9 +77,21 @@ export function Navbar() {
           </Button>
         </div>
 
-        {/* Google Sign In button */}
+        {/* Auth: Either Profile Dropdown or Sign In Button */}
         <div className="mr-4">
-          <GoogleSignInButton />
+          {!loading &&
+            (user ? (
+              <ProfileDropdown
+                name={user.user_metadata?.full_name || user.user_metadata?.name}
+                email={user.email}
+                avatarUrl={
+                  user.user_metadata?.avatar_url ||
+                  user.user_metadata?.avatarUrl
+                }
+              />
+            ) : (
+              <GoogleSignInButton />
+            ))}
         </div>
 
         {/* Submit button */}
