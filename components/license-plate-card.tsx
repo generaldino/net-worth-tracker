@@ -9,7 +9,8 @@ import { HighlightText } from "./highlight-text";
 import { ReportButton } from "./report-button";
 import { colorVariantsBackground } from "@/lib/color-variants";
 import { getCategoryById } from "@/lib/actions/categories";
-import type { Category } from "@/db/schema";
+import { getCountryById } from "@/lib/actions/countries";
+import type { Category, Country } from "@/db/schema";
 import { ShareButton } from "@/components/share-button";
 import { ImageCarousel } from "@/components/image-carousel";
 
@@ -26,6 +27,17 @@ export async function LicensePlateCard({
   let category: Category | null = null;
   if (licensePlate.categoryId) {
     category = await getCategoryById(licensePlate.categoryId);
+  }
+
+  // Fetch country on the server
+  let country: Country | null = null;
+  let countryName = "Unknown";
+
+  if (licensePlate.countryId) {
+    country = await getCountryById(licensePlate.countryId);
+    if (country) {
+      countryName = country.name;
+    }
   }
 
   return (
@@ -112,19 +124,14 @@ export async function LicensePlateCard({
 
           <div className="flex gap-2">
             <Link
-              href={`/filter/tag/${encodeURIComponent(licensePlate.country)}`}
+              href={`/filter/tag/${encodeURIComponent(countryName)}`}
               className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             >
               <span className="flex items-center gap-1.5">
                 <span className="text-[13px]">
-                  {countryCodeEmoji(
-                    countryToAlpha2(licensePlate.country) || ""
-                  )}
+                  {countryCodeEmoji(countryToAlpha2(countryName) || "")}
                 </span>
-                <HighlightText
-                  text={licensePlate.country}
-                  searchTerm={searchTerm}
-                />
+                <HighlightText text={countryName} searchTerm={searchTerm} />
               </span>
             </Link>
 
@@ -162,7 +169,7 @@ export async function LicensePlateCard({
           <ShareButton
             plateNumber={licensePlate.plateNumber}
             caption={licensePlate.caption}
-            country={licensePlate.country}
+            country={countryName}
           />
           <ReportButton
             licensePlateId={licensePlate.id}

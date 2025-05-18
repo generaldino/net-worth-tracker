@@ -3,7 +3,8 @@ export interface LicensePlate {
   plateNumber: string;
   imageUrls: string[];
   createdAt: Date | null;
-  country: string;
+  countryId: string | null;
+  country?: string | null; // From database joins - populated by queries
   caption: string;
   carMake: string;
   tags: string[];

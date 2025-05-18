@@ -1,7 +1,7 @@
 import { db } from "@/db";
-import { licensePlates } from "@/db/schema";
+import { licensePlates, countries, users } from "@/db/schema";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 
 export async function getLicensePlates(page = 1) {
@@ -15,11 +15,32 @@ export async function getLicensePlates(page = 1) {
 
   // Get paginated plates
   const plates = await db
-    .select()
+    .select({
+      id: licensePlates.id,
+      plateNumber: licensePlates.plateNumber,
+      createdAt: licensePlates.createdAt,
+      countryId: licensePlates.countryId,
+      country: countries.name, // Join with countries table
+      caption: licensePlates.caption,
+      imageUrls: licensePlates.imageUrls,
+      tags: licensePlates.tags,
+      userId: licensePlates.userId,
+      carMake: licensePlates.carMake,
+      categoryId: licensePlates.categoryId,
+      reporter: users.name,
+    })
     .from(licensePlates)
+    .leftJoin(users, eq(licensePlates.userId, users.id))
+    .leftJoin(countries, eq(licensePlates.countryId, countries.id)) // Left join to get country info
     .orderBy(desc(licensePlates.createdAt))
     .limit(ITEMS_PER_PAGE)
-    .offset(from);
+    .offset(from)
+    .then((results) =>
+      results.map((plate) => ({
+        ...plate,
+        reporter: plate.reporter || "Unknown",
+      }))
+    );
 
   const pageCount = count ? Math.ceil(count / ITEMS_PER_PAGE) : 0;
 

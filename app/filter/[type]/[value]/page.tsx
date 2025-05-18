@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { licensePlates, categories, users } from "@/db/schema";
+import { licensePlates, categories, users, countries } from "@/db/schema";
 import type { LicensePlate } from "@/types/license-plate";
 import { eq, arrayContains, desc, sql } from "drizzle-orm";
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
@@ -56,7 +56,8 @@ export default async function FilterPage({
               id: licensePlates.id,
               plateNumber: licensePlates.plateNumber,
               createdAt: licensePlates.createdAt,
-              country: licensePlates.country,
+              countryId: licensePlates.countryId,
+              country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
               tags: licensePlates.tags,
@@ -67,6 +68,7 @@ export default async function FilterPage({
             })
             .from(licensePlates)
             .leftJoin(users, eq(licensePlates.userId, users.id))
+            .leftJoin(countries, eq(licensePlates.countryId, countries.id))
             .where(eq(users.name, decodedValue))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
@@ -102,7 +104,8 @@ export default async function FilterPage({
               id: licensePlates.id,
               plateNumber: licensePlates.plateNumber,
               createdAt: licensePlates.createdAt,
-              country: licensePlates.country,
+              countryId: licensePlates.countryId,
+              country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
               tags: licensePlates.tags,
@@ -113,6 +116,7 @@ export default async function FilterPage({
             })
             .from(licensePlates)
             .leftJoin(users, eq(licensePlates.userId, users.id))
+            .leftJoin(countries, eq(licensePlates.countryId, countries.id))
             .where(eq(licensePlates.carMake, decodedValue))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
@@ -133,7 +137,7 @@ export default async function FilterPage({
 
         // If we found results as car make, use those
         if (carMakeCount > 0) {
-          plates = carMakePlates as LicensePlate[];
+          plates = carMakePlates;
           totalCount = carMakeCount;
           title = decodedValue;
           description = `License plates with ${decodedValue} vehicles`;
@@ -147,7 +151,8 @@ export default async function FilterPage({
               id: licensePlates.id,
               plateNumber: licensePlates.plateNumber,
               createdAt: licensePlates.createdAt,
-              country: licensePlates.country,
+              countryId: licensePlates.countryId,
+              country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
               tags: licensePlates.tags,
@@ -158,7 +163,8 @@ export default async function FilterPage({
             })
             .from(licensePlates)
             .leftJoin(users, eq(licensePlates.userId, users.id))
-            .where(eq(licensePlates.country, decodedValue))
+            .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+            .where(eq(countries.name, decodedValue))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset)
@@ -172,13 +178,14 @@ export default async function FilterPage({
           db
             .select({ count: sql`count(*)` })
             .from(licensePlates)
-            .where(eq(licensePlates.country, decodedValue))
+            .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+            .where(eq(countries.name, decodedValue))
             .then((result) => Number(result[0]?.count || 0)),
         ]);
 
         // If we found results as country, use those
         if (countryCount > 0) {
-          plates = countryPlates as LicensePlate[];
+          plates = countryPlates;
           totalCount = countryCount;
           title = decodedValue;
           description = `License plates from ${decodedValue}`;
@@ -192,7 +199,8 @@ export default async function FilterPage({
               id: licensePlates.id,
               plateNumber: licensePlates.plateNumber,
               createdAt: licensePlates.createdAt,
-              country: licensePlates.country,
+              countryId: licensePlates.countryId,
+              country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
               tags: licensePlates.tags,
@@ -203,6 +211,7 @@ export default async function FilterPage({
             })
             .from(licensePlates)
             .leftJoin(users, eq(licensePlates.userId, users.id))
+            .leftJoin(countries, eq(licensePlates.countryId, countries.id))
             .where(arrayContains(licensePlates.tags, [decodedValue]))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
@@ -221,7 +230,7 @@ export default async function FilterPage({
             .then((result) => Number(result[0]?.count || 0)),
         ]);
 
-        plates = tagPlates as LicensePlate[];
+        plates = tagPlates;
         totalCount = tagCount;
         break;
 
@@ -250,7 +259,8 @@ export default async function FilterPage({
               id: licensePlates.id,
               plateNumber: licensePlates.plateNumber,
               createdAt: licensePlates.createdAt,
-              country: licensePlates.country,
+              countryId: licensePlates.countryId,
+              country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
               tags: licensePlates.tags,
@@ -261,6 +271,7 @@ export default async function FilterPage({
             })
             .from(licensePlates)
             .leftJoin(users, eq(licensePlates.userId, users.id))
+            .leftJoin(countries, eq(licensePlates.countryId, countries.id))
             .where(eq(licensePlates.categoryId, category.id))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)

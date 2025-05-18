@@ -155,6 +155,20 @@
       "when": 1747576578495,
       "tag": "0021_tiny_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1747582786857,
+      "tag": "0022_narrow_old_lace",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1747583057028,
+      "tag": "0023_peaceful_leper_queen",
+      "breakpoints": true
     }
   ]
 }

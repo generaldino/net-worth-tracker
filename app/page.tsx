@@ -4,7 +4,6 @@ import { licensePlates, users } from "@/db/schema";
 import { desc, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { Metadata } from "next";
-import { createClient } from "@/utils/supabase/server";
 
 export const metadata: Metadata = {
   title: "WeSpotNumberPlates | Share & Discover Unique License Plates",
@@ -82,7 +81,7 @@ export default async function Home({
         id: licensePlates.id,
         plateNumber: licensePlates.plateNumber,
         createdAt: licensePlates.createdAt,
-        country: licensePlates.country,
+        countryId: licensePlates.countryId,
         caption: licensePlates.caption,
         imageUrls: licensePlates.imageUrls,
         tags: licensePlates.tags,

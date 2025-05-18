@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { licensePlates, users } from "@/db/schema";
+import { licensePlates, users, countries } from "@/db/schema";
 import { LicensePlateCard } from "@/components/license-plate-card";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
@@ -14,84 +14,47 @@ interface PageProps {
 // Generate metadata for the page
 export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> {
+}: {
+  params: Promise<{ plateNumber: string }>;
+}): Promise<Metadata> {
   const resolvedParams = await params;
   const plateNumber = decodeURIComponent(resolvedParams.plateNumber);
 
-  // Fetch the license plate data
-  const [licensePlate] = await db
-    .select({
-      id: licensePlates.id,
-      plateNumber: licensePlates.plateNumber,
-      createdAt: licensePlates.createdAt,
-      country: licensePlates.country,
-      caption: licensePlates.caption,
-      imageUrls: licensePlates.imageUrls,
-      tags: licensePlates.tags,
-      userId: licensePlates.userId,
-      carMake: licensePlates.carMake,
-      categoryId: licensePlates.categoryId,
-      reporter: users.name,
-    })
-    .from(licensePlates)
-    .leftJoin(users, eq(licensePlates.userId, users.id))
-    .where(eq(licensePlates.plateNumber, plateNumber))
-    .limit(1)
-    .then((results) =>
-      results.map((plate) => ({
-        ...plate,
-        reporter: plate.reporter || "Unknown",
-      }))
-    );
+  try {
+    // Query the database for the license plate
+    const [licensePlate] = await db
+      .select({
+        plateNumber: licensePlates.plateNumber,
+        caption: licensePlates.caption,
+        country: countries.name,
+      })
+      .from(licensePlates)
+      .leftJoin(countries, eq(licensePlates.countryId, countries.id))
+      .where(eq(licensePlates.plateNumber, plateNumber))
+      .limit(1);
 
-  // If plate not found, return basic metadata
-  if (!licensePlate) {
+    if (!licensePlate) {
+      return {
+        title: "License Plate Not Found",
+        description: "The requested license plate could not be found.",
+      };
+    }
+
+    const countryText = licensePlate.country
+      ? ` from ${licensePlate.country}`
+      : "";
+
     return {
-      title: "License Plate Not Found",
+      title: `${licensePlate.plateNumber} - ${licensePlate.caption}`,
+      description: `View details about license plate ${licensePlate.plateNumber}${countryText}`,
+    };
+  } catch (error) {
+    console.error("Error generating metadata:", error);
+    return {
+      title: "License Plate Details",
+      description: "View detailed information about this license plate.",
     };
   }
-
-  // Format car make for display
-  const formattedCarMake = licensePlate.carMake
-    ? licensePlate.carMake
-        .split("_")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
-    : "Unknown Make";
-
-  // Create marketing-friendly title with emoji
-  const title = `🚗 Spotted: A ${formattedCarMake} with plate ${licensePlate.plateNumber} in ${licensePlate.country}`;
-
-  // Create engaging description with call to action
-  const description = `This eye-catching ${formattedCarMake} is turning heads with its unique ${licensePlate.plateNumber} plate! Join our community of spotters discovering rare license plates from around the world.`;
-
-  // Get the first image URL or use a fallback
-  const imageUrl = licensePlate.imageUrls[0] || "/placeholder.svg";
-
-  // Create the metadata object with optimized title and description
-  return {
-    title: title,
-    description: description,
-    openGraph: {
-      title: title,
-      description: description,
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${formattedCarMake} with license plate ${licensePlate.plateNumber} from ${licensePlate.country}`,
-        },
-      ],
-      type: "article",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: title,
-      description: description,
-      images: [imageUrl],
-    },
-  };
 }
 
 export default async function LicensePlatePage({ params }: PageProps) {
@@ -106,7 +69,8 @@ export default async function LicensePlatePage({ params }: PageProps) {
         id: licensePlates.id,
         plateNumber: licensePlates.plateNumber,
         createdAt: licensePlates.createdAt,
-        country: licensePlates.country,
+        countryId: licensePlates.countryId,
+        country: countries.name, // Join with countries table
         caption: licensePlates.caption,
         imageUrls: licensePlates.imageUrls,
         tags: licensePlates.tags,
@@ -117,6 +81,7 @@ export default async function LicensePlatePage({ params }: PageProps) {
       })
       .from(licensePlates)
       .leftJoin(users, eq(licensePlates.userId, users.id))
+      .leftJoin(countries, eq(licensePlates.countryId, countries.id)) // Left join to get country data
       .where(eq(licensePlates.plateNumber, plateNumber))
       .limit(1)
       .then((results) =>
