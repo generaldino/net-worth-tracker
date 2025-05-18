@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { licensePlates } from "@/db/schema";
-import { desc, ilike, or, sql } from "drizzle-orm";
+import { licensePlates, categories } from "@/db/schema";
+import { desc, ilike, or, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
@@ -49,8 +49,27 @@ export async function GET(request: NextRequest) {
     // Search for license plates that match the term with pagination
     const [searchResults, totalCount] = await Promise.all([
       db
-        .select()
+        .select({
+          id: licensePlates.id,
+          plateNumber: licensePlates.plateNumber,
+          createdAt: licensePlates.createdAt,
+          country: licensePlates.country,
+          caption: licensePlates.caption,
+          imageUrls: licensePlates.imageUrls,
+          tags: licensePlates.tags,
+          reporter: licensePlates.reporter,
+          carMake: licensePlates.carMake,
+          categoryId: licensePlates.categoryId,
+          category: {
+            id: categories.id,
+            name: categories.name,
+            emoji: categories.emoji,
+            color: categories.color,
+            description: categories.description,
+          },
+        })
         .from(licensePlates)
+        .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
@@ -58,6 +77,7 @@ export async function GET(request: NextRequest) {
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
+            ilike(categories.name, searchPattern),
             sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
           )
         )
@@ -68,6 +88,7 @@ export async function GET(request: NextRequest) {
       db
         .select({ count: sql`count(*)` })
         .from(licensePlates)
+        .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
@@ -75,6 +96,7 @@ export async function GET(request: NextRequest) {
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
+            ilike(categories.name, searchPattern),
             sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
           )
         )
