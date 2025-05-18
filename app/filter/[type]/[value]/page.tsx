@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { LicensePlate, licensePlates, categories } from "@/db/schema";
+import { licensePlates, categories, users } from "@/db/schema";
+import type { LicensePlate } from "@/types/license-plate";
 import { eq, arrayContains, desc, sql } from "drizzle-orm";
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
@@ -51,17 +52,37 @@ export default async function FilterPage({
 
         [plates, totalCount] = await Promise.all([
           db
-            .select()
+            .select({
+              id: licensePlates.id,
+              plateNumber: licensePlates.plateNumber,
+              createdAt: licensePlates.createdAt,
+              country: licensePlates.country,
+              caption: licensePlates.caption,
+              imageUrls: licensePlates.imageUrls,
+              tags: licensePlates.tags,
+              userId: licensePlates.userId,
+              carMake: licensePlates.carMake,
+              categoryId: licensePlates.categoryId,
+              reporter: users.name,
+            })
             .from(licensePlates)
-            .where(eq(licensePlates.reporter, decodedValue))
+            .leftJoin(users, eq(licensePlates.userId, users.id))
+            .where(eq(users.name, decodedValue))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
-            .offset(offset),
+            .offset(offset)
+            .then((results) =>
+              results.map((plate) => ({
+                ...plate,
+                reporter: plate.reporter || "Unknown",
+              }))
+            ),
 
           db
             .select({ count: sql`count(*)` })
             .from(licensePlates)
-            .where(eq(licensePlates.reporter, decodedValue))
+            .leftJoin(users, eq(licensePlates.userId, users.id))
+            .where(eq(users.name, decodedValue))
             .then((result) => Number(result[0]?.count || 0)),
         ]);
 
@@ -77,12 +98,31 @@ export default async function FilterPage({
         // Query for car make
         const [carMakePlates, carMakeCount] = await Promise.all([
           db
-            .select()
+            .select({
+              id: licensePlates.id,
+              plateNumber: licensePlates.plateNumber,
+              createdAt: licensePlates.createdAt,
+              country: licensePlates.country,
+              caption: licensePlates.caption,
+              imageUrls: licensePlates.imageUrls,
+              tags: licensePlates.tags,
+              userId: licensePlates.userId,
+              carMake: licensePlates.carMake,
+              categoryId: licensePlates.categoryId,
+              reporter: users.name,
+            })
             .from(licensePlates)
+            .leftJoin(users, eq(licensePlates.userId, users.id))
             .where(eq(licensePlates.carMake, decodedValue))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
-            .offset(offset),
+            .offset(offset)
+            .then((results) =>
+              results.map((plate) => ({
+                ...plate,
+                reporter: plate.reporter || "Unknown",
+              }))
+            ),
 
           db
             .select({ count: sql`count(*)` })
@@ -93,7 +133,7 @@ export default async function FilterPage({
 
         // If we found results as car make, use those
         if (carMakeCount > 0) {
-          plates = carMakePlates;
+          plates = carMakePlates as LicensePlate[];
           totalCount = carMakeCount;
           title = decodedValue;
           description = `License plates with ${decodedValue} vehicles`;
@@ -103,12 +143,31 @@ export default async function FilterPage({
         // Query for country
         const [countryPlates, countryCount] = await Promise.all([
           db
-            .select()
+            .select({
+              id: licensePlates.id,
+              plateNumber: licensePlates.plateNumber,
+              createdAt: licensePlates.createdAt,
+              country: licensePlates.country,
+              caption: licensePlates.caption,
+              imageUrls: licensePlates.imageUrls,
+              tags: licensePlates.tags,
+              userId: licensePlates.userId,
+              carMake: licensePlates.carMake,
+              categoryId: licensePlates.categoryId,
+              reporter: users.name,
+            })
             .from(licensePlates)
+            .leftJoin(users, eq(licensePlates.userId, users.id))
             .where(eq(licensePlates.country, decodedValue))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
-            .offset(offset),
+            .offset(offset)
+            .then((results) =>
+              results.map((plate) => ({
+                ...plate,
+                reporter: plate.reporter || "Unknown",
+              }))
+            ),
 
           db
             .select({ count: sql`count(*)` })
@@ -119,7 +178,7 @@ export default async function FilterPage({
 
         // If we found results as country, use those
         if (countryCount > 0) {
-          plates = countryPlates;
+          plates = countryPlates as LicensePlate[];
           totalCount = countryCount;
           title = decodedValue;
           description = `License plates from ${decodedValue}`;
@@ -129,12 +188,31 @@ export default async function FilterPage({
         // Finally, check regular tags
         const [tagPlates, tagCount] = await Promise.all([
           db
-            .select()
+            .select({
+              id: licensePlates.id,
+              plateNumber: licensePlates.plateNumber,
+              createdAt: licensePlates.createdAt,
+              country: licensePlates.country,
+              caption: licensePlates.caption,
+              imageUrls: licensePlates.imageUrls,
+              tags: licensePlates.tags,
+              userId: licensePlates.userId,
+              carMake: licensePlates.carMake,
+              categoryId: licensePlates.categoryId,
+              reporter: users.name,
+            })
             .from(licensePlates)
+            .leftJoin(users, eq(licensePlates.userId, users.id))
             .where(arrayContains(licensePlates.tags, [decodedValue]))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
-            .offset(offset),
+            .offset(offset)
+            .then((results) =>
+              results.map((plate) => ({
+                ...plate,
+                reporter: plate.reporter || "Unknown",
+              }))
+            ),
 
           db
             .select({ count: sql`count(*)` })
@@ -143,7 +221,7 @@ export default async function FilterPage({
             .then((result) => Number(result[0]?.count || 0)),
         ]);
 
-        plates = tagPlates;
+        plates = tagPlates as LicensePlate[];
         totalCount = tagCount;
         break;
 
@@ -168,12 +246,31 @@ export default async function FilterPage({
 
         [plates, totalCount] = await Promise.all([
           db
-            .select()
+            .select({
+              id: licensePlates.id,
+              plateNumber: licensePlates.plateNumber,
+              createdAt: licensePlates.createdAt,
+              country: licensePlates.country,
+              caption: licensePlates.caption,
+              imageUrls: licensePlates.imageUrls,
+              tags: licensePlates.tags,
+              userId: licensePlates.userId,
+              carMake: licensePlates.carMake,
+              categoryId: licensePlates.categoryId,
+              reporter: users.name,
+            })
             .from(licensePlates)
+            .leftJoin(users, eq(licensePlates.userId, users.id))
             .where(eq(licensePlates.categoryId, category.id))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
-            .offset(offset),
+            .offset(offset)
+            .then((results) =>
+              results.map((plate) => ({
+                ...plate,
+                reporter: plate.reporter || "Unknown",
+              }))
+            ),
 
           db
             .select({ count: sql`count(*)` })
@@ -243,6 +340,7 @@ export default async function FilterPage({
         initialLicensePlates={plates}
         initialPagination={pagination}
         filterParams={{ type, value: decodedValue }}
+        currentPath={`/filter/${type}/${value}`}
       />
     </main>
   );

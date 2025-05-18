@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { licensePlates, categories } from "@/db/schema";
+import { licensePlates, categories, users } from "@/db/schema";
 import { desc, ilike, or, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 
@@ -21,11 +21,31 @@ export async function GET(request: NextRequest) {
     if (!term.trim()) {
       const [allPlates, totalCount] = await Promise.all([
         db
-          .select()
+          .select({
+            id: licensePlates.id,
+            plateNumber: licensePlates.plateNumber,
+            createdAt: licensePlates.createdAt,
+            country: licensePlates.country,
+            caption: licensePlates.caption,
+            imageUrls: licensePlates.imageUrls,
+            tags: licensePlates.tags,
+            userId: licensePlates.userId,
+            carMake: licensePlates.carMake,
+            categoryId: licensePlates.categoryId,
+            reporter: users.name,
+          })
           .from(licensePlates)
+          .leftJoin(users, eq(licensePlates.userId, users.id))
           .orderBy(desc(licensePlates.createdAt))
           .limit(ITEMS_PER_PAGE)
-          .offset(offset),
+          .offset(offset)
+          .then((results) =>
+            results.map((plate) => ({
+              ...plate,
+              reporter: plate.reporter || "Unknown",
+            }))
+          ),
+
         db
           .select({ count: sql`count(*)` })
           .from(licensePlates)
@@ -57,9 +77,10 @@ export async function GET(request: NextRequest) {
           caption: licensePlates.caption,
           imageUrls: licensePlates.imageUrls,
           tags: licensePlates.tags,
-          reporter: licensePlates.reporter,
+          userId: licensePlates.userId,
           carMake: licensePlates.carMake,
           categoryId: licensePlates.categoryId,
+          reporter: users.name,
           category: {
             id: categories.id,
             name: categories.name,
@@ -70,10 +91,11 @@ export async function GET(request: NextRequest) {
         })
         .from(licensePlates)
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
+        .leftJoin(users, eq(licensePlates.userId, users.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
-            ilike(licensePlates.reporter, searchPattern),
+            ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
@@ -83,16 +105,23 @@ export async function GET(request: NextRequest) {
         )
         .orderBy(desc(licensePlates.createdAt))
         .limit(ITEMS_PER_PAGE)
-        .offset(offset),
+        .offset(offset)
+        .then((results) =>
+          results.map((plate) => ({
+            ...plate,
+            reporter: plate.reporter || "Unknown",
+          }))
+        ),
 
       db
         .select({ count: sql`count(*)` })
         .from(licensePlates)
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
+        .leftJoin(users, eq(licensePlates.userId, users.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
-            ilike(licensePlates.reporter, searchPattern),
+            ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),

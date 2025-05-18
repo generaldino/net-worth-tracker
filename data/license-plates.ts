@@ -15,6 +15,7 @@ export const licensePlates: LicensePlate[] = [
     tags: ["California", "Modern", "Sunset Design"],
     reporter: "Maria Johnson",
     categoryId: "1",
+    userId: "1",
   },
   {
     id: "2",
@@ -30,6 +31,7 @@ export const licensePlates: LicensePlate[] = [
     tags: ["Paris", "Classic", "French Standard"],
     reporter: "Jean Dupont",
     categoryId: "2",
+    userId: "2",
   },
   {
     id: "3",
@@ -44,6 +46,7 @@ export const licensePlates: LicensePlate[] = [
     tags: ["Tokyo", "Metropolitan", "JDM", "Hybrid"],
     reporter: "Yuki Tanaka",
     categoryId: "3",
+    userId: "3",
   },
   {
     id: "4",
@@ -58,6 +61,7 @@ export const licensePlates: LicensePlate[] = [
     tags: ["Berlin", "Special Edition", "Bavarian"],
     reporter: "Hans Mueller",
     categoryId: "4",
+    userId: "4",
   },
   {
     id: "5",
@@ -73,5 +77,6 @@ export const licensePlates: LicensePlate[] = [
     tags: ["Sydney", "Custom", "Aussie Classic", "007"],
     reporter: "Sarah Thompson",
     categoryId: "5",
+    userId: "5",
   },
 ];
