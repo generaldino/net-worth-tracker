@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/server";
 import { sql } from "drizzle-orm";
 import { Provider } from "@supabase/supabase-js";
 import { getSiteUrl } from "@/utils/site-url";
+import { cookies } from "next/headers";
 
 /**
  * Server action that fetches a random license plate and redirects to its page
@@ -192,5 +193,73 @@ export async function getUserByEmail(email: string) {
   } catch (error) {
     console.error("Error fetching user:", error);
     return { success: false, error: "Failed to fetch user data" };
+  }
+}
+
+/**
+ * Gets a user from the database by id
+ */
+export async function getUserById(id: string) {
+  try {
+    if (!id) {
+      return { success: false, error: "Id is required" };
+    }
+
+    const user = await db
+      .select()
+      .from(users)
+      .where(sql`${users.id} = ${id}`)
+      .limit(1);
+
+    if (user.length === 0) {
+      return { success: false, error: "User not found" };
+    }
+
+    return {
+      success: true,
+      user: user[0],
+    };
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return { success: false, error: "Failed to fetch user data" };
+  }
+}
+
+export async function getUserSession() {
+  try {
+    // Get the current user data directly from the database
+    // First, get currently authenticated user ID from session cookie
+    const cookieStore = await cookies();
+    const supabaseAuthCookie = cookieStore.get("sb-supabase-auth-token");
+
+    if (!supabaseAuthCookie?.value) {
+      return { dbUser: null };
+    }
+
+    // Parse the cookie value to get the user ID
+    try {
+      const cookieData = JSON.parse(supabaseAuthCookie.value);
+      const userId = cookieData[0]?.user?.id;
+
+      if (!userId) {
+        return { dbUser: null };
+      }
+
+      // Query the database directly with Drizzle ORM
+      const dbUsers = await db
+        .select()
+        .from(users)
+        .where(sql`${users.id} = ${userId}`)
+        .limit(1);
+
+      const dbUser = dbUsers.length > 0 ? dbUsers[0] : null;
+      return { dbUser };
+    } catch (parseError) {
+      console.error("Error parsing auth cookie:", parseError);
+      return { dbUser: null };
+    }
+  } catch (error) {
+    console.error("Error getting user session:", error);
+    return { dbUser: null };
   }
 }

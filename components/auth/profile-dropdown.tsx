@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useState } from "react";
 
 interface ProfileDropdownProps {
   name?: string | null;
@@ -24,6 +26,7 @@ export function ProfileDropdown({
 }: ProfileDropdownProps) {
   const router = useRouter();
   const supabase = createClient();
+  const [imageError, setImageError] = useState(false);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -43,12 +46,23 @@ export function ProfileDropdown({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-border focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
-          <Avatar>
-            <AvatarImage src={avatarUrl || ""} alt={name || "User"} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative h-full w-full">
+            {avatarUrl && !imageError ? (
+              <Image
+                src={avatarUrl}
+                alt={name || "User"}
+                width={32}
+                height={32}
+                className="h-full w-full object-cover"
+                priority={true}
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground">
+                {initials}
+              </div>
+            )}
+          </div>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
