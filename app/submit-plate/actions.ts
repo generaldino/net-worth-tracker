@@ -1,7 +1,13 @@
 "use server";
 
 import { db } from "@/db";
-import { categories, countries, carMakes, licensePlates } from "@/db/schema";
+import {
+  categories,
+  countries,
+  carMakes,
+  licensePlates,
+  users,
+} from "@/db/schema";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
@@ -41,6 +47,24 @@ export async function getCarMakes() {
   }
 }
 
+// Fetch all users from the database
+export async function getUsers() {
+  try {
+    const allUsers = await db.select().from(users);
+
+    return {
+      users: allUsers,
+      error: null,
+    };
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return {
+      users: [],
+      error: "Failed to fetch users",
+    };
+  }
+}
+
 // Submit license plate form
 export async function submitLicensePlate(formData: FormData) {
   const session = await auth();
@@ -58,8 +82,12 @@ export async function submitLicensePlate(formData: FormData) {
     const countryId = formData.get("countryId") as string;
     const carMakeId = formData.get("carMakeId") as string;
     const categoryId = formData.get("categoryId") as string;
+    const userIdFromForm = formData.get("userId") as string;
     const caption = formData.get("caption") as string;
     const tags = formData.getAll("tags") as string[];
+
+    // Use the form's userId if present, otherwise use the session userId
+    const userId = userIdFromForm || session.user.id;
 
     // Handle image uploads
     const imageFiles = formData.getAll("images") as File[];
@@ -91,7 +119,7 @@ export async function submitLicensePlate(formData: FormData) {
       caption: caption || null,
       tags,
       imageUrls,
-      userId: session.user.id,
+      userId: userId,
       createdAt: new Date(), // Explicitly set the created_at timestamp
     });
 

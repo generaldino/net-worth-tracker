@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { Check, ChevronsUpDown, Upload } from "lucide-react";
+import { Check, ChevronsUpDown, Upload, User } from "lucide-react";
 import Image from "next/image";
 import imageCompression from "browser-image-compression";
 
@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Category, Country, CarMake } from "@/db/schema";
+import { Category, Country, CarMake, User as UserType } from "@/db/schema";
 import { submitLicensePlate } from "./actions";
 
 // Form schema for validation
@@ -50,12 +50,8 @@ const formSchema = z.object({
   categoryId: z.string().uuid({
     message: "Please select a category.",
   }),
-  caption: z
-    .string()
-    .min(5, {
-      message: "Caption must be at least 5 characters.",
-    })
-    .optional(),
+  userId: z.union([z.string().uuid(), z.string().length(0), z.undefined()]),
+  caption: z.string().optional(),
   tags: z.array(z.string()).default([]),
   images: z.any(), // Using z.any() to avoid type issues with File objects
 });
@@ -64,12 +60,14 @@ interface SubmitPlateFormProps {
   categories: Category[];
   countries: Country[];
   carMakes: CarMake[];
+  users: UserType[];
 }
 
 export default function SubmitPlateForm({
   categories,
   countries,
   carMakes,
+  users,
 }: SubmitPlateFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -84,6 +82,7 @@ export default function SubmitPlateForm({
       countryId: "",
       carMakeId: "",
       categoryId: "",
+      userId: "",
       caption: "",
       tags: [],
       images: [],
@@ -181,6 +180,17 @@ export default function SubmitPlateForm({
       formData.append("plateNumber", values.plateNumber);
       formData.append("countryId", values.countryId);
       formData.append("categoryId", values.categoryId);
+
+      // Only append userId if it has a value and is a valid UUID
+      if (
+        values.userId &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          values.userId
+        )
+      ) {
+        formData.append("userId", values.userId);
+      }
+
       formData.append("caption", values.caption || "");
 
       if (values.carMakeId) {
@@ -341,6 +351,110 @@ export default function SubmitPlateForm({
                 </Popover>
                 <FormDescription>
                   Select the country of the license plate.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Reporter Dropdown */}
+          <FormField
+            control={form.control}
+            name="userId"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Reporter</FormLabel>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between",
+                          !field.value && "text-muted-foreground"
+                        )}
+                      >
+                        {field.value ? (
+                          <>
+                            <span className="mr-2 flex items-center">
+                              {users.find((user) => user.id === field.value)
+                                ?.avatarUrl ? (
+                                <Image
+                                  src={
+                                    users.find(
+                                      (user) => user.id === field.value
+                                    )?.avatarUrl || ""
+                                  }
+                                  alt="User avatar"
+                                  width={20}
+                                  height={20}
+                                  className="h-5 w-5 rounded-full"
+                                  unoptimized
+                                />
+                              ) : (
+                                <User className="h-5 w-5" />
+                              )}
+                            </span>
+                            {
+                              users.find((user) => user.id === field.value)
+                                ?.name
+                            }
+                          </>
+                        ) : (
+                          "Select reporter"
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search reporter..." />
+                      <CommandList>
+                        <CommandEmpty>No reporter found.</CommandEmpty>
+                        <CommandGroup>
+                          {users.map((user) => (
+                            <CommandItem
+                              value={user.name || user.email}
+                              key={user.id}
+                              onSelect={() => {
+                                form.setValue("userId", user.id);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  user.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              <span className="mr-2 flex items-center">
+                                {user.avatarUrl ? (
+                                  <Image
+                                    src={user.avatarUrl}
+                                    alt={`${user.name} avatar`}
+                                    width={20}
+                                    height={20}
+                                    className="h-5 w-5 rounded-full"
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <User className="h-5 w-5" />
+                                )}
+                              </span>
+                              {user.name || user.email}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormDescription>
+                  Select who spotted this license plate. If not selected, you
+                  will be recorded as the reporter.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

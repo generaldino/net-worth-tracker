@@ -1,6 +1,6 @@
 import SubmitPlateForm from "@/app/submit-plate/submit-plate-form";
 import { Metadata } from "next";
-import { getCategories, getCountries, getCarMakes } from "./actions";
+import { getCategories, getCountries, getCarMakes, getUsers } from "./actions";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
@@ -24,6 +24,7 @@ export default async function SubmitPlatePage() {
   const { categories } = await getCategories();
   const { countries } = await getCountries();
   const { carMakes } = await getCarMakes();
+  const { users } = await getUsers();
 
   return (
     <div className="container mx-auto max-w-3xl py-10">
@@ -40,6 +41,7 @@ export default async function SubmitPlatePage() {
         categories={categories}
         countries={countries}
         carMakes={carMakes}
+        users={users}
       />
     </div>
   );
