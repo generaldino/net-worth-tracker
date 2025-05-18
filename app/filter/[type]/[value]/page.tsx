@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { LicensePlate, licensePlates } from "@/db/schema";
+import { LicensePlate, licensePlates, categories } from "@/db/schema";
 import { eq, arrayContains, desc, sql } from "drizzle-orm";
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
@@ -40,6 +40,7 @@ export default async function FilterPage({
   let description = "";
   let plates: LicensePlate[] = [];
   let totalCount = 0;
+  let categoryInfo: { emoji: string; color: string } | null = null;
 
   try {
     // Apply the appropriate filter based on the type
@@ -147,14 +148,29 @@ export default async function FilterPage({
         break;
 
       case "category":
-        title = decodedValue;
-        description = `License plates in the ${decodedValue} category`;
+        // First, get the category information
+        const [category] = await db
+          .select()
+          .from(categories)
+          .where(eq(categories.name, decodedValue));
+
+        if (!category) {
+          return notFound();
+        }
+
+        categoryInfo = {
+          emoji: category.emoji,
+          color: category.color,
+        };
+
+        title = category.name;
+        description = `License plates in the ${category.name} category`;
 
         [plates, totalCount] = await Promise.all([
           db
             .select()
             .from(licensePlates)
-            .where(eq(licensePlates.category, decodedValue))
+            .where(eq(licensePlates.categoryId, category.id))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset),
@@ -162,7 +178,7 @@ export default async function FilterPage({
           db
             .select({ count: sql`count(*)` })
             .from(licensePlates)
-            .where(eq(licensePlates.category, decodedValue))
+            .where(eq(licensePlates.categoryId, category.id))
             .then((result) => Number(result[0]?.count || 0)),
         ]);
 
@@ -186,30 +202,30 @@ export default async function FilterPage({
 
   return (
     <main className="container mx-auto py-10 px-4">
-      {type === "category" && plates.length > 0 ? (
+      {type === "category" && categoryInfo ? (
         <div
           className={`mb-8 py-6 px-4 mx-auto max-w-2xl ${
             colorVariantsBackground[
-              plates[0].categoryColor as keyof typeof colorVariantsBackground
+              categoryInfo.color as keyof typeof colorVariantsBackground
             ] || "text-amber-800"
           }`}
         >
           <h1
             className={`text-3xl font-bold mb-2 text-center ${
               colorVariantsHeading[
-                plates[0].categoryColor as keyof typeof colorVariantsHeading
+                categoryInfo.color as keyof typeof colorVariantsHeading
               ] || "text-amber-800"
             }`}
           >
             <span className="flex items-center justify-center gap-2">
-              <span>{plates[0].categoryEmoji}</span>
+              <span>{categoryInfo.emoji}</span>
               <span>{title}</span>
             </span>
           </h1>
           <p
             className={`text-center ${
               colorVariantsParagraph[
-                plates[0].categoryColor as keyof typeof colorVariantsParagraph
+                categoryInfo.color as keyof typeof colorVariantsParagraph
               ] || "text-amber-800"
             }`}
           >
