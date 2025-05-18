@@ -12,9 +12,12 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
+import { getUserByEmail, syncUserToDB } from "@/app/actions";
+import { User as DbUser } from "@/db/schema";
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
+  const [dbUser, setDbUser] = useState<DbUser | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
   const router = useRouter();
@@ -24,14 +27,46 @@ export function Navbar() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+
+      if (session?.user) {
+        setUser(session.user);
+
+        // Sync user to DB and get updated user data
+        await syncUserToDB();
+
+        // Get user from database using server action
+        if (session.user.email) {
+          const result = await getUserByEmail(session.user.email);
+          if (result.success && result.user) {
+            setDbUser(result.user as DbUser);
+          }
+        }
+      }
+
       setLoading(false);
 
       // Set up auth state listener
       const {
         data: { subscription },
-      } = await supabase.auth.onAuthStateChange((_event, session) => {
+      } = await supabase.auth.onAuthStateChange(async (_event, session) => {
         setUser(session?.user || null);
+
+        if (session?.user) {
+          // Sync user to DB on auth state change
+          await syncUserToDB();
+
+          // Get user from database using server action
+          if (session.user.email) {
+            const result = await getUserByEmail(session.user.email);
+            if (result.success && result.user) {
+              setDbUser(result.user as DbUser);
+            } else {
+              setDbUser(null);
+            }
+          }
+        } else {
+          setDbUser(null);
+        }
       });
 
       return () => {
@@ -82,12 +117,13 @@ export function Navbar() {
           {!loading &&
             (user ? (
               <ProfileDropdown
-                name={user.user_metadata?.full_name || user.user_metadata?.name}
-                email={user.email}
-                avatarUrl={
-                  user.user_metadata?.avatar_url ||
-                  user.user_metadata?.avatarUrl
+                name={
+                  dbUser?.name ||
+                  user.user_metadata?.full_name ||
+                  user.user_metadata?.name
                 }
+                email={user.email}
+                avatarUrl={dbUser?.avatarUrl || user.user_metadata?.avatar_url}
               />
             ) : (
               <GoogleSignInButton />

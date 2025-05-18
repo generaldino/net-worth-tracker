@@ -96,6 +96,7 @@ export async function syncUserToDB() {
         id: user.id, // Use the Supabase user ID
         email: user.email!,
         name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        avatarUrl: user.user_metadata?.avatar_url || null,
       });
 
       return {
@@ -109,7 +110,9 @@ export async function syncUserToDB() {
     if (
       existingUser[0].id !== user.id ||
       (user.user_metadata?.full_name &&
-        existingUser[0].name !== user.user_metadata.full_name)
+        existingUser[0].name !== user.user_metadata.full_name) ||
+      (user.user_metadata?.avatar_url &&
+        existingUser[0].avatarUrl !== user.user_metadata.avatar_url)
     ) {
       await db
         .update(users)
@@ -118,6 +121,8 @@ export async function syncUserToDB() {
             user.user_metadata?.full_name ||
             user.user_metadata?.name ||
             existingUser[0].name,
+          avatarUrl:
+            user.user_metadata?.avatar_url || existingUser[0].avatarUrl,
         })
         .where(sql`${users.email} = ${user.email}`);
 
@@ -160,3 +165,32 @@ const signInWith = (provider: Provider) => async () => {
 const signinWithGoogle = signInWith("google");
 
 export { signinWithGoogle };
+
+/**
+ * Gets a user from the database by email
+ */
+export async function getUserByEmail(email: string) {
+  try {
+    if (!email) {
+      return { success: false, error: "Email is required" };
+    }
+
+    const user = await db
+      .select()
+      .from(users)
+      .where(sql`${users.email} = ${email}`)
+      .limit(1);
+
+    if (user.length === 0) {
+      return { success: false, error: "User not found" };
+    }
+
+    return {
+      success: true,
+      user: user[0],
+    };
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return { success: false, error: "Failed to fetch user data" };
+  }
+}
