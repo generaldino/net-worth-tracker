@@ -1,7 +1,7 @@
 import { LicensePlateGallery } from "@/components/license-plate-gallery";
 import { db } from "@/db";
-import { licensePlates } from "@/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { licensePlates, users } from "@/db/schema";
+import { desc, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
@@ -78,15 +78,28 @@ export default async function Home({
   // Get plates with pagination
   const [plates, totalCount] = await Promise.all([
     db
-      .select()
+      .select({
+        id: licensePlates.id,
+        plateNumber: licensePlates.plateNumber,
+        createdAt: licensePlates.createdAt,
+        country: licensePlates.country,
+        caption: licensePlates.caption,
+        imageUrls: licensePlates.imageUrls,
+        tags: licensePlates.tags,
+        userId: licensePlates.userId,
+        carMake: licensePlates.carMake,
+        categoryId: licensePlates.categoryId,
+        reporter: users.name,
+      })
       .from(licensePlates)
+      .leftJoin(users, eq(licensePlates.userId, users.id))
       .orderBy(desc(licensePlates.createdAt))
       .limit(ITEMS_PER_PAGE)
       .offset(offset)
       .then((results) =>
         results.map((plate) => ({
           ...plate,
-          reporter: plate.userId, // Add reporter field from userId
+          reporter: plate.reporter || "Unknown", // Ensure reporter is never null
         }))
       ),
 

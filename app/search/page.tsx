@@ -1,6 +1,6 @@
 import { SearchBar } from "@/components/search-bar";
 import { db } from "@/db";
-import { licensePlates, categories } from "@/db/schema";
+import { licensePlates, categories, users } from "@/db/schema";
 import { desc, ilike, or, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import type { LicensePlate } from "@/types/license-plate";
@@ -43,9 +43,10 @@ export default async function SearchPage({
           caption: licensePlates.caption,
           imageUrls: licensePlates.imageUrls,
           tags: licensePlates.tags,
-          reporter: licensePlates.userId,
+          userId: licensePlates.userId,
           carMake: licensePlates.carMake,
           categoryId: licensePlates.categoryId,
+          reporter: users.name,
           category: {
             id: categories.id,
             name: categories.name,
@@ -56,10 +57,11 @@ export default async function SearchPage({
         })
         .from(licensePlates)
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
+        .leftJoin(users, eq(licensePlates.userId, users.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
-            ilike(licensePlates.userId, searchPattern),
+            ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
@@ -75,10 +77,11 @@ export default async function SearchPage({
         .select({ count: sql`count(*)` })
         .from(licensePlates)
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
+        .leftJoin(users, eq(licensePlates.userId, users.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
-            ilike(licensePlates.userId, searchPattern),
+            ilike(users.name, searchPattern),
             ilike(licensePlates.caption, searchPattern),
             ilike(licensePlates.country, searchPattern),
             ilike(licensePlates.carMake, searchPattern),
@@ -102,7 +105,7 @@ export default async function SearchPage({
       userId: result.userId,
       carMake: result.carMake,
       categoryId: result.categoryId,
-      reporter: result.userId,
+      reporter: result.reporter || "Unknown",
     }));
 
     searchResults = {

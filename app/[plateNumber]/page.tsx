@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { licensePlates } from "@/db/schema";
+import { licensePlates, users } from "@/db/schema";
 import { LicensePlateCard } from "@/components/license-plate-card";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
@@ -20,10 +20,29 @@ export async function generateMetadata({
 
   // Fetch the license plate data
   const [licensePlate] = await db
-    .select()
+    .select({
+      id: licensePlates.id,
+      plateNumber: licensePlates.plateNumber,
+      createdAt: licensePlates.createdAt,
+      country: licensePlates.country,
+      caption: licensePlates.caption,
+      imageUrls: licensePlates.imageUrls,
+      tags: licensePlates.tags,
+      userId: licensePlates.userId,
+      carMake: licensePlates.carMake,
+      categoryId: licensePlates.categoryId,
+      reporter: users.name,
+    })
     .from(licensePlates)
+    .leftJoin(users, eq(licensePlates.userId, users.id))
     .where(eq(licensePlates.plateNumber, plateNumber))
-    .limit(1);
+    .limit(1)
+    .then((results) =>
+      results.map((plate) => ({
+        ...plate,
+        reporter: plate.reporter || "Unknown",
+      }))
+    );
 
   // If plate not found, return basic metadata
   if (!licensePlate) {
@@ -83,10 +102,29 @@ export default async function LicensePlatePage({ params }: PageProps) {
   try {
     // Query the database for the license plate
     const [licensePlate] = await db
-      .select()
+      .select({
+        id: licensePlates.id,
+        plateNumber: licensePlates.plateNumber,
+        createdAt: licensePlates.createdAt,
+        country: licensePlates.country,
+        caption: licensePlates.caption,
+        imageUrls: licensePlates.imageUrls,
+        tags: licensePlates.tags,
+        userId: licensePlates.userId,
+        carMake: licensePlates.carMake,
+        categoryId: licensePlates.categoryId,
+        reporter: users.name,
+      })
       .from(licensePlates)
+      .leftJoin(users, eq(licensePlates.userId, users.id))
       .where(eq(licensePlates.plateNumber, plateNumber))
-      .limit(1);
+      .limit(1)
+      .then((results) =>
+        results.map((plate) => ({
+          ...plate,
+          reporter: plate.reporter || "Unknown",
+        }))
+      );
 
     // If plate not found, show 404
     if (!licensePlate) {
