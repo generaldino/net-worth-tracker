@@ -5,6 +5,8 @@ import { categories, countries, carMakes, licensePlates } from "@/db/schema";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
+import { uploadMultipleFiles } from "@/lib/google-cloud-storage";
+import { v4 as uuidv4 } from "uuid";
 
 // Fetch all categories from the database
 export async function getCategories() {
@@ -56,8 +58,6 @@ export async function submitLicensePlate(formData: FormData) {
     carMakeId: z.string().uuid().optional(),
     categoryId: z.string().uuid(),
     caption: z.string().min(5),
-    // For the actual implementation, image handling would be more complex
-    // This is a simplified version
     images: z.array(z.any()).min(1).max(5),
     tags: z.array(z.string()).default([]),
   });
@@ -69,19 +69,31 @@ export async function submitLicensePlate(formData: FormData) {
     const carMakeId = formData.get("carMakeId") as string;
     const categoryId = formData.get("categoryId") as string;
     const caption = formData.get("caption") as string;
-
-    // Tags would need to be extracted from a more complex UI component
-    // This is just a placeholder
     const tags = formData.getAll("tags") as string[];
 
-    // In a real implementation, you would:
-    // 1. Upload images to a storage service (e.g. Supabase Storage)
-    // 2. Get the URLs of the uploaded images
-    // Here we're just simulating this process
-    const imageUrls = ["https://example.com/placeholder-image.jpg"];
+    // Handle image uploads
+    const imageFiles = formData.getAll("images") as File[];
+
+    // Prepare files for upload - convert Files to Buffers
+    const files = await Promise.all(
+      imageFiles.map(async (file) => {
+        const buffer = await file.arrayBuffer();
+        return {
+          buffer: Buffer.from(buffer),
+          originalname: file.name,
+        };
+      })
+    );
+
+    // Upload images to Google Cloud Storage
+    const imageUrls = await uploadMultipleFiles(files);
+
+    // Generate a unique ID for the license plate
+    const licensePlateId = uuidv4();
 
     // Create the license plate in the database
     await db.insert(licensePlates).values({
+      id: licensePlateId,
       plateNumber,
       countryId,
       carMakeId: carMakeId || null,
@@ -90,13 +102,18 @@ export async function submitLicensePlate(formData: FormData) {
       tags,
       imageUrls,
       userId: session.user.id,
+      createdAt: new Date(), // Explicitly set the created_at timestamp
     });
 
     // Revalidate relevant paths
     revalidatePath("/");
-    revalidatePath("/dashboard");
+    revalidatePath(`/${encodeURIComponent(plateNumber)}`);
 
-    return { success: true };
+    return {
+      success: true,
+      licensePlateId: licensePlateId,
+      plateNumber: plateNumber,
+    };
   } catch (error) {
     console.error("Failed to submit license plate:", error);
     return { success: false, error: "Failed to submit license plate" };
