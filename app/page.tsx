@@ -104,10 +104,6 @@ export default async function Home({
     pageCount: Math.ceil(totalCount / ITEMS_PER_PAGE),
   };
 
-  const supabase = await createClient();
-  const { data: user } = await supabase.auth.getUser();
-  console.log("user", user);
-
   return (
     <main className="container mx-auto py-10 px-4">
       <LicensePlateGallery
