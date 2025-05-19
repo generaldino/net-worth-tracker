@@ -85,7 +85,6 @@ export default async function Home({
         country: countries.name,
         caption: licensePlates.caption,
         imageUrls: licensePlates.imageUrls,
-        tags: licensePlates.tags,
         userId: licensePlates.userId,
         carMakeId: licensePlates.carMakeId,
         carMake: carMakes.name,

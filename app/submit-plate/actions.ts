@@ -7,12 +7,15 @@ import {
   carMakes,
   licensePlates,
   users,
+  tags,
+  licensePlateTags,
 } from "@/db/schema";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { uploadMultipleFiles } from "@/lib/google-cloud-storage";
 import { v4 as uuidv4 } from "uuid";
+import { eq } from "drizzle-orm";
 
 // Fetch all categories from the database
 export async function getCategories() {
@@ -84,7 +87,7 @@ export async function submitLicensePlate(formData: FormData) {
     const categoryId = formData.get("categoryId") as string;
     const userIdFromForm = formData.get("userId") as string;
     const caption = formData.get("caption") as string;
-    const tags = formData.getAll("tags") as string[];
+    const tagNames = formData.getAll("tags") as string[];
 
     // Use the form's userId if present, otherwise use the session userId
     const userId = userIdFromForm || session.user.id;
@@ -109,18 +112,50 @@ export async function submitLicensePlate(formData: FormData) {
     // Generate a unique ID for the license plate
     const licensePlateId = uuidv4();
 
-    // Create the license plate in the database
-    await db.insert(licensePlates).values({
-      id: licensePlateId,
-      plateNumber,
-      countryId,
-      carMakeId: carMakeId || null,
-      categoryId,
-      caption: caption || null,
-      tags,
-      imageUrls,
-      userId: userId,
-      createdAt: new Date(), // Explicitly set the created_at timestamp
+    // Start a transaction
+    await db.transaction(async (tx) => {
+      // Create the license plate in the database
+      await tx.insert(licensePlates).values({
+        id: licensePlateId,
+        plateNumber,
+        countryId,
+        carMakeId: carMakeId || null,
+        categoryId,
+        caption: caption || null,
+        imageUrls,
+        userId: userId,
+        createdAt: new Date(),
+      });
+
+      // Create tags and link them to the license plate
+      for (const tagName of tagNames) {
+        // First, try to find an existing tag
+        const [existingTag] = await tx
+          .select()
+          .from(tags)
+          .where(eq(tags.name, tagName))
+          .limit(1);
+
+        let tagId: string;
+        if (existingTag) {
+          tagId = existingTag.id;
+        } else {
+          // Create a new tag if it doesn't exist
+          const [newTag] = await tx
+            .insert(tags)
+            .values({
+              name: tagName,
+            })
+            .returning();
+          tagId = newTag.id;
+        }
+
+        // Link the tag to the license plate
+        await tx.insert(licensePlateTags).values({
+          licensePlateId,
+          tagId,
+        });
+      }
     });
 
     // Revalidate relevant paths

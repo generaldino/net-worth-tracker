@@ -6,6 +6,8 @@ import {
   users,
   countries,
   carMakes,
+  licensePlateTags,
+  tags,
 } from "@/db/schema";
 import { desc, ilike, or, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
@@ -35,7 +37,6 @@ export async function GET(request: NextRequest) {
             country: countries.name,
             caption: licensePlates.caption,
             imageUrls: licensePlates.imageUrls,
-            tags: licensePlates.tags,
             userId: licensePlates.userId,
             carMakeId: licensePlates.carMakeId,
             carMake: carMakes.name,
@@ -87,7 +88,6 @@ export async function GET(request: NextRequest) {
           country: countries.name,
           caption: licensePlates.caption,
           imageUrls: licensePlates.imageUrls,
-          tags: licensePlates.tags,
           userId: licensePlates.userId,
           carMakeId: licensePlates.carMakeId,
           carMake: carMakes.name,
@@ -106,6 +106,11 @@ export async function GET(request: NextRequest) {
         .leftJoin(users, eq(licensePlates.userId, users.id))
         .leftJoin(countries, eq(licensePlates.countryId, countries.id))
         .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
+        .leftJoin(
+          licensePlateTags,
+          eq(licensePlates.id, licensePlateTags.licensePlateId)
+        )
+        .leftJoin(tags, eq(licensePlateTags.tagId, tags.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
@@ -114,7 +119,7 @@ export async function GET(request: NextRequest) {
             ilike(countries.name, searchPattern),
             ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
-            sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
+            ilike(tags.name, searchPattern)
           )
         )
         .orderBy(desc(licensePlates.createdAt))
@@ -134,6 +139,11 @@ export async function GET(request: NextRequest) {
         .leftJoin(users, eq(licensePlates.userId, users.id))
         .leftJoin(countries, eq(licensePlates.countryId, countries.id))
         .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
+        .leftJoin(
+          licensePlateTags,
+          eq(licensePlates.id, licensePlateTags.licensePlateId)
+        )
+        .leftJoin(tags, eq(licensePlateTags.tagId, tags.id))
         .where(
           or(
             ilike(licensePlates.plateNumber, searchPattern),
@@ -142,7 +152,7 @@ export async function GET(request: NextRequest) {
             ilike(countries.name, searchPattern),
             ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
-            sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
+            ilike(tags.name, searchPattern)
           )
         )
         .then((result) => Number(result[0]?.count || 0)),

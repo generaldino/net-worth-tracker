@@ -38,7 +38,6 @@ export const licensePlates = pgTable("license_plates", {
   countryId: uuid("country_id").references(() => countries.id),
   caption: text("caption"),
   imageUrls: text("image_urls").array().notNull(),
-  tags: text("tags").array().notNull(),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id),
@@ -46,6 +45,23 @@ export const licensePlates = pgTable("license_plates", {
   categoryId: uuid("category_id")
     .notNull()
     .references(() => categories.id),
+});
+
+export const tags = pgTable("tags", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const licensePlateTags = pgTable("license_plate_tags", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  licensePlateId: uuid("license_plate_id")
+    .notNull()
+    .references(() => licensePlates.id),
+  tagId: uuid("tag_id")
+    .notNull()
+    .references(() => tags.id),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const reports = pgTable("reports", {
@@ -73,3 +89,7 @@ export type LicensePlate = typeof licensePlates.$inferSelect;
 export type NewLicensePlate = typeof licensePlates.$inferInsert;
 export type Report = typeof reports.$inferSelect;
 export type NewReport = typeof reports.$inferInsert;
+export type Tag = typeof tags.$inferSelect;
+export type NewTag = typeof tags.$inferInsert;
+export type LicensePlateTag = typeof licensePlateTags.$inferSelect;
+export type NewLicensePlateTag = typeof licensePlateTags.$inferInsert;

@@ -9,9 +9,11 @@ import { colorVariantsBackground } from "@/lib/color-variants";
 import { getCategoryById } from "@/lib/actions/categories";
 import { getCountryById } from "@/lib/actions/countries";
 import { getCarMakeById } from "@/lib/actions/car-makes";
-import type { Category, Country, CarMake } from "@/db/schema";
+
+import type { Category, Country, CarMake, Tag } from "@/db/schema";
 import { ShareButton } from "@/components/share-button";
 import { ImageCarousel } from "@/components/image-carousel";
+import { getTagsByLicensePlateId } from "@/lib/actions/tags";
 
 interface LicensePlateCardProps {
   licensePlate: LicensePlate;
@@ -53,6 +55,9 @@ export async function LicensePlateCard({
       carMakeLogoUrl = carMake.logoUrl;
     }
   }
+
+  // Fetch tags for this license plate
+  const tags = await getTagsByLicensePlateId(licensePlate.id);
 
   return (
     <div className="max-w-2xl mx-auto border-b pb-4 border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
@@ -162,13 +167,13 @@ export async function LicensePlateCard({
               </Link>
             )}
 
-            {licensePlate.tags.map((tag, index) => (
+            {tags.map((tag: { id: string; name: string }) => (
               <Link
-                key={index}
-                href={`/filter/tag/${encodeURIComponent(tag)}`}
+                key={tag.id}
+                href={`/filter/tag/${encodeURIComponent(tag.name)}`}
                 className="bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
-                <HighlightText text={tag} searchTerm={searchTerm} />
+                <HighlightText text={tag.name} searchTerm={searchTerm} />
               </Link>
             ))}
           </div>

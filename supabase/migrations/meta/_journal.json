@@ -197,6 +197,13 @@
       "when": 1747598339128,
       "tag": "0027_fearless_blur",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1747686709604,
+      "tag": "0028_supreme_pyro",
+      "breakpoints": true
     }
   ]
 }

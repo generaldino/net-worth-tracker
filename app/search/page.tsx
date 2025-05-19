@@ -49,19 +49,11 @@ export default async function SearchPage({
           country: countries.name,
           caption: licensePlates.caption,
           imageUrls: licensePlates.imageUrls,
-          tags: licensePlates.tags,
           userId: licensePlates.userId,
           carMakeId: licensePlates.carMakeId,
           carMake: carMakes.name,
           categoryId: licensePlates.categoryId,
           reporter: users.name,
-          category: {
-            id: categories.id,
-            name: categories.name,
-            emoji: categories.emoji,
-            color: categories.color,
-            description: categories.description,
-          },
         })
         .from(licensePlates)
         .leftJoin(categories, eq(licensePlates.categoryId, categories.id))
@@ -76,7 +68,12 @@ export default async function SearchPage({
             ilike(countries.name, searchPattern),
             ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
-            sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
+            sql`EXISTS (
+              SELECT 1 FROM license_plate_tags lpt
+              JOIN tags t ON t.id = lpt.tag_id
+              WHERE lpt.license_plate_id = ${licensePlates.id}
+              AND t.name ILIKE ${searchPattern}
+            )`
           )
         )
         .orderBy(desc(licensePlates.createdAt))
@@ -98,7 +95,12 @@ export default async function SearchPage({
             ilike(countries.name, searchPattern),
             ilike(carMakes.name, searchPattern),
             ilike(categories.name, searchPattern),
-            sql`EXISTS (SELECT 1 FROM unnest(${licensePlates.tags}) tag WHERE tag ILIKE ${searchPattern})`
+            sql`EXISTS (
+              SELECT 1 FROM license_plate_tags lpt
+              JOIN tags t ON t.id = lpt.tag_id
+              WHERE lpt.license_plate_id = ${licensePlates.id}
+              AND t.name ILIKE ${searchPattern}
+            )`
           )
         )
         .then((result) => Number(result[0]?.count || 0)),
@@ -114,7 +116,6 @@ export default async function SearchPage({
       country: result.country,
       caption: result.caption,
       imageUrls: result.imageUrls,
-      tags: result.tags,
       userId: result.userId,
       carMakeId: result.carMakeId,
       carMake: result.carMake,

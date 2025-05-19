@@ -23,7 +23,6 @@ export async function getLicensePlates(page = 1) {
       country: countries.name, // Join with countries table
       caption: licensePlates.caption,
       imageUrls: licensePlates.imageUrls,
-      tags: licensePlates.tags,
       userId: licensePlates.userId,
       carMakeId: licensePlates.carMakeId,
       carMake: carMakes.name, // Join with car_makes table

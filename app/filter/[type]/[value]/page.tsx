@@ -6,6 +6,8 @@ import {
   users,
   countries,
   carMakes,
+  licensePlateTags,
+  tags,
 } from "@/db/schema";
 import type { LicensePlate } from "@/types/license-plate";
 import { eq, arrayContains, desc, sql } from "drizzle-orm";
@@ -66,7 +68,6 @@ export default async function FilterPage({
               country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
-              tags: licensePlates.tags,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -116,7 +117,6 @@ export default async function FilterPage({
               country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
-              tags: licensePlates.tags,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -166,7 +166,6 @@ export default async function FilterPage({
               country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
-              tags: licensePlates.tags,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -216,7 +215,6 @@ export default async function FilterPage({
               country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
-              tags: licensePlates.tags,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -227,7 +225,12 @@ export default async function FilterPage({
             .leftJoin(users, eq(licensePlates.userId, users.id))
             .leftJoin(countries, eq(licensePlates.countryId, countries.id))
             .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
-            .where(arrayContains(licensePlates.tags, [decodedValue]))
+            .leftJoin(
+              licensePlateTags,
+              eq(licensePlates.id, licensePlateTags.licensePlateId)
+            )
+            .leftJoin(tags, eq(licensePlateTags.tagId, tags.id))
+            .where(eq(tags.name, decodedValue))
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset)
@@ -241,7 +244,12 @@ export default async function FilterPage({
           db
             .select({ count: sql`count(*)` })
             .from(licensePlates)
-            .where(arrayContains(licensePlates.tags, [decodedValue]))
+            .leftJoin(
+              licensePlateTags,
+              eq(licensePlates.id, licensePlateTags.licensePlateId)
+            )
+            .leftJoin(tags, eq(licensePlateTags.tagId, tags.id))
+            .where(eq(tags.name, decodedValue))
             .then((result) => Number(result[0]?.count || 0)),
         ]);
 
@@ -278,7 +286,6 @@ export default async function FilterPage({
               country: countries.name,
               caption: licensePlates.caption,
               imageUrls: licensePlates.imageUrls,
-              tags: licensePlates.tags,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,

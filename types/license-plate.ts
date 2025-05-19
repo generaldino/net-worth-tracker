@@ -8,7 +8,6 @@ export interface LicensePlate {
   caption: string | null;
   carMakeId: string | null;
   carMake?: string | null; // From database joins - populated by queries
-  tags: string[];
   reporter: string;
   userId: string;
   categoryId: string;
