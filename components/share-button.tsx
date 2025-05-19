@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 interface ShareButtonProps {
   plateNumber: string;
-  caption?: string;
+  caption?: string | null;
   country?: string;
 }
 
