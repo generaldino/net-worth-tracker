@@ -15,14 +15,6 @@ import {
   FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -80,6 +72,12 @@ export default function SubmitPlateForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [previewUrls, setPreviewUrls] = React.useState<string[]>([]);
   const [isCompressing, setIsCompressing] = React.useState(false);
+  const [openPopovers, setOpenPopovers] = React.useState({
+    country: false,
+    reporter: false,
+    carMake: false,
+    category: false,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -252,7 +250,12 @@ export default function SubmitPlateForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Country</FormLabel>
-                <Popover>
+                <Popover
+                  open={openPopovers.country}
+                  onOpenChange={(open) =>
+                    setOpenPopovers((prev) => ({ ...prev, country: open }))
+                  }
+                >
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -295,18 +298,24 @@ export default function SubmitPlateForm({
                               key={country.id}
                               onSelect={() => {
                                 form.setValue("countryId", country.id);
+                                setOpenPopovers((prev) => ({
+                                  ...prev,
+                                  country: false,
+                                }));
                               }}
                             >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  country.id === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              <span className="mr-2">{country.flag}</span>
-                              {country.name}
+                              <div className="flex items-center">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    country.id === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <span className="mr-2">{country.flag}</span>
+                                {country.name}
+                              </div>
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -328,7 +337,12 @@ export default function SubmitPlateForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Reporter</FormLabel>
-                <Popover>
+                <Popover
+                  open={openPopovers.reporter}
+                  onOpenChange={(open) =>
+                    setOpenPopovers((prev) => ({ ...prev, reporter: open }))
+                  }
+                >
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -384,31 +398,37 @@ export default function SubmitPlateForm({
                               key={user.id}
                               onSelect={() => {
                                 form.setValue("userId", user.id);
+                                setOpenPopovers((prev) => ({
+                                  ...prev,
+                                  reporter: false,
+                                }));
                               }}
                             >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  user.id === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              <span className="mr-2 flex items-center">
-                                {user.avatarUrl ? (
-                                  <Image
-                                    src={user.avatarUrl}
-                                    alt={`${user.name} avatar`}
-                                    width={20}
-                                    height={20}
-                                    className="h-5 w-5 rounded-full"
-                                    unoptimized
-                                  />
-                                ) : (
-                                  <UserIcon className="h-5 w-5" />
-                                )}
-                              </span>
-                              {user.name || user.email}
+                              <div className="flex items-center">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    user.id === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <span className="mr-2 flex items-center">
+                                  {user.avatarUrl ? (
+                                    <Image
+                                      src={user.avatarUrl}
+                                      alt={`${user.name} avatar`}
+                                      width={20}
+                                      height={20}
+                                      className="h-5 w-5 rounded-full"
+                                      unoptimized
+                                    />
+                                  ) : (
+                                    <UserIcon className="h-5 w-5" />
+                                  )}
+                                </span>
+                                {user.name || user.email}
+                              </div>
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -431,7 +451,12 @@ export default function SubmitPlateForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Car Make</FormLabel>
-                <Popover>
+                <Popover
+                  open={openPopovers.carMake}
+                  onOpenChange={(open) =>
+                    setOpenPopovers((prev) => ({ ...prev, carMake: open }))
+                  }
+                >
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -483,29 +508,36 @@ export default function SubmitPlateForm({
                               key={carMake.id}
                               onSelect={() => {
                                 form.setValue("carMakeId", carMake.id);
+                                setOpenPopovers((prev) => ({
+                                  ...prev,
+                                  carMake: false,
+                                }));
                               }}
                             >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  carMake.id === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              <span className="mr-2 flex items-center">
-                                <Image
-                                  src={
-                                    carMake.logoUrl || "/car-logos/default.svg"
-                                  }
-                                  alt={`${carMake.name} logo`}
-                                  width={20}
-                                  height={20}
-                                  className="h-5 w-5"
-                                  unoptimized
+                              <div className="flex items-center">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    carMake.id === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
                                 />
-                              </span>
-                              {carMake.name}
+                                <span className="mr-2 flex items-center">
+                                  <Image
+                                    src={
+                                      carMake.logoUrl ||
+                                      "/car-logos/default.svg"
+                                    }
+                                    alt={`${carMake.name} logo`}
+                                    width={20}
+                                    height={20}
+                                    className="h-5 w-5"
+                                    unoptimized
+                                  />
+                                </span>
+                                {carMake.name}
+                              </div>
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -527,7 +559,12 @@ export default function SubmitPlateForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Category</FormLabel>
-                <Popover>
+                <Popover
+                  open={openPopovers.category}
+                  onOpenChange={(open) =>
+                    setOpenPopovers((prev) => ({ ...prev, category: open }))
+                  }
+                >
                   <PopoverTrigger asChild>
                     <FormControl>
                       <Button
@@ -572,18 +609,24 @@ export default function SubmitPlateForm({
                               key={category.id}
                               onSelect={() => {
                                 form.setValue("categoryId", category.id);
+                                setOpenPopovers((prev) => ({
+                                  ...prev,
+                                  category: false,
+                                }));
                               }}
                             >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  category.id === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              <span className="mr-2">{category.emoji}</span>
-                              {category.name}
+                              <div className="flex items-center">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    category.id === field.value
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                <span className="mr-2">{category.emoji}</span>
+                                {category.name}
+                              </div>
                             </CommandItem>
                           ))}
                         </CommandGroup>
