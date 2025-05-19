@@ -234,7 +234,7 @@ export default function SubmitPlateForm({
             control={form.control}
             name="plateNumber"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col items-start">
                 <FormLabel>License Plate Number</FormLabel>
                 <FormControl>
                   <Input placeholder="ABC123" {...field} />
@@ -248,7 +248,7 @@ export default function SubmitPlateForm({
             control={form.control}
             name="countryId"
             render={({ field }) => (
-              <FormItem className="flex flex-col">
+              <FormItem className="flex flex-col items-start">
                 <FormLabel>Country</FormLabel>
                 <Popover
                   open={openPopovers.country}
