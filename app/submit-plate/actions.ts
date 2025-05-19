@@ -15,7 +15,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { uploadMultipleFiles } from "@/lib/google-cloud-storage";
 import { v4 as uuidv4 } from "uuid";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 // Fetch all categories from the database
 export async function getCategories() {
@@ -68,36 +68,38 @@ export async function getUsers() {
   }
 }
 
+// Fetch all tags from the database
+export async function getTags() {
+  try {
+    const allTags = await db.select().from(tags).orderBy(desc(tags.createdAt));
+    return { tags: allTags };
+  } catch (error) {
+    console.error("Error fetching tags:", error);
+    return { tags: [] };
+  }
+}
+
 // Submit license plate form
 export async function submitLicensePlate(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    return {
-      success: false,
-      error: "You must be logged in to submit a license plate",
-    };
-  }
-
   try {
-    // Extract form data
+    // Get form data
     const plateNumber = formData.get("plateNumber") as string;
     const countryId = formData.get("countryId") as string;
-    const carMakeId = formData.get("carMakeId") as string;
     const categoryId = formData.get("categoryId") as string;
-    const userIdFromForm = formData.get("userId") as string;
+    const carMakeId = formData.get("carMakeId") as string;
+    const userId = formData.get("userId") as string;
     const caption = formData.get("caption") as string;
-    const tagNames = formData.getAll("tags") as string[];
+    const tagIds = formData.getAll("tagIds") as string[];
+    const images = formData.getAll("images") as File[];
 
-    // Use the form's userId if present, otherwise use the session userId
-    const userId = userIdFromForm || session.user.id;
-
-    // Handle image uploads
-    const imageFiles = formData.getAll("images") as File[];
+    // Validate required fields
+    if (!plateNumber || !countryId || !categoryId || !carMakeId || !userId) {
+      throw new Error("Missing required fields");
+    }
 
     // Prepare files for upload - convert Files to Buffers
     const files = await Promise.all(
-      imageFiles.map(async (file) => {
+      images.map(async (file) => {
         const buffer = await file.arrayBuffer();
         return {
           buffer: Buffer.from(buffer),
@@ -109,66 +111,37 @@ export async function submitLicensePlate(formData: FormData) {
     // Upload images to Google Cloud Storage
     const imageUrls = await uploadMultipleFiles(files);
 
-    // Generate a unique ID for the license plate
-    const licensePlateId = uuidv4();
-
-    // Start a transaction
-    await db.transaction(async (tx) => {
-      // Create the license plate in the database
-      await tx.insert(licensePlates).values({
-        id: licensePlateId,
+    // Create license plate
+    const [licensePlate] = await db
+      .insert(licensePlates)
+      .values({
+        id: uuidv4(),
         plateNumber,
         countryId,
-        carMakeId: carMakeId || null,
         categoryId,
-        caption: caption || null,
+        carMakeId,
+        userId,
+        caption,
         imageUrls,
-        userId: userId,
         createdAt: new Date(),
-      });
+      })
+      .returning();
 
-      // Create tags and link them to the license plate
-      for (const tagName of tagNames) {
-        // First, try to find an existing tag
-        const [existingTag] = await tx
-          .select()
-          .from(tags)
-          .where(eq(tags.name, tagName))
-          .limit(1);
-
-        let tagId: string;
-        if (existingTag) {
-          tagId = existingTag.id;
-        } else {
-          // Create a new tag if it doesn't exist
-          const [newTag] = await tx
-            .insert(tags)
-            .values({
-              name: tagName,
-            })
-            .returning();
-          tagId = newTag.id;
-        }
-
-        // Link the tag to the license plate
-        await tx.insert(licensePlateTags).values({
-          licensePlateId,
+    // Add tags if any
+    if (tagIds.length > 0) {
+      await db.insert(licensePlateTags).values(
+        tagIds.map((tagId) => ({
+          id: uuidv4(),
+          licensePlateId: licensePlate.id,
           tagId,
-        });
-      }
-    });
+          createdAt: new Date(),
+        }))
+      );
+    }
 
-    // Revalidate relevant paths
-    revalidatePath("/");
-    revalidatePath(`/${encodeURIComponent(plateNumber)}`);
-
-    return {
-      success: true,
-      licensePlateId: licensePlateId,
-      plateNumber: plateNumber,
-    };
+    return { success: true, licensePlate };
   } catch (error) {
-    console.error("Failed to submit license plate:", error);
-    return { success: false, error: "Failed to submit license plate" };
+    console.error("Error submitting license plate:", error);
+    throw error;
   }
 }

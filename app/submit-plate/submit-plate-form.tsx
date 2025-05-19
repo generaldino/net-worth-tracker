@@ -1,25 +1,37 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
-import * as React from "react";
-import { Check, ChevronsUpDown, Upload, User } from "lucide-react";
-import Image from "next/image";
-import imageCompression from "browser-image-compression";
-
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { submitLicensePlate } from "./actions";
+import type { Category, Country, CarMake, User, Tag } from "@/db/schema";
+import * as React from "react";
+import { Check, ChevronsUpDown, Upload, User as UserIcon } from "lucide-react";
+import Image from "next/image";
+import imageCompression from "browser-image-compression";
 import {
   Popover,
   PopoverContent,
@@ -34,49 +46,43 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { Category, Country, CarMake, User as UserType } from "@/db/schema";
-import { submitLicensePlate } from "./actions";
-
-// Form schema for validation
-const formSchema = z.object({
-  plateNumber: z.string().min(2, {
-    message: "License plate number must be at least 2 characters.",
-  }),
-  countryId: z.string().uuid({
-    message: "Please select a country.",
-  }),
-  carMakeId: z.string().uuid().optional(),
-  categoryId: z.string().uuid({
-    message: "Please select a category.",
-  }),
-  userId: z.union([z.string().uuid(), z.string().length(0), z.undefined()]),
-  caption: z.string().optional(),
-  tags: z.array(z.string()).default([]),
-  images: z.any(), // Using z.any() to avoid type issues with File objects
-});
 
 interface SubmitPlateFormProps {
   categories: Category[];
   countries: Country[];
   carMakes: CarMake[];
-  users: UserType[];
+  users: User[];
+  tags: Tag[];
 }
+
+const formSchema = z.object({
+  plateNumber: z.string().min(1, "Plate number is required"),
+  countryId: z.string().min(1, "Country is required"),
+  carMakeId: z.string().min(1, "Car make is required"),
+  categoryId: z.string().min(1, "Category is required"),
+  userId: z.union([z.string().uuid(), z.string().length(0), z.undefined()]),
+  caption: z.string().optional(),
+  tagIds: z.array(z.string()).max(5, "Maximum 5 tags allowed").optional(),
+  images: z
+    .array(z.any())
+    .min(1, "At least one image is required")
+    .max(5, "Maximum 5 images allowed"),
+});
 
 export default function SubmitPlateForm({
   categories,
   countries,
   carMakes,
   users,
+  tags,
 }: SubmitPlateFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [previewUrls, setPreviewUrls] = React.useState<string[]>([]);
   const [isCompressing, setIsCompressing] = React.useState(false);
 
-  // Initialize form
-  const form = useForm({
-    resolver: zodResolver(formSchema) as any,
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       plateNumber: "",
       countryId: "",
@@ -84,34 +90,29 @@ export default function SubmitPlateForm({
       categoryId: "",
       userId: "",
       caption: "",
-      tags: [],
+      tagIds: [],
       images: [],
     },
   });
 
-  // Handle file upload
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     console.log("File input change detected", files.length, "files");
 
     if (files.length > 0) {
-      // Clean up previous preview URLs to avoid memory leaks
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
 
-      // Compression options
       const options = {
-        maxSizeMB: 0.8, // Set max size to 0.8MB to ensure it stays under 1MB
-        maxWidthOrHeight: 1920, // Resize if larger than 1920px
-        useWebWorker: true, // Use web workers for better performance
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
       };
 
       setIsCompressing(true);
 
       try {
-        // Compress all images
         const compressedFiles = await Promise.all(
           files.map(async (file) => {
-            // Log original file size
             console.log(
               `Original image: ${file.name}, Size: ${(
                 file.size /
@@ -120,10 +121,8 @@ export default function SubmitPlateForm({
               ).toFixed(2)} MB`
             );
 
-            // Compress the file
             const compressedFile = await imageCompression(file, options);
 
-            // Log compressed file size
             console.log(
               `Compressed image: ${file.name}, Size: ${(
                 compressedFile.size /
@@ -132,33 +131,32 @@ export default function SubmitPlateForm({
               ).toFixed(2)} MB`
             );
 
-            return compressedFile;
+            // Create a new File object from the compressed blob
+            return new File([compressedFile], file.name, {
+              type: file.type,
+              lastModified: file.lastModified,
+            });
           })
         );
 
         console.log("All files compressed:", compressedFiles.length);
 
-        // Create preview URLs
         const newPreviewUrls = compressedFiles.map((file) =>
           URL.createObjectURL(file)
         );
 
-        // Update form value with type assertion to bypass TypeScript errors
         console.log("Setting form value for images:", compressedFiles);
-        form.setValue("images", compressedFiles as any, {
+        form.setValue("images", compressedFiles, {
           shouldValidate: true,
         });
 
-        // Log form values after update to verify
         console.log("Form values after update:", form.getValues());
 
-        // Set new preview URLs
         setPreviewUrls(newPreviewUrls);
       } catch (error) {
         console.error("Error compressing images:", error);
-        // Fall back to original files if compression fails
         const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
-        form.setValue("images", files as any, { shouldValidate: true });
+        form.setValue("images", files, { shouldValidate: true });
         setPreviewUrls(newPreviewUrls);
       } finally {
         setIsCompressing(false);
@@ -166,87 +164,54 @@ export default function SubmitPlateForm({
     }
   };
 
-  // Form submission
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Form submission started", values);
-
-    setIsSubmitting(true);
-
     try {
-      // Create a new FormData instance
-      const formData = new FormData();
+      setIsSubmitting(true);
 
-      // Add all text fields
-      formData.append("plateNumber", values.plateNumber);
-      formData.append("countryId", values.countryId);
-      formData.append("categoryId", values.categoryId);
-
-      // Only append userId if it has a value and is a valid UUID
+      // Validate required fields
       if (
-        values.userId &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-          values.userId
-        )
+        !values.plateNumber ||
+        !values.countryId ||
+        !values.categoryId ||
+        !values.carMakeId
       ) {
-        formData.append("userId", values.userId);
+        toast.error("Please fill in all required fields");
+        setIsSubmitting(false);
+        return;
       }
 
-      formData.append("caption", values.caption || "");
-
-      if (values.carMakeId) {
-        formData.append("carMakeId", values.carMakeId);
-      }
-
-      // Add any tags if present
-      if (values.tags && values.tags.length > 0) {
-        values.tags.forEach((tag) => formData.append("tags", tag));
-      }
-
-      // Add images directly from the form state
-      if (values.images && values.images.length > 0) {
-        for (let i = 0; i < values.images.length; i++) {
-          const file = values.images[i];
-          console.log(`Adding image ${i} to FormData:`, file.name, file.size);
-          formData.append("images", file);
-        }
-      } else {
-        console.error("No images found in form values");
+      // Validate images
+      if (!values.images || values.images.length === 0) {
         toast.error("Please upload at least one image");
         setIsSubmitting(false);
         return;
       }
 
-      // Submit the form data to the server action
-      console.log("Calling server action with form data");
+      const formData = new FormData();
+      formData.append("plateNumber", values.plateNumber);
+      formData.append("countryId", values.countryId);
+      formData.append("categoryId", values.categoryId);
+      formData.append("carMakeId", values.carMakeId);
+      formData.append("userId", values.userId || "");
+      formData.append("caption", values.caption || "");
+
+      if (values.tagIds && values.tagIds.length > 0) {
+        values.tagIds.forEach((tagId) => formData.append("tagIds", tagId));
+      }
+
+      values.images.forEach((file) => formData.append("images", file));
+
       const result = await submitLicensePlate(formData);
-      console.log("Server action result:", result);
-
-      if (result.success && result.plateNumber) {
-        toast.success(
-          <div className="flex flex-col space-y-2">
-            <p>License plate submitted successfully!</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() =>
-                router.push(`/${encodeURIComponent(result.plateNumber)}`)
-              }
-            >
-              View License Plate
-            </Button>
-          </div>
-        );
-
-        // Redirect after successful submission
+      if (result.success) {
+        toast.success("License plate submitted successfully!");
         router.push("/");
         router.refresh();
       } else {
-        toast.error(result.error || "Failed to submit license plate");
+        toast.error("Failed to submit license plate. Please try again.");
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
-      toast.error("An error occurred while submitting the form");
+      console.error("Error submitting license plate:", error);
+      toast.error("Failed to submit license plate. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -255,14 +220,18 @@ export default function SubmitPlateForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit as any, (errors) => {
+        onSubmit={form.handleSubmit(onSubmit, (errors) => {
           console.error("Form validation failed:", errors);
-          toast.error("Please fill all required fields correctly");
+          // Show specific error messages for each field
+          Object.entries(errors).forEach(([field, error]) => {
+            if (error?.message) {
+              toast.error(`${field}: ${error.message}`);
+            }
+          });
         })}
         className="space-y-8"
       >
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* License Plate Number */}
           <FormField
             control={form.control}
             name="plateNumber"
@@ -272,15 +241,11 @@ export default function SubmitPlateForm({
                 <FormControl>
                   <Input placeholder="ABC123" {...field} />
                 </FormControl>
-                <FormDescription>
-                  Enter the license plate number.
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Country Dropdown */}
           <FormField
             control={form.control}
             name="countryId"
@@ -357,7 +322,6 @@ export default function SubmitPlateForm({
             )}
           />
 
-          {/* Reporter Dropdown */}
           <FormField
             control={form.control}
             name="userId"
@@ -393,7 +357,7 @@ export default function SubmitPlateForm({
                                   unoptimized
                                 />
                               ) : (
-                                <User className="h-5 w-5" />
+                                <UserIcon className="h-5 w-5" />
                               )}
                             </span>
                             {
@@ -441,7 +405,7 @@ export default function SubmitPlateForm({
                                     unoptimized
                                   />
                                 ) : (
-                                  <User className="h-5 w-5" />
+                                  <UserIcon className="h-5 w-5" />
                                 )}
                               </span>
                               {user.name || user.email}
@@ -461,7 +425,6 @@ export default function SubmitPlateForm({
             )}
           />
 
-          {/* Car Make Dropdown */}
           <FormField
             control={form.control}
             name="carMakeId"
@@ -558,7 +521,6 @@ export default function SubmitPlateForm({
             )}
           />
 
-          {/* Category Dropdown */}
           <FormField
             control={form.control}
             name="categoryId"
@@ -637,7 +599,6 @@ export default function SubmitPlateForm({
             )}
           />
 
-          {/* Caption */}
           <FormField
             control={form.control}
             name="caption"
@@ -659,7 +620,29 @@ export default function SubmitPlateForm({
           />
         </div>
 
-        {/* Image Upload */}
+        <FormField
+          control={form.control}
+          name="tagIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tags (max 5)</FormLabel>
+              <FormControl>
+                <MultiSelect
+                  selected={field.value || []}
+                  options={tags.map((tag) => ({
+                    label: tag.name,
+                    value: tag.id,
+                  }))}
+                  onChange={field.onChange}
+                  placeholder="Select tags..."
+                  maxSelections={5}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="images"
@@ -696,7 +679,6 @@ export default function SubmitPlateForm({
                       )}
                     </div>
 
-                    {/* Image Previews */}
                     {previewUrls.length > 0 && (
                       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                         {previewUrls.map((url, index) => (
@@ -727,7 +709,6 @@ export default function SubmitPlateForm({
             disabled={isSubmitting}
             className="w-full"
             onClick={() => {
-              // Debug validation before submission
               const isValid = form.formState.isValid;
               const errors = form.formState.errors;
               console.log("Form is valid:", isValid);
