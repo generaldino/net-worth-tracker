@@ -59,6 +59,7 @@ const formSchema = z.object({
     .array(z.any())
     .min(1, "At least one image is required")
     .max(5, "Maximum 5 images allowed"),
+  createdAt: z.string().optional(),
 });
 
 export default function SubmitPlateForm({
@@ -90,6 +91,7 @@ export default function SubmitPlateForm({
       caption: "",
       tagIds: [],
       images: [],
+      createdAt: "",
     },
   });
 
@@ -192,6 +194,7 @@ export default function SubmitPlateForm({
       formData.append("carMakeId", values.carMakeId);
       formData.append("userId", values.userId || "");
       formData.append("caption", values.caption || "");
+      formData.append("createdAt", values.createdAt || "");
 
       if (values.tagIds && values.tagIds.length > 0) {
         values.tagIds.forEach((tagId) => formData.append("tagIds", tagId));
@@ -656,6 +659,28 @@ export default function SubmitPlateForm({
                 </FormControl>
                 <FormDescription>
                   Add a caption to describe the license plate.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="createdAt"
+            render={({ field }) => (
+              <FormItem className="flex flex-col items-start">
+                <FormLabel>Date Spotted (Optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="datetime-local"
+                    {...field}
+                    placeholder="DD/MM/YYYY HH:MM:SS"
+                  />
+                </FormControl>
+                <FormDescription>
+                  When was this license plate spotted? Leave empty for current
+                  time.
                 </FormDescription>
                 <FormMessage />
               </FormItem>

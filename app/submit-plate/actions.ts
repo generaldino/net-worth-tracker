@@ -113,6 +113,7 @@ export async function submitLicensePlate(formData: FormData) {
     const carMakeId = formData.get("carMakeId") as string;
     const userId = formData.get("userId") as string;
     const caption = formData.get("caption") as string;
+    const createdAt = formData.get("createdAt") as string;
     const tagIdsArray = formData.getAll("tagIds") as string[];
     const imageFiles = formData.getAll("images") as File[];
 
@@ -126,7 +127,7 @@ export async function submitLicensePlate(formData: FormData) {
         carMakeId: carMakeId || null,
         userId,
         caption: caption || null,
-        createdAt: new Date(),
+        createdAt: createdAt ? new Date(createdAt) : new Date(),
       })
       .returning();
 
