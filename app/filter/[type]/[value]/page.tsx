@@ -18,6 +18,7 @@ import {
   colorVariantsParagraph,
   colorVariantsBackground,
 } from "@/lib/color-variants";
+import { getImagesByLicensePlateId } from "@/lib/actions/images";
 
 // Define the props type, correctly typing both params and searchParams as Promises
 interface FilterPageProps {
@@ -67,7 +68,6 @@ export default async function FilterPage({
               countryId: licensePlates.countryId,
               country: countries.name,
               caption: licensePlates.caption,
-              imageUrls: licensePlates.imageUrls,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -82,12 +82,21 @@ export default async function FilterPage({
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset)
-            .then((results) =>
-              results.map((plate) => ({
-                ...plate,
-                reporter: plate.reporter || "Unknown",
-              }))
-            ),
+            .then(async (results) => {
+              // Get images for each license plate
+              const platesWithDetails = await Promise.all(
+                results.map(async (plate) => {
+                  const images = await getImagesByLicensePlateId(plate.id);
+                  return {
+                    ...plate,
+                    reporter: plate.reporter || "Unknown",
+                    carMake: plate.carMake || undefined,
+                    images,
+                  };
+                })
+              );
+              return platesWithDetails;
+            }),
 
           db
             .select({ count: sql`count(*)` })
@@ -116,7 +125,6 @@ export default async function FilterPage({
               countryId: licensePlates.countryId,
               country: countries.name,
               caption: licensePlates.caption,
-              imageUrls: licensePlates.imageUrls,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -131,12 +139,21 @@ export default async function FilterPage({
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset)
-            .then((results) =>
-              results.map((plate) => ({
-                ...plate,
-                reporter: plate.reporter || "Unknown",
-              }))
-            ),
+            .then(async (results) => {
+              // Get images for each license plate
+              const platesWithDetails = await Promise.all(
+                results.map(async (plate) => {
+                  const images = await getImagesByLicensePlateId(plate.id);
+                  return {
+                    ...plate,
+                    reporter: plate.reporter || "Unknown",
+                    carMake: plate.carMake || undefined,
+                    images,
+                  };
+                })
+              );
+              return platesWithDetails;
+            }),
 
           db
             .select({ count: sql`count(*)` })
@@ -165,7 +182,6 @@ export default async function FilterPage({
               countryId: licensePlates.countryId,
               country: countries.name,
               caption: licensePlates.caption,
-              imageUrls: licensePlates.imageUrls,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -180,12 +196,21 @@ export default async function FilterPage({
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset)
-            .then((results) =>
-              results.map((plate) => ({
-                ...plate,
-                reporter: plate.reporter || "Unknown",
-              }))
-            ),
+            .then(async (results) => {
+              // Get images for each license plate
+              const platesWithDetails = await Promise.all(
+                results.map(async (plate) => {
+                  const images = await getImagesByLicensePlateId(plate.id);
+                  return {
+                    ...plate,
+                    reporter: plate.reporter || "Unknown",
+                    carMake: plate.carMake || undefined,
+                    images,
+                  };
+                })
+              );
+              return platesWithDetails;
+            }),
 
           db
             .select({ count: sql`count(*)` })
@@ -214,7 +239,6 @@ export default async function FilterPage({
               countryId: licensePlates.countryId,
               country: countries.name,
               caption: licensePlates.caption,
-              imageUrls: licensePlates.imageUrls,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -234,12 +258,21 @@ export default async function FilterPage({
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset)
-            .then((results) =>
-              results.map((plate) => ({
-                ...plate,
-                reporter: plate.reporter || "Unknown",
-              }))
-            ),
+            .then(async (results) => {
+              // Get images for each license plate
+              const platesWithDetails = await Promise.all(
+                results.map(async (plate) => {
+                  const images = await getImagesByLicensePlateId(plate.id);
+                  return {
+                    ...plate,
+                    reporter: plate.reporter || "Unknown",
+                    carMake: plate.carMake || undefined,
+                    images,
+                  };
+                })
+              );
+              return platesWithDetails;
+            }),
 
           db
             .select({ count: sql`count(*)` })
@@ -285,7 +318,6 @@ export default async function FilterPage({
               countryId: licensePlates.countryId,
               country: countries.name,
               caption: licensePlates.caption,
-              imageUrls: licensePlates.imageUrls,
               userId: licensePlates.userId,
               carMakeId: licensePlates.carMakeId,
               carMake: carMakes.name,
@@ -300,12 +332,21 @@ export default async function FilterPage({
             .orderBy(desc(licensePlates.createdAt))
             .limit(ITEMS_PER_PAGE)
             .offset(offset)
-            .then((results) =>
-              results.map((plate) => ({
-                ...plate,
-                reporter: plate.reporter || "Unknown",
-              }))
-            ),
+            .then(async (results) => {
+              // Get images for each license plate
+              const platesWithDetails = await Promise.all(
+                results.map(async (plate) => {
+                  const images = await getImagesByLicensePlateId(plate.id);
+                  return {
+                    ...plate,
+                    reporter: plate.reporter || "Unknown",
+                    carMake: plate.carMake || undefined,
+                    images,
+                  };
+                })
+              );
+              return platesWithDetails;
+            }),
 
           db
             .select({ count: sql`count(*)` })

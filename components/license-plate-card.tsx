@@ -9,8 +9,9 @@ import { colorVariantsBackground } from "@/lib/color-variants";
 import { getCategoryById } from "@/lib/actions/categories";
 import { getCountryById } from "@/lib/actions/countries";
 import { getCarMakeById } from "@/lib/actions/car-makes";
+import { getImagesByLicensePlateId } from "@/lib/actions/images";
 
-import type { Category, Country, CarMake, Tag } from "@/db/schema";
+import type { Category, Country, CarMake } from "@/db/schema";
 import { ShareButton } from "@/components/share-button";
 import { ImageCarousel } from "@/components/image-carousel";
 import { getTagsByLicensePlateId } from "@/lib/actions/tags";
@@ -58,6 +59,10 @@ export async function LicensePlateCard({
 
   // Fetch tags for this license plate
   const tags = await getTagsByLicensePlateId(licensePlate.id);
+
+  // Fetch images for this license plate
+  const images = await getImagesByLicensePlateId(licensePlate.id);
+  const imageUrls = images.map((image) => image.url);
 
   return (
     <div className="max-w-2xl mx-auto border-b pb-4 border-gray-200 dark:border-gray-800 dark:hover:bg-gray-900/50 transition-colors">
@@ -130,7 +135,7 @@ export async function LicensePlateCard({
       <div className="relative">
         <div className="h-[400px] bg-gray-50 dark:bg-gray-950">
           <ImageCarousel
-            imageUrls={licensePlate.imageUrls}
+            imageUrls={imageUrls}
             plateNumber={licensePlate.plateNumber}
           />
         </div>

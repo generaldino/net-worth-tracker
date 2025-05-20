@@ -4,6 +4,7 @@ import { licensePlates, users, countries, carMakes } from "@/db/schema";
 import { desc, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import { Metadata } from "next";
+import { getImagesByLicensePlateId } from "@/lib/actions/images";
 
 export const metadata: Metadata = {
   title: "WeSpotNumberPlates | Share & Discover Unique License Plates",
@@ -84,7 +85,6 @@ export default async function Home({
         countryId: licensePlates.countryId,
         country: countries.name,
         caption: licensePlates.caption,
-        imageUrls: licensePlates.imageUrls,
         userId: licensePlates.userId,
         carMakeId: licensePlates.carMakeId,
         carMake: carMakes.name,
@@ -98,12 +98,21 @@ export default async function Home({
       .orderBy(desc(licensePlates.createdAt))
       .limit(ITEMS_PER_PAGE)
       .offset(offset)
-      .then((results) =>
-        results.map((plate) => ({
-          ...plate,
-          reporter: plate.reporter || "Unknown", // Ensure reporter is never null
-        }))
-      ),
+      .then(async (results) => {
+        // Get images for each license plate
+        const platesWithDetails = await Promise.all(
+          results.map(async (plate) => {
+            const images = await getImagesByLicensePlateId(plate.id);
+            return {
+              ...plate,
+              reporter: plate.reporter || "Unknown",
+              carMake: plate.carMake || undefined,
+              images,
+            };
+          })
+        );
+        return platesWithDetails;
+      }),
 
     db
       .select({ count: sql`count(*)` })

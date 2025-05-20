@@ -204,6 +204,13 @@
       "when": 1747686709604,
       "tag": "0028_supreme_pyro",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1747775316887,
+      "tag": "0029_sparkling_chimera",
+      "breakpoints": true
     }
   ]
 }

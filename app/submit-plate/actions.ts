@@ -9,13 +9,14 @@ import {
   users,
   tags,
   licensePlateTags,
+  images,
 } from "@/db/schema";
-import { z } from "zod";
+
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
-import { uploadMultipleFiles } from "@/lib/google-cloud-storage";
+
 import { v4 as uuidv4 } from "uuid";
-import { eq, desc } from "drizzle-orm";
+import { desc } from "drizzle-orm";
+import { uploadToGoogleCloudStorage } from "@/lib/google-cloud-storage";
 
 // Fetch all categories from the database
 export async function getCategories() {
@@ -79,69 +80,102 @@ export async function getTags() {
   }
 }
 
+// Helper function to save image data
+async function saveImageToStorage(file: File): Promise<string | null> {
+  try {
+    // Convert File to ArrayBuffer
+    const buffer = await file.arrayBuffer();
+
+    // Upload to Google Cloud Storage
+    const imageUrl = await uploadToGoogleCloudStorage(
+      Buffer.from(buffer),
+      file.name
+    );
+
+    if (!imageUrl) {
+      throw new Error("Failed to upload image to Google Cloud Storage");
+    }
+
+    return imageUrl;
+  } catch (error) {
+    console.error("Error processing image:", error);
+    return null;
+  }
+}
+
 // Submit license plate form
 export async function submitLicensePlate(formData: FormData) {
   try {
-    // Get form data
+    // Extract form data
     const plateNumber = formData.get("plateNumber") as string;
     const countryId = formData.get("countryId") as string;
     const categoryId = formData.get("categoryId") as string;
     const carMakeId = formData.get("carMakeId") as string;
     const userId = formData.get("userId") as string;
     const caption = formData.get("caption") as string;
-    const tagIds = formData.getAll("tagIds") as string[];
-    const images = formData.getAll("images") as File[];
+    const tagIdsArray = formData.getAll("tagIds") as string[];
+    const imageFiles = formData.getAll("images") as File[];
 
-    // Validate required fields
-    if (!plateNumber || !countryId || !categoryId || !carMakeId || !userId) {
-      throw new Error("Missing required fields");
-    }
-
-    // Prepare files for upload - convert Files to Buffers
-    const files = await Promise.all(
-      images.map(async (file) => {
-        const buffer = await file.arrayBuffer();
-        return {
-          buffer: Buffer.from(buffer),
-          originalname: file.name,
-        };
-      })
-    );
-
-    // Upload images to Google Cloud Storage
-    const imageUrls = await uploadMultipleFiles(files);
-
-    // Create license plate
-    const [licensePlate] = await db
+    // Insert license plate data
+    const [licensePlateResult] = await db
       .insert(licensePlates)
       .values({
-        id: uuidv4(),
         plateNumber,
-        countryId,
+        countryId: countryId || null,
         categoryId,
-        carMakeId,
+        carMakeId: carMakeId || null,
         userId,
-        caption,
-        imageUrls,
+        caption: caption || null,
         createdAt: new Date(),
       })
       .returning();
 
-    // Add tags if any
-    if (tagIds.length > 0) {
-      await db.insert(licensePlateTags).values(
-        tagIds.map((tagId) => ({
-          id: uuidv4(),
-          licensePlateId: licensePlate.id,
-          tagId,
-          createdAt: new Date(),
-        }))
-      );
+    if (!licensePlateResult) {
+      throw new Error("Failed to insert license plate");
     }
 
-    return { success: true, licensePlate };
+    const licensePlateId = licensePlateResult.id;
+
+    // Process tags if any
+    if (tagIdsArray.length > 0) {
+      const tagInserts = tagIdsArray.map((tagId) => ({
+        id: uuidv4(),
+        licensePlateId,
+        tagId,
+      }));
+
+      await db.insert(licensePlateTags).values(tagInserts);
+    }
+
+    // Process and save images
+    const imagePromises = imageFiles.map(async (file) => {
+      // Save image file to storage and get URL
+      const imageUrl = await saveImageToStorage(file);
+
+      if (!imageUrl) return null;
+
+      // Save image record in database using Drizzle
+      const [imageRecord] = await db
+        .insert(images)
+        .values({
+          url: imageUrl,
+          licensePlateId,
+        })
+        .returning();
+
+      return imageRecord;
+    });
+
+    // Wait for all image processing to complete
+    await Promise.all(imagePromises);
+
+    // Revalidate paths
+    revalidatePath("/");
+    revalidatePath(`/${encodeURIComponent(plateNumber)}`);
+
+    return { success: true, plateNumber, licensePlateId };
   } catch (error) {
     console.error("Error submitting license plate:", error);
-    throw error;
+    return { success: false, error: (error as Error).message };
   }
 }

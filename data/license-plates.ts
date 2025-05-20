@@ -4,10 +4,6 @@ export const licensePlates: LicensePlate[] = [
   {
     id: "1",
     plateNumber: "7ABC123",
-    imageUrls: [
-      "https://media.wired.com/photos/5e2b52d1097df7000896da19/16:9/w_2399,h_1349,c_limit/Transpo-licenseplates-502111737.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/1200px-Walking_tiger_female.jpg",
-    ],
     createdAt: new Date("2023-08-15"),
     countryId: "5",
     caption: "California Sunset Design",
@@ -20,10 +16,6 @@ export const licensePlates: LicensePlate[] = [
   {
     id: "2",
     plateNumber: "AB-123-CD",
-    imageUrls: [
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/1200px-Walking_tiger_female.jpg",
-      "https://media.wired.com/photos/5e2b52d1097df7000896da19/16:9/w_2399,h_1349,c_limit/Transpo-licenseplates-502111737.jpg",
-    ],
     createdAt: new Date("2025-05-10T09:15:00Z"),
     countryId: "4",
     caption: "Classic Parisian Style",
@@ -36,9 +28,6 @@ export const licensePlates: LicensePlate[] = [
   {
     id: "3",
     plateNumber: "TOK_123",
-    imageUrls: [
-      "https://media.wired.com/photos/5e2b52d1097df7000896da19/16:9/w_2399,h_1349,c_limit/Transpo-licenseplates-502111737.jpg",
-    ],
     createdAt: new Date("2024-01-10T16:45:00Z"),
     countryId: "3",
     caption: "Tokyo Metropolitan Area",
@@ -51,9 +40,6 @@ export const licensePlates: LicensePlate[] = [
   {
     id: "4",
     plateNumber: "BER-MW-2024",
-    imageUrls: [
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/1200px-Walking_tiger_female.jpg",
-    ],
     createdAt: new Date("2024-05-03T11:22:00Z"),
     countryId: "1",
     caption: "Berlin Special Edition",
@@ -66,10 +52,6 @@ export const licensePlates: LicensePlate[] = [
   {
     id: "5",
     plateNumber: "NSW_007",
-    imageUrls: [
-      "https://media.wired.com/photos/5e2b52d1097df7000896da19/16:9/w_2399,h_1349,c_limit/Transpo-licenseplates-502111737.jpg",
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Walking_tiger_female.jpg/1200px-Walking_tiger_female.jpg",
-    ],
     createdAt: new Date("2023-11-28T13:30:00Z"),
     countryId: "2",
     caption: "Sydney Harbor Bridge Custom",

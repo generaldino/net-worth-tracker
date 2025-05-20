@@ -10,6 +10,7 @@ import {
 import { desc, ilike, or, sql, eq } from "drizzle-orm";
 import { ITEMS_PER_PAGE } from "@/lib/constants";
 import type { LicensePlate } from "@/types/license-plate";
+import { getImagesByLicensePlateId } from "@/lib/actions/images";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,6 @@ export default async function SearchPage({
           countryId: licensePlates.countryId,
           country: countries.name,
           caption: licensePlates.caption,
-          imageUrls: licensePlates.imageUrls,
           userId: licensePlates.userId,
           carMakeId: licensePlates.carMakeId,
           carMake: carMakes.name,
@@ -106,22 +106,26 @@ export default async function SearchPage({
         .then((result) => Number(result[0]?.count || 0)),
     ]);
 
-    // The database query returns more fields than our LicensePlate type definition
     // Extract just the fields we need for our LicensePlate type
-    const plates = results.map((result) => ({
-      id: result.id,
-      plateNumber: result.plateNumber,
-      createdAt: result.createdAt,
-      countryId: result.countryId,
-      country: result.country,
-      caption: result.caption,
-      imageUrls: result.imageUrls,
-      userId: result.userId,
-      carMakeId: result.carMakeId,
-      carMake: result.carMake,
-      categoryId: result.categoryId,
-      reporter: result.reporter || "Unknown",
-    }));
+    const plates = await Promise.all(
+      results.map(async (result) => {
+        const images = await getImagesByLicensePlateId(result.id);
+        return {
+          id: result.id,
+          plateNumber: result.plateNumber,
+          createdAt: result.createdAt,
+          countryId: result.countryId,
+          country: result.country,
+          caption: result.caption,
+          userId: result.userId,
+          carMakeId: result.carMakeId,
+          carMake: result.carMake || undefined,
+          categoryId: result.categoryId,
+          reporter: result.reporter || "Unknown",
+          images,
+        };
+      })
+    );
 
     searchResults = {
       plates,

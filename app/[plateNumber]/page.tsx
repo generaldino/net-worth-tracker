@@ -4,6 +4,7 @@ import { LicensePlateCard } from "@/components/license-plate-card";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { Metadata } from "next";
+import type { LicensePlate } from "@/types/license-plate";
 
 interface PageProps {
   params: Promise<{
@@ -70,7 +71,7 @@ export default async function LicensePlatePage({ params }: PageProps) {
 
   try {
     // Query the database for the license plate
-    const [licensePlate] = await db
+    const [result] = await db
       .select({
         id: licensePlates.id,
         plateNumber: licensePlates.plateNumber,
@@ -78,7 +79,6 @@ export default async function LicensePlatePage({ params }: PageProps) {
         countryId: licensePlates.countryId,
         country: countries.name,
         caption: licensePlates.caption,
-        imageUrls: licensePlates.imageUrls,
         userId: licensePlates.userId,
         carMakeId: licensePlates.carMakeId,
         carMake: carMakes.name,
@@ -90,18 +90,26 @@ export default async function LicensePlatePage({ params }: PageProps) {
       .leftJoin(countries, eq(licensePlates.countryId, countries.id))
       .leftJoin(carMakes, eq(licensePlates.carMakeId, carMakes.id))
       .where(eq(licensePlates.plateNumber, plateNumber))
-      .limit(1)
-      .then((results) =>
-        results.map((plate) => ({
-          ...plate,
-          reporter: plate.reporter || "Unknown",
-        }))
-      );
+      .limit(1);
 
     // If plate not found, show 404
-    if (!licensePlate) {
+    if (!result) {
       notFound();
     }
+
+    // Prepare license plate object matching the LicensePlate type
+    const licensePlate: LicensePlate = {
+      id: result.id,
+      plateNumber: result.plateNumber,
+      createdAt: result.createdAt,
+      countryId: result.countryId,
+      caption: result.caption,
+      userId: result.userId,
+      carMakeId: result.carMakeId,
+      categoryId: result.categoryId,
+      reporter: result.reporter || "Unknown",
+      carMake: result.carMake || undefined, // Replace null with undefined
+    };
 
     return (
       <main className="container mx-auto py-10 px-4">
