@@ -27,17 +27,19 @@ export function ImageModal({
             License plate {plateNumber} - Full size image
           </DialogTitle>
         </VisuallyHidden>
-        <div className="relative w-full h-full">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white"
-            onClick={onClose}
-            aria-label="Close image modal"
-          >
-            <X className="h-6 w-6" />
-          </Button>
-          <div className="relative w-full h-[90vh]">
+        <div className="flex flex-col w-full h-full">
+          <div className="w-full flex justify-end px-4 pt-4 pb-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="bg-black/50 hover:bg-black/70 text-white"
+              onClick={onClose}
+              aria-label="Close image modal"
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+          <div className="relative w-full h-[80vh]">
             <Image
               src={imageUrl}
               alt={`License plate ${plateNumber}`}
