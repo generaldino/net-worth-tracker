@@ -6,7 +6,9 @@ import { ShuffleButton } from "./shuffle-button";
 import { SubmitPlateButton } from "./submit-plate-button";
 import { NavbarAuth } from "@/components/navbar-auth";
 import { createClient } from "@/utils/supabase/server";
-import { getUserById } from "@/app/actions";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function Navbar() {
   const supabase = await createClient();
@@ -14,7 +16,22 @@ export async function Navbar() {
     data: { user },
   } = await supabase.auth.getUser();
   const isAuthenticated = !!user;
-  const dbUser = await getUserById(user?.id || "");
+
+  // Get user data from database using Drizzle
+  let isAdmin = false;
+  let dbUser = null;
+  if (isAuthenticated && user) {
+    const [userData] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+
+    if (userData) {
+      dbUser = userData;
+      isAdmin = userData.isAdmin === "true";
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -53,15 +70,15 @@ export async function Navbar() {
 
         {/* Auth Section */}
         <div className="mr-4">
-          <NavbarAuth
-            isAuthenticated={isAuthenticated}
-            dbUser={dbUser.user || null}
-          />
+          <NavbarAuth isAuthenticated={isAuthenticated} dbUser={dbUser} />
         </div>
 
         {/* Submit button */}
         <div>
-          <SubmitPlateButton />
+          <SubmitPlateButton
+            isAuthenticated={isAuthenticated}
+            isAdmin={isAdmin}
+          />
         </div>
       </div>
     </header>

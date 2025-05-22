@@ -6,6 +6,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name"),
   avatarUrl: text("avatar_url"),
+  isAdmin: text("is_admin").notNull().default("false"),
 });
 
 export const categories = pgTable("categories", {

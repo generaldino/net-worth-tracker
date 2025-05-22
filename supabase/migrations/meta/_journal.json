@@ -211,6 +211,13 @@
       "when": 1747775316887,
       "tag": "0029_sparkling_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1747946963220,
+      "tag": "0030_nebulous_gorgon",
+      "breakpoints": true
     }
   ]
 }

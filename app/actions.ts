@@ -7,6 +7,7 @@ import { sql } from "drizzle-orm";
 import { Provider } from "@supabase/supabase-js";
 import { getSiteUrl } from "@/utils/site-url";
 import { cookies } from "next/headers";
+import { auth } from "@/lib/auth";
 
 /**
  * Server action that fetches a random license plate and redirects to its page
@@ -262,4 +263,18 @@ export async function getUserSession() {
     console.error("Error getting user session:", error);
     return { dbUser: null };
   }
+}
+
+export async function isUserAdmin() {
+  const session = await auth();
+  if (!session?.user) return false;
+
+  const supabase = await createClient();
+  const { data: user } = await supabase
+    .from("users")
+    .select("isAdmin")
+    .eq("id", session.user.id)
+    .single();
+
+  return user?.isAdmin === "true";
 }

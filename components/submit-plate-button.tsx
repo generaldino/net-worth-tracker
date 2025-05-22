@@ -3,38 +3,31 @@
 import { Button } from "@/components/ui/button";
 import { CameraIcon } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { AuthModal } from "@/components/auth/auth-modal";
 
-export function SubmitPlateButton() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+interface SubmitPlateButtonProps {
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+}
+
+export function SubmitPlateButton({
+  isAuthenticated,
+  isAdmin,
+}: SubmitPlateButtonProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
-    };
+  // Don't render the button if user is authenticated but not an admin
+  if (isAuthenticated && !isAdmin) {
+    return null;
+  }
 
-    checkAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setIsAuthenticated(!!session);
-      }
-    );
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [supabase.auth]);
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isAuthenticated === false) {
+  const handleClick = async (e: React.MouseEvent) => {
+    if (!isAuthenticated) {
       e.preventDefault();
       setShowAuthModal(true);
     }
