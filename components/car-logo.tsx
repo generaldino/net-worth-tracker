@@ -25,6 +25,7 @@ const carLogoMap: Record<string, string> = {
   land_rover: "/car-logos/land_rover.svg",
   rolls_royce: "/car-logos/rolls_royce.svg",
   bentley: "/car-logos/bentley.svg",
+  taxi: "/car-logos/taxi.svg",
   default: "/car-logos/default.svg",
 };
 
