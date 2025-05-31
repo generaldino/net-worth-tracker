@@ -140,3 +140,37 @@ export async function createAccount(data: {
     return { success: false, error: "Failed to create account" };
   }
 }
+
+export async function updateAccount(data: {
+  id: string;
+  name: string;
+  type: "current" | "savings" | "investment";
+  isISA: boolean;
+}) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const [account] = await db
+      .update(accountsTable)
+      .set({
+        name: data.name,
+        type: data.type,
+        isISA: data.isISA,
+        updatedAt: new Date(),
+      })
+      .where(eq(accountsTable.id, data.id))
+      .returning();
+
+    return { success: true, account };
+  } catch (error) {
+    console.error("Error updating account:", error);
+    return { success: false, error: "Failed to update account" };
+  }
+}

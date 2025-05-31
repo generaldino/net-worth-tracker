@@ -21,6 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { updateAccount } from "@/lib/actions";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/use-toast";
 
 interface EditAccountDialogProps {
   account: Account | null;
@@ -35,9 +38,11 @@ export function EditAccountDialog({
   onOpenChange,
   onUpdateAccount,
 }: EditAccountDialogProps) {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("current");
   const [isISA, setIsISA] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (account) {
@@ -47,20 +52,49 @@ export function EditAccountDialog({
     }
   }, [account]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!account || !name) {
-      alert("Please fill in all required fields");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all required fields",
+      });
       return;
     }
 
-    onUpdateAccount({
-      ...account,
-      name,
-      type,
-      isISA,
-    });
+    setIsLoading(true);
+    try {
+      const result = await updateAccount({
+        id: account.id,
+        name,
+        type,
+        isISA,
+      });
 
-    onOpenChange(false);
+      if (result.success && result.account) {
+        onUpdateAccount(result.account);
+        onOpenChange(false);
+        router.refresh();
+        toast({
+          title: "Success",
+          description: "Account updated successfully",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "Failed to update account",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred while updating the account",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!account) return null;
@@ -120,8 +154,9 @@ export function EditAccountDialog({
             type="submit"
             onClick={handleSubmit}
             className="w-full sm:w-auto"
+            disabled={isLoading}
           >
-            Update Account
+            {isLoading ? "Updating..." : "Update Account"}
           </Button>
         </DialogFooter>
       </DialogContent>
