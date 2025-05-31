@@ -1,9 +1,17 @@
-import { pgTable, serial, text, numeric, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  text,
+  numeric,
+  timestamp,
+  boolean,
+} from "drizzle-orm/pg-core";
 
 export const accounts = pgTable("accounts", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   type: text("type").notNull(),
+  isISA: boolean("is_isa").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

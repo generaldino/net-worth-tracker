@@ -1,17 +1,20 @@
 import { AccountsManagerClient } from "@/components/accounts-manager-client";
-import {
-  accounts as initialAccounts,
-  monthlyData as initialMonthlyData,
-} from "@/lib/data";
-import { calculateNetWorth } from "@/lib/actions";
+import { calculateNetWorth, getAccounts, getMonthlyData } from "@/lib/actions";
 
 export async function AccountsManager() {
-  const netWorth = await calculateNetWorth();
+  const [netWorth, accounts, monthlyData] = await Promise.all([
+    calculateNetWorth(),
+    getAccounts(),
+    getMonthlyData(),
+  ]);
+
+  console.log("Accounts:", accounts);
+  console.log("Monthly Data:", monthlyData);
 
   return (
     <AccountsManagerClient
-      initialAccounts={initialAccounts}
-      initialMonthlyData={initialMonthlyData}
+      initialAccounts={accounts}
+      initialMonthlyData={monthlyData}
       netWorth={netWorth}
     />
   );

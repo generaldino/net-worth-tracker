@@ -28,7 +28,7 @@ export function AccountsManagerClient({
   const handleAddAccount = (newAccount: Omit<Account, "id">) => {
     const account = {
       ...newAccount,
-      id: Date.now(),
+      id: Date.now().toString(),
     };
     setAccounts([...accounts, account]);
   };
@@ -46,7 +46,7 @@ export function AccountsManagerClient({
     );
   };
 
-  const handleDeleteAccount = (accountId: number) => {
+  const handleDeleteAccount = (accountId: string) => {
     if (confirm("Are you sure you want to delete this account?")) {
       setAccounts(accounts.filter((account) => account.id !== accountId));
       // Also remove from monthly data
@@ -61,7 +61,7 @@ export function AccountsManagerClient({
   };
 
   const handleUpdateMonthlyEntry = (
-    accountId: number,
+    accountId: string,
     month: string,
     updatedEntry: Partial<MonthlyEntry>
   ) => {
@@ -77,17 +77,45 @@ export function AccountsManagerClient({
 
     if (entryIndex >= 0) {
       // Update existing entry
-      updatedMonthlyData[month][entryIndex] = {
-        ...updatedMonthlyData[month][entryIndex],
+      const entry = updatedMonthlyData[month][entryIndex];
+      const updatedEntryWithCalculations = {
+        ...entry,
         ...updatedEntry,
+        cashFlow:
+          (updatedEntry.cashIn || entry.cashIn) -
+          (updatedEntry.cashOut || entry.cashOut),
       };
+
+      // Find previous month's entry for this account
+      const months = Object.keys(updatedMonthlyData).sort();
+      const currentMonthIndex = months.indexOf(month);
+      if (currentMonthIndex > 0) {
+        const previousMonth = months[currentMonthIndex - 1];
+        const previousEntry = updatedMonthlyData[previousMonth].find(
+          (e) => e.accountId === accountId
+        );
+
+        if (previousEntry) {
+          updatedEntryWithCalculations.accountGrowth =
+            updatedEntryWithCalculations.endingBalance -
+            previousEntry.endingBalance -
+            updatedEntryWithCalculations.cashFlow;
+        }
+      }
+
+      updatedMonthlyData[month][entryIndex] = updatedEntryWithCalculations;
     } else {
       // Add new entry if it doesn't exist
+      const cashFlow = (updatedEntry.cashIn || 0) - (updatedEntry.cashOut || 0);
       const newEntry: MonthlyEntry = {
         accountId,
+        monthKey: month,
+        month,
         endingBalance: updatedEntry.endingBalance || 0,
         cashIn: updatedEntry.cashIn || 0,
         cashOut: updatedEntry.cashOut || 0,
+        cashFlow,
+        accountGrowth: 0, // Will be calculated by the server
       };
       updatedMonthlyData[month].push(newEntry);
     }
@@ -96,7 +124,7 @@ export function AccountsManagerClient({
   };
 
   const handleAddNewMonth = (
-    accountId: number,
+    accountId: string,
     month: string,
     entry: MonthlyEntry
   ) => {

@@ -1,11 +1,28 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   type Account,
   getCurrentValue,
@@ -14,17 +31,25 @@ import {
   type ValueTimePeriod,
   valueTimePeriods,
   calculateValueChange,
-} from "@/lib/data"
-import { ChevronDown, ChevronRight, Edit, Trash2, Save } from "lucide-react"
-import { AddMonthDialog } from "@/components/add-month-dialog"
+} from "@/lib/data";
+import { ChevronDown, ChevronRight, Edit, Trash2, Save } from "lucide-react";
+import { AddMonthDialog } from "@/components/add-month-dialog";
 
 interface AccountsTableProps {
-  accounts: Account[]
-  monthlyData: Record<string, MonthlyEntry[]>
-  onEditAccount: (account: Account) => void
-  onDeleteAccount: (accountId: number) => void
-  onUpdateMonthlyEntry: (accountId: number, month: string, entry: Partial<MonthlyEntry>) => void
-  onAddNewMonth: (accountId: number, month: string, entry: MonthlyEntry) => void
+  accounts: Account[];
+  monthlyData: Record<string, MonthlyEntry[]>;
+  onEditAccount: (account: Account) => void;
+  onDeleteAccount: (accountId: string) => void;
+  onUpdateMonthlyEntry: (
+    accountId: string,
+    month: string,
+    entry: Partial<MonthlyEntry>
+  ) => void;
+  onAddNewMonth: (
+    accountId: string,
+    month: string,
+    entry: MonthlyEntry
+  ) => void;
 }
 
 export function AccountsTable({
@@ -35,21 +60,31 @@ export function AccountsTable({
   onUpdateMonthlyEntry,
   onAddNewMonth,
 }: AccountsTableProps) {
-  const [expandedAccounts, setExpandedAccounts] = useState<Set<number>>(new Set())
-  const [editingValues, setEditingValues] = useState<Record<string, Record<string, any>>>({})
-  const [selectedTimePeriod, setSelectedTimePeriod] = useState<ValueTimePeriod>("3M")
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
+    new Set()
+  );
+  const [editingValues, setEditingValues] = useState<
+    Record<string, Record<string, any>>
+  >({});
+  const [selectedTimePeriod, setSelectedTimePeriod] =
+    useState<ValueTimePeriod>("3M");
 
-  const toggleAccount = (accountId: number) => {
-    const newExpanded = new Set(expandedAccounts)
+  const toggleAccount = (accountId: string) => {
+    const newExpanded = new Set(expandedAccounts);
     if (newExpanded.has(accountId)) {
-      newExpanded.delete(accountId)
+      newExpanded.delete(accountId);
     } else {
-      newExpanded.add(accountId)
+      newExpanded.add(accountId);
     }
-    setExpandedAccounts(newExpanded)
-  }
+    setExpandedAccounts(newExpanded);
+  };
 
-  const handleValueChange = (accountId: number, month: string, field: string, value: string) => {
+  const handleValueChange = (
+    accountId: string,
+    month: string,
+    field: string,
+    value: string
+  ) => {
     setEditingValues((prev) => ({
       ...prev,
       [accountId]: {
@@ -59,49 +94,61 @@ export function AccountsTable({
           [field]: value,
         },
       },
-    }))
-  }
+    }));
+  };
 
-  const handleSaveValue = (accountId: number, month: string) => {
-    const editedEntry = editingValues[accountId]?.[month]
+  const handleSaveValue = (accountId: string, month: string) => {
+    const editedEntry = editingValues[accountId]?.[month];
     if (editedEntry) {
-      const updatedEntry: Partial<MonthlyEntry> = {}
+      const updatedEntry: Partial<MonthlyEntry> = {};
 
       if (editedEntry.endingBalance !== undefined) {
-        updatedEntry.endingBalance = Number.parseFloat(editedEntry.endingBalance) || 0
+        updatedEntry.endingBalance =
+          Number.parseFloat(editedEntry.endingBalance) || 0;
       }
       if (editedEntry.cashIn !== undefined) {
-        updatedEntry.cashIn = Number.parseFloat(editedEntry.cashIn) || 0
+        updatedEntry.cashIn = Number.parseFloat(editedEntry.cashIn) || 0;
       }
       if (editedEntry.cashOut !== undefined) {
-        updatedEntry.cashOut = Number.parseFloat(editedEntry.cashOut) || 0
+        updatedEntry.cashOut = Number.parseFloat(editedEntry.cashOut) || 0;
       }
 
-      onUpdateMonthlyEntry(accountId, month, updatedEntry)
+      onUpdateMonthlyEntry(accountId, month, updatedEntry);
 
       // Clear the editing state
       setEditingValues((prev) => {
-        const newState = { ...prev }
+        const newState = { ...prev };
         if (newState[accountId]) {
-          delete newState[accountId][month]
+          delete newState[accountId][month];
         }
-        return newState
-      })
+        return newState;
+      });
     }
-  }
+  };
 
-  const handleAddMonth = (accountId: number, month: string, entry: MonthlyEntry) => {
-    onAddNewMonth(accountId, month, entry)
-  }
+  const handleAddMonth = (
+    accountId: string,
+    month: string,
+    entry: MonthlyEntry
+  ) => {
+    onAddNewMonth(accountId, month, entry);
+  };
 
   return (
     <div className="space-y-4">
       {/* Time Period Selector */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b">
-        <div className="text-sm text-muted-foreground">Showing value changes over the selected time period</div>
+        <div className="text-sm text-muted-foreground">
+          Showing value changes over the selected time period
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Time Period:</span>
-          <Select value={selectedTimePeriod} onValueChange={(value: ValueTimePeriod) => setSelectedTimePeriod(value)}>
+          <Select
+            value={selectedTimePeriod}
+            onValueChange={(value: ValueTimePeriod) =>
+              setSelectedTimePeriod(value)
+            }
+          >
             <SelectTrigger className="w-[140px]">
               <SelectValue />
             </SelectTrigger>
@@ -118,13 +165,21 @@ export function AccountsTable({
 
       <div className="space-y-3">
         {accounts.map((account) => {
-          const currentValue = getCurrentValue(account.id)
-          const valueChange = calculateValueChange(account.id, selectedTimePeriod)
-          const isExpanded = expandedAccounts.has(account.id)
-          const history = getAccountHistory(account.id)
+          const currentValue = getCurrentValue(account.id, monthlyData);
+          const valueChange = calculateValueChange(
+            account.id,
+            selectedTimePeriod,
+            monthlyData
+          );
+          const isExpanded = expandedAccounts.has(account.id);
+          const history = getAccountHistory(account.id, monthlyData);
 
           return (
-            <Collapsible key={account.id} open={isExpanded} onOpenChange={() => toggleAccount(account.id)}>
+            <Collapsible
+              key={account.id}
+              open={isExpanded}
+              onOpenChange={() => toggleAccount(account.id)}
+            >
               <div className="border rounded-lg bg-card">
                 <CollapsibleTrigger asChild>
                   <div className="w-full p-4 hover:bg-muted/50 cursor-pointer">
@@ -138,7 +193,9 @@ export function AccountsTable({
                             <ChevronRight className="h-4 w-4 mt-1" />
                           )}
                           <div>
-                            <div className="font-medium text-base">{account.name}</div>
+                            <div className="font-medium text-base">
+                              {account.name}
+                            </div>
                             <div className="flex gap-2 mt-1">
                               <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
                                 {account.type}
@@ -156,8 +213,8 @@ export function AccountsTable({
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              onEditAccount(account)
+                              e.stopPropagation();
+                              onEditAccount(account);
                             }}
                           >
                             <Edit className="h-4 w-4" />
@@ -166,8 +223,8 @@ export function AccountsTable({
                             variant="ghost"
                             size="sm"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              onDeleteAccount(account.id)
+                              e.stopPropagation();
+                              onDeleteAccount(account.id);
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -176,20 +233,38 @@ export function AccountsTable({
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-muted-foreground">Current Value:</span>
-                          <div className="font-medium text-lg">£{currentValue.toLocaleString()}</div>
+                          <span className="text-muted-foreground">
+                            Current Value:
+                          </span>
+                          <div className="font-medium text-lg">
+                            £{currentValue.toLocaleString()}
+                          </div>
                         </div>
                         <div>
                           <span className="text-muted-foreground">
-                            {valueTimePeriods.find((p) => p.value === selectedTimePeriod)?.label} Change:
+                            {
+                              valueTimePeriods.find(
+                                (p) => p.value === selectedTimePeriod
+                              )?.label
+                            }{" "}
+                            Change:
                           </span>
                           <div
-                            className={`font-medium ${valueChange.absoluteChange >= 0 ? "text-green-600" : "text-red-600"}`}
+                            className={`font-medium ${
+                              valueChange.absoluteChange >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
                           >
-                            {valueChange.absoluteChange >= 0 ? "+" : ""}£{valueChange.absoluteChange.toLocaleString()}
+                            {valueChange.absoluteChange >= 0 ? "+" : ""}£
+                            {valueChange.absoluteChange.toLocaleString()}
                           </div>
                           <div
-                            className={`text-xs ${valueChange.percentageChange >= 0 ? "text-green-600" : "text-red-600"}`}
+                            className={`text-xs ${
+                              valueChange.percentageChange >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
                           >
                             ({valueChange.percentageChange >= 0 ? "+" : ""}
                             {valueChange.percentageChange.toFixed(1)}%)
@@ -201,7 +276,11 @@ export function AccountsTable({
                     {/* Desktop Layout */}
                     <div className="hidden sm:flex items-center justify-between">
                       <div className="flex items-center space-x-4 flex-1">
-                        {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
                         <div className="grid grid-cols-5 gap-4 flex-1 items-center">
                           <div className="font-medium">{account.name}</div>
                           <div className="flex gap-2">
@@ -214,14 +293,25 @@ export function AccountsTable({
                               </span>
                             )}
                           </div>
-                          <div className="font-medium">£{currentValue.toLocaleString()}</div>
-                          <div
-                            className={`font-medium ${valueChange.absoluteChange >= 0 ? "text-green-600" : "text-red-600"}`}
-                          >
-                            {valueChange.absoluteChange >= 0 ? "+" : ""}£{valueChange.absoluteChange.toLocaleString()}
+                          <div className="font-medium">
+                            £{currentValue.toLocaleString()}
                           </div>
                           <div
-                            className={`font-medium ${valueChange.percentageChange >= 0 ? "text-green-600" : "text-red-600"}`}
+                            className={`font-medium ${
+                              valueChange.absoluteChange >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {valueChange.absoluteChange >= 0 ? "+" : ""}£
+                            {valueChange.absoluteChange.toLocaleString()}
+                          </div>
+                          <div
+                            className={`font-medium ${
+                              valueChange.percentageChange >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
                           >
                             {valueChange.percentageChange >= 0 ? "+" : ""}
                             {valueChange.percentageChange.toFixed(1)}%
@@ -233,8 +323,8 @@ export function AccountsTable({
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            onEditAccount(account)
+                            e.stopPropagation();
+                            onEditAccount(account);
                           }}
                         >
                           <Edit className="h-4 w-4" />
@@ -243,8 +333,8 @@ export function AccountsTable({
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
-                            e.stopPropagation()
-                            onDeleteAccount(account.id)
+                            e.stopPropagation();
+                            onDeleteAccount(account.id);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -259,68 +349,103 @@ export function AccountsTable({
                       <h4 className="font-medium">Monthly History</h4>
                       <AddMonthDialog
                         account={account}
-                        onAddMonth={(month, entry) => handleAddMonth(account.id, month, entry)}
+                        monthlyData={monthlyData}
+                        onAddMonth={(month, entry) =>
+                          handleAddMonth(account.id, month, entry)
+                        }
                       />
                     </div>
 
                     {history.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <p>No monthly data yet.</p>
-                        <p className="text-sm">Use the "Add Month" button to get started.</p>
+                        <p className="text-sm">
+                          Use the "Add Month" button to get started.
+                        </p>
                       </div>
                     ) : (
                       <>
                         {/* Mobile History Layout */}
                         <div className="block sm:hidden space-y-3">
                           {history.map((entry) => {
-                            const isEditing = editingValues[account.id]?.[entry.monthKey] !== undefined
+                            const isEditing =
+                              editingValues[account.id]?.[entry.monthKey] !==
+                              undefined;
 
                             return (
-                              <div key={entry.monthKey} className="bg-muted/30 rounded-lg p-3">
+                              <div
+                                key={entry.monthKey}
+                                className="bg-muted/30 rounded-lg p-3"
+                              >
                                 <div className="flex justify-between items-start mb-2">
-                                  <div className="font-medium">{entry.month}</div>
+                                  <div className="font-medium">
+                                    {entry.month}
+                                  </div>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => {
                                       if (isEditing) {
-                                        handleSaveValue(account.id, entry.monthKey)
+                                        handleSaveValue(
+                                          account.id,
+                                          entry.monthKey
+                                        );
                                       } else {
                                         setEditingValues((prev) => ({
                                           ...prev,
                                           [account.id]: {
                                             ...(prev[account.id] || {}),
                                             [entry.monthKey]: {
-                                              endingBalance: entry.endingBalance.toString(),
+                                              endingBalance:
+                                                entry.endingBalance.toString(),
                                               cashIn: entry.cashIn.toString(),
                                               cashOut: entry.cashOut.toString(),
                                             },
                                           },
-                                        }))
+                                        }));
                                       }
                                     }}
                                   >
-                                    {isEditing ? <Save className="h-4 w-4" /> : <Edit className="h-4 w-4" />}
+                                    {isEditing ? (
+                                      <Save className="h-4 w-4" />
+                                    ) : (
+                                      <Edit className="h-4 w-4" />
+                                    )}
                                   </Button>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-sm">
                                   <div>
-                                    <span className="text-muted-foreground">Balance:</span>
+                                    <span className="text-muted-foreground">
+                                      Balance:
+                                    </span>
                                     {isEditing ? (
                                       <Input
                                         type="number"
-                                        value={editingValues[account.id][entry.monthKey].endingBalance}
+                                        value={
+                                          editingValues[account.id][
+                                            entry.monthKey
+                                          ].endingBalance
+                                        }
                                         onChange={(e) =>
-                                          handleValueChange(account.id, entry.monthKey, "endingBalance", e.target.value)
+                                          handleValueChange(
+                                            account.id,
+                                            entry.monthKey,
+                                            "endingBalance",
+                                            e.target.value
+                                          )
                                         }
                                         className="mt-1"
                                       />
                                     ) : (
-                                      <div className="font-medium">£{entry.endingBalance.toLocaleString()}</div>
+                                      <div className="font-medium">
+                                        £{entry.endingBalance.toLocaleString()}
+                                      </div>
                                     )}
                                   </div>
                                   <div>
-                                    <span className="text-muted-foreground">Growth:</span>
+                                    <span className="text-muted-foreground">
+                                      Growth:
+                                    </span>
                                     <div
                                       className={
                                         entry.accountGrowth >= 0
@@ -328,42 +453,69 @@ export function AccountsTable({
                                           : "text-red-600 font-medium"
                                       }
                                     >
-                                      {entry.accountGrowth >= 0 ? "+" : ""}£{entry.accountGrowth.toLocaleString()}
+                                      {entry.accountGrowth >= 0 ? "+" : ""}£
+                                      {entry.accountGrowth.toLocaleString()}
                                     </div>
                                   </div>
                                   <div>
-                                    <span className="text-muted-foreground">Cash In:</span>
+                                    <span className="text-muted-foreground">
+                                      Cash In:
+                                    </span>
                                     {isEditing ? (
                                       <Input
                                         type="number"
-                                        value={editingValues[account.id][entry.monthKey].cashIn}
+                                        value={
+                                          editingValues[account.id][
+                                            entry.monthKey
+                                          ].cashIn
+                                        }
                                         onChange={(e) =>
-                                          handleValueChange(account.id, entry.monthKey, "cashIn", e.target.value)
+                                          handleValueChange(
+                                            account.id,
+                                            entry.monthKey,
+                                            "cashIn",
+                                            e.target.value
+                                          )
                                         }
                                         className="mt-1"
                                       />
                                     ) : (
-                                      <div className="font-medium">£{entry.cashIn.toLocaleString()}</div>
+                                      <div className="font-medium">
+                                        £{entry.cashIn.toLocaleString()}
+                                      </div>
                                     )}
                                   </div>
                                   <div>
-                                    <span className="text-muted-foreground">Cash Out:</span>
+                                    <span className="text-muted-foreground">
+                                      Cash Out:
+                                    </span>
                                     {isEditing ? (
                                       <Input
                                         type="number"
-                                        value={editingValues[account.id][entry.monthKey].cashOut}
+                                        value={
+                                          editingValues[account.id][
+                                            entry.monthKey
+                                          ].cashOut
+                                        }
                                         onChange={(e) =>
-                                          handleValueChange(account.id, entry.monthKey, "cashOut", e.target.value)
+                                          handleValueChange(
+                                            account.id,
+                                            entry.monthKey,
+                                            "cashOut",
+                                            e.target.value
+                                          )
                                         }
                                         className="mt-1"
                                       />
                                     ) : (
-                                      <div className="font-medium">£{entry.cashOut.toLocaleString()}</div>
+                                      <div className="font-medium">
+                                        £{entry.cashOut.toLocaleString()}
+                                      </div>
                                     )}
                                   </div>
                                 </div>
                               </div>
-                            )
+                            );
                           })}
                         </div>
 
@@ -378,12 +530,17 @@ export function AccountsTable({
                                 <TableHead>Cash Out</TableHead>
                                 <TableHead>Cash Flow</TableHead>
                                 <TableHead>Growth</TableHead>
-                                <TableHead className="w-[100px]">Actions</TableHead>
+                                <TableHead className="w-[100px]">
+                                  Actions
+                                </TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {history.map((entry) => {
-                                const isEditing = editingValues[account.id]?.[entry.monthKey] !== undefined
+                                const isEditing =
+                                  editingValues[account.id]?.[
+                                    entry.monthKey
+                                  ] !== undefined;
 
                                 return (
                                   <TableRow key={entry.monthKey}>
@@ -392,13 +549,17 @@ export function AccountsTable({
                                       {isEditing ? (
                                         <Input
                                           type="number"
-                                          value={editingValues[account.id][entry.monthKey].endingBalance}
+                                          value={
+                                            editingValues[account.id][
+                                              entry.monthKey
+                                            ].endingBalance
+                                          }
                                           onChange={(e) =>
                                             handleValueChange(
                                               account.id,
                                               entry.monthKey,
                                               "endingBalance",
-                                              e.target.value,
+                                              e.target.value
                                             )
                                           }
                                           className="w-[120px]"
@@ -411,9 +572,18 @@ export function AccountsTable({
                                       {isEditing ? (
                                         <Input
                                           type="number"
-                                          value={editingValues[account.id][entry.monthKey].cashIn}
+                                          value={
+                                            editingValues[account.id][
+                                              entry.monthKey
+                                            ].cashIn
+                                          }
                                           onChange={(e) =>
-                                            handleValueChange(account.id, entry.monthKey, "cashIn", e.target.value)
+                                            handleValueChange(
+                                              account.id,
+                                              entry.monthKey,
+                                              "cashIn",
+                                              e.target.value
+                                            )
                                           }
                                           className="w-[100px]"
                                         />
@@ -425,9 +595,18 @@ export function AccountsTable({
                                       {isEditing ? (
                                         <Input
                                           type="number"
-                                          value={editingValues[account.id][entry.monthKey].cashOut}
+                                          value={
+                                            editingValues[account.id][
+                                              entry.monthKey
+                                            ].cashOut
+                                          }
                                           onChange={(e) =>
-                                            handleValueChange(account.id, entry.monthKey, "cashOut", e.target.value)
+                                            handleValueChange(
+                                              account.id,
+                                              entry.monthKey,
+                                              "cashOut",
+                                              e.target.value
+                                            )
                                           }
                                           className="w-[100px]"
                                         />
@@ -435,18 +614,37 @@ export function AccountsTable({
                                         `£${entry.cashOut.toLocaleString()}`
                                       )}
                                     </TableCell>
-                                    <TableCell className={entry.cashFlow >= 0 ? "text-green-600" : "text-red-600"}>
-                                      {entry.cashFlow >= 0 ? "+" : ""}£{entry.cashFlow.toLocaleString()}
+                                    <TableCell
+                                      className={
+                                        entry.cashFlow >= 0
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                      }
+                                    >
+                                      {entry.cashFlow >= 0 ? "+" : ""}£
+                                      {entry.cashFlow.toLocaleString()}
                                     </TableCell>
-                                    <TableCell className={entry.accountGrowth >= 0 ? "text-green-600" : "text-red-600"}>
-                                      {entry.accountGrowth >= 0 ? "+" : ""}£{entry.accountGrowth.toLocaleString()}
+                                    <TableCell
+                                      className={
+                                        entry.accountGrowth >= 0
+                                          ? "text-green-600"
+                                          : "text-red-600"
+                                      }
+                                    >
+                                      {entry.accountGrowth >= 0 ? "+" : ""}£
+                                      {entry.accountGrowth.toLocaleString()}
                                     </TableCell>
                                     <TableCell>
                                       {isEditing ? (
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          onClick={() => handleSaveValue(account.id, entry.monthKey)}
+                                          onClick={() =>
+                                            handleSaveValue(
+                                              account.id,
+                                              entry.monthKey
+                                            )
+                                          }
                                         >
                                           <Save className="h-4 w-4 mr-1" />
                                           Save
@@ -461,12 +659,15 @@ export function AccountsTable({
                                               [account.id]: {
                                                 ...(prev[account.id] || {}),
                                                 [entry.monthKey]: {
-                                                  endingBalance: entry.endingBalance.toString(),
-                                                  cashIn: entry.cashIn.toString(),
-                                                  cashOut: entry.cashOut.toString(),
+                                                  endingBalance:
+                                                    entry.endingBalance.toString(),
+                                                  cashIn:
+                                                    entry.cashIn.toString(),
+                                                  cashOut:
+                                                    entry.cashOut.toString(),
                                                 },
                                               },
-                                            }))
+                                            }));
                                           }}
                                         >
                                           <Edit className="h-4 w-4" />
@@ -474,7 +675,7 @@ export function AccountsTable({
                                       )}
                                     </TableCell>
                                   </TableRow>
-                                )
+                                );
                               })}
                             </TableBody>
                           </Table>
@@ -485,7 +686,7 @@ export function AccountsTable({
                 </CollapsibleContent>
               </div>
             </Collapsible>
-          )
+          );
         })}
 
         {/* Header row for desktop reference */}
@@ -493,10 +694,16 @@ export function AccountsTable({
           <div>Account Name</div>
           <div>Type</div>
           <div>Current Value</div>
-          <div>{valueTimePeriods.find((p) => p.value === selectedTimePeriod)?.label} Change</div>
+          <div>
+            {
+              valueTimePeriods.find((p) => p.value === selectedTimePeriod)
+                ?.label
+            }{" "}
+            Change
+          </div>
           <div>% Change</div>
         </div>
       </div>
     </div>
-  )
+  );
 }

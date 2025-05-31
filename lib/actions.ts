@@ -1,17 +1,14 @@
 "use server";
 
 import { db } from "@/db";
-import { accounts, monthlyEntries } from "@/lib/db/schema";
-import { desc } from "drizzle-orm";
-import type { InferModel } from "drizzle-orm";
-
-type Account = InferModel<typeof accounts>;
-type MonthlyEntry = InferModel<typeof monthlyEntries>;
+import { accounts as accountsTable, monthlyEntries } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
+import type { Account, MonthlyEntry } from "@/db/schema";
 
 export async function calculateNetWorth() {
   try {
     // Get all accounts
-    const allAccounts = await db.select().from(accounts);
+    const allAccounts = await db.select().from(accountsTable);
 
     // Get the latest monthly entries for each account
     const latestEntries = await db
@@ -31,5 +28,82 @@ export async function calculateNetWorth() {
   } catch (error) {
     console.error("Error calculating net worth:", error);
     return 0;
+  }
+}
+
+export async function getAccounts() {
+  try {
+    const dbAccounts = await db
+      .select()
+      .from(accountsTable)
+      .orderBy(accountsTable.createdAt);
+
+    // Transform the data to match the client-side Account type
+    return dbAccounts.map((account) => ({
+      id: account.id, // Keep as UUID string, don't convert to string
+      name: account.name,
+      type: account.type,
+      isISA: account.isISA,
+    }));
+  } catch (error) {
+    console.error("Error fetching accounts:", error);
+    return [];
+  }
+}
+
+export async function getMonthlyData() {
+  try {
+    // Get all monthly entries ordered by month (desc) and accountId
+    const entries = await db
+      .select()
+      .from(monthlyEntries)
+      .orderBy(desc(monthlyEntries.month), monthlyEntries.accountId);
+
+    // Transform the data into the required format
+    const monthlyData: Record<string, any[]> = {};
+
+    // First pass: organize entries by month
+    entries.forEach((entry) => {
+      const month = entry.month;
+      if (!monthlyData[month]) {
+        monthlyData[month] = [];
+      }
+
+      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
+      monthlyData[month].push({
+        accountId: entry.accountId,
+        monthKey: month,
+        month: month,
+        endingBalance: Number(entry.endingBalance),
+        cashIn: Number(entry.cashIn),
+        cashOut: Number(entry.cashOut),
+        cashFlow,
+        accountGrowth: 0, // Will be calculated in second pass
+      });
+    });
+
+    // Second pass: calculate accountGrowth by finding previous month's entry
+    const months = Object.keys(monthlyData).sort();
+    for (let i = 1; i < months.length; i++) {
+      const currentMonth = months[i];
+      const previousMonth = months[i - 1];
+
+      monthlyData[currentMonth].forEach((entry) => {
+        const previousEntry = monthlyData[previousMonth].find(
+          (e) => e.accountId === entry.accountId
+        );
+
+        if (previousEntry) {
+          // accountGrowth = currentBalance - previousBalance - cashFlow
+          entry.accountGrowth =
+            entry.endingBalance - previousEntry.endingBalance - entry.cashFlow;
+        }
+      });
+    }
+
+    return monthlyData;
+  } catch (error) {
+    console.error("Error getting monthly data:", error);
+    return {};
   }
 }
