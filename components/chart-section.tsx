@@ -55,9 +55,14 @@ interface SourceData {
   "Capital Gains": number;
 }
 
+interface AccountData {
+  month: string;
+  [key: string]: number | string;
+}
+
 interface ChartData {
   netWorthData: Array<{ month: string; netWorth: number }>;
-  accountData: Array<Record<string, number>>;
+  accountData: Array<AccountData>;
   sourceData: Array<SourceData>;
   accounts: Array<Account>;
 }
@@ -127,8 +132,19 @@ export function ChartSection() {
   const margins = getMargins();
 
   // Handle bar click
-  const handleBarClick = (data: any, month: string) => {
-    setClickedData({ month, data, chartType });
+  const handleBarClick = (
+    data: { month: string } & Record<string, any>,
+    month: string
+  ) => {
+    if (chartType === "accounts") {
+      // For accounts view, we need to find the month's data
+      const monthData = chartData.accountData.find((d) => d.month === month);
+      if (monthData) {
+        setClickedData({ month, data: monthData, chartType });
+      }
+    } else {
+      setClickedData({ month, data, chartType });
+    }
   };
 
   // Custom tooltip content
@@ -255,8 +271,8 @@ export function ChartSection() {
                 <ChartTooltip content={<CustomTooltip />} />
                 {chartData.accounts.map((account: Account, index: number) => {
                   const hasData = chartData.accountData.some(
-                    (monthData: Record<string, number>) =>
-                      (monthData[account.name] || 0) > 0
+                    (monthData: AccountData) =>
+                      ((monthData[account.name] as number) || 0) > 0
                   );
                   if (hasData) {
                     return (
@@ -352,8 +368,8 @@ export function ChartSection() {
   };
 
   // Render detailed data panel
-  const renderDataDetails = (data: ClickedData) => {
-    const { month, data: chartData, chartType: type } = data;
+  const renderDataDetails = (clickedData: ClickedData) => {
+    const { month, data, chartType: type } = clickedData;
 
     return (
       <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
@@ -374,7 +390,7 @@ export function ChartSection() {
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total Net Worth:</span>
               <span className="font-medium">
-                £{chartData.netWorth.toLocaleString()}
+                £{data.netWorth.toLocaleString()}
               </span>
             </div>
           </div>
@@ -386,7 +402,11 @@ export function ChartSection() {
               Account Breakdown:
             </div>
             {Object.entries(data).map(([accountName, value], index) => {
-              if (accountName !== "month" && value > 0) {
+              if (
+                accountName !== "month" &&
+                typeof value === "number" &&
+                value > 0
+              ) {
                 return (
                   <div
                     key={accountName}
@@ -415,8 +435,11 @@ export function ChartSection() {
                 <span>
                   £
                   {Object.entries(data)
-                    .filter(([key]) => key !== "month")
-                    .reduce((sum, [_, value]) => sum + (value || 0), 0)
+                    .filter(
+                      ([key, value]) =>
+                        key !== "month" && typeof value === "number"
+                    )
+                    .reduce((sum, [_, value]) => sum + (value as number), 0)
                     .toLocaleString()}
                 </span>
               </div>
@@ -431,7 +454,7 @@ export function ChartSection() {
             </div>
             {["Savings from Income", "Interest Earned", "Capital Gains"].map(
               (source, index) => {
-                const value = chartData[source];
+                const value = data[source];
                 return (
                   <div
                     key={source}
@@ -462,25 +485,25 @@ export function ChartSection() {
                 <span>Total Growth:</span>
                 <span
                   className={`${
-                    chartData["Savings from Income"] +
-                      chartData["Interest Earned"] +
-                      chartData["Capital Gains"] >=
+                    data["Savings from Income"] +
+                      data["Interest Earned"] +
+                      data["Capital Gains"] >=
                     0
                       ? "text-green-600"
                       : "text-red-600"
                   }`}
                 >
-                  {chartData["Savings from Income"] +
-                    chartData["Interest Earned"] +
-                    chartData["Capital Gains"] >=
+                  {data["Savings from Income"] +
+                    data["Interest Earned"] +
+                    data["Capital Gains"] >=
                   0
                     ? "+"
                     : ""}
                   £
                   {(
-                    chartData["Savings from Income"] +
-                    chartData["Interest Earned"] +
-                    chartData["Capital Gains"]
+                    data["Savings from Income"] +
+                    data["Interest Earned"] +
+                    data["Capital Gains"]
                   ).toLocaleString()}
                 </span>
               </div>
