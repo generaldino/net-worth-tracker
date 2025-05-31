@@ -1,1 +1,0 @@
-ALTER TABLE "license_plates" ADD COLUMN "reporter_profile_picture" text;

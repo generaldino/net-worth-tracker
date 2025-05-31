@@ -1,1 +1,0 @@
-ALTER TABLE "license_plates" ALTER COLUMN "caption" DROP NOT NULL;
