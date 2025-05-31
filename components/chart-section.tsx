@@ -254,8 +254,11 @@ export function ChartSection() {
                 />
                 <ChartTooltip content={<CustomTooltip />} />
                 {chartData.accounts.map((account: Account, index: number) => {
-                  const value = chartData.accountData[0]?.[account.name] || 0;
-                  if (value > 0) {
+                  const hasData = chartData.accountData.some(
+                    (monthData: Record<string, number>) =>
+                      (monthData[account.name] || 0) > 0
+                  );
+                  if (hasData) {
                     return (
                       <Bar
                         key={account.id}
@@ -382,12 +385,11 @@ export function ChartSection() {
             <div className="text-sm text-muted-foreground mb-2">
               Account Breakdown:
             </div>
-            {chartData.accounts.map((account: Account, index: number) => {
-              const value = chartData.accountData[0]?.[account.name] || 0;
-              if (value > 0) {
+            {Object.entries(data).map(([accountName, value], index) => {
+              if (accountName !== "month" && value > 0) {
                 return (
                   <div
-                    key={account.id}
+                    key={accountName}
                     className="flex justify-between items-center"
                   >
                     <div className="flex items-center gap-2">
@@ -397,7 +399,7 @@ export function ChartSection() {
                           backgroundColor: COLORS[index % COLORS.length],
                         }}
                       />
-                      <span>{account.name}</span>
+                      <span>{accountName}</span>
                     </div>
                     <span className="font-medium">
                       £{value.toLocaleString()}
@@ -412,12 +414,9 @@ export function ChartSection() {
                 <span>Total:</span>
                 <span>
                   £
-                  {chartData.accounts
-                    .reduce(
-                      (sum: number, account: Account) =>
-                        sum + (chartData.accountData[0]?.[account.name] || 0),
-                      0
-                    )
+                  {Object.entries(data)
+                    .filter(([key]) => key !== "month")
+                    .reduce((sum, [_, value]) => sum + (value || 0), 0)
                     .toLocaleString()}
                 </span>
               </div>
