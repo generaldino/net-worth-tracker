@@ -114,14 +114,6 @@ export function AccountsManagerClient({
                 onDeleteAccount={() => router.refresh()}
                 onUpdateMonthlyEntry={handleUpdateMonthlyEntry}
                 onAddNewMonth={(accountId, month, entry) => {
-                  if (
-                    monthlyData[month]?.some((e) => e.accountId === accountId)
-                  ) {
-                    alert(
-                      "An entry for this month already exists. Please edit the existing entry instead."
-                    );
-                    return;
-                  }
                   handleUpdateMonthlyEntry(accountId, month, entry);
                 }}
               />

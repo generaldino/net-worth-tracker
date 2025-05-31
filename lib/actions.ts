@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { accounts as accountsTable, monthlyEntries } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
@@ -220,8 +220,10 @@ export async function addMonthlyEntry(
       .select()
       .from(monthlyEntries)
       .where(
-        eq(monthlyEntries.accountId, accountId) &&
+        and(
+          eq(monthlyEntries.accountId, accountId),
           eq(monthlyEntries.month, month)
+        )
       )
       .limit(1);
 
@@ -273,8 +275,10 @@ export async function updateMonthlyEntry(
       .select()
       .from(monthlyEntries)
       .where(
-        eq(monthlyEntries.accountId, accountId) &&
+        and(
+          eq(monthlyEntries.accountId, accountId),
           eq(monthlyEntries.month, month)
+        )
       )
       .limit(1);
 
@@ -295,8 +299,10 @@ export async function updateMonthlyEntry(
         updatedAt: new Date(),
       })
       .where(
-        eq(monthlyEntries.accountId, accountId) &&
+        and(
+          eq(monthlyEntries.accountId, accountId),
           eq(monthlyEntries.month, month)
+        )
       );
 
     // Revalidate the page to show the updated data
