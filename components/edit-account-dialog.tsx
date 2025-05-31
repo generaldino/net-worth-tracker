@@ -13,7 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { type Account, type AccountType, accountTypes } from "@/lib/data";
 import {
   Select,
   SelectContent,
@@ -24,6 +23,7 @@ import {
 import { updateAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
+import { Account, AccountType, accountTypes } from "@/lib/types";
 
 interface EditAccountDialogProps {
   account: Account | null;

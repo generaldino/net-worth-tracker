@@ -5,9 +5,9 @@ import { AddAccountDialog } from "@/components/add-account-dialog";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/chart-section";
-import type { Account, MonthlyData, MonthlyEntry } from "@/lib/data";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Account, MonthlyData, MonthlyEntry } from "@/lib/types";
 
 interface AccountsManagerClientProps {
   initialAccounts: Account[];

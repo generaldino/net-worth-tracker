@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -25,16 +25,19 @@ import {
 } from "@/components/ui/select";
 import {
   type Account,
-  getCurrentValue,
-  getAccountHistory,
   type MonthlyEntry,
   type ValueTimePeriod,
   valueTimePeriods,
-  calculateValueChange,
-} from "@/lib/data";
+} from "@/lib/types";
 import { ChevronDown, ChevronRight, Edit, Trash2, Save } from "lucide-react";
 import { AddMonthDialog } from "@/components/add-month-dialog";
-import { deleteAccount, updateMonthlyEntry } from "@/lib/actions";
+import {
+  deleteAccount,
+  updateMonthlyEntry,
+  getCurrentValue,
+  getAccountHistory,
+  calculateValueChange,
+} from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -79,6 +82,43 @@ export function AccountsTable({
   >({});
   const [selectedTimePeriod, setSelectedTimePeriod] =
     useState<ValueTimePeriod>("3M");
+  const [currentValues, setCurrentValues] = useState<Record<string, number>>(
+    {}
+  );
+  const [accountHistories, setAccountHistories] = useState<
+    Record<string, MonthlyEntry[]>
+  >({});
+  const [valueChanges, setValueChanges] = useState<
+    Record<string, { absoluteChange: number; percentageChange: number }>
+  >({});
+
+  // Fetch current values, histories, and value changes for all accounts
+  useEffect(() => {
+    async function fetchAccountData() {
+      const values: Record<string, number> = {};
+      const histories: Record<string, MonthlyEntry[]> = {};
+      const changes: Record<
+        string,
+        { absoluteChange: number; percentageChange: number }
+      > = {};
+
+      for (const account of accounts) {
+        const [value, history, change] = await Promise.all([
+          getCurrentValue(account.id),
+          getAccountHistory(account.id),
+          calculateValueChange(account.id, selectedTimePeriod),
+        ]);
+        values[account.id] = value;
+        histories[account.id] = history;
+        changes[account.id] = change;
+      }
+
+      setCurrentValues(values);
+      setAccountHistories(histories);
+      setValueChanges(changes);
+    }
+    fetchAccountData();
+  }, [accounts, selectedTimePeriod]);
 
   const toggleAccount = (accountId: string) => {
     const newExpanded = new Set(expandedAccounts);
@@ -189,14 +229,13 @@ export function AccountsTable({
 
       <div className="space-y-3">
         {accounts.map((account) => {
-          const currentValue = getCurrentValue(account.id, monthlyData);
-          const valueChange = calculateValueChange(
-            account.id,
-            selectedTimePeriod,
-            monthlyData
-          );
+          const currentValue = currentValues[account.id] || 0;
+          const valueChange = valueChanges[account.id] || {
+            absoluteChange: 0,
+            percentageChange: 0,
+          };
           const isExpanded = expandedAccounts.has(account.id);
-          const history = getAccountHistory(account.id, monthlyData);
+          const history = accountHistories[account.id] || [];
 
           return (
             <Collapsible

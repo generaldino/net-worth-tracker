@@ -14,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { type Account, type AccountType, accountTypes } from "@/lib/data";
 import { PlusCircle } from "lucide-react";
 import {
   Select,
@@ -26,6 +25,7 @@ import {
 import { createAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
+import { AccountType, accountTypes, Account } from "@/lib/types";
 
 interface AddAccountDialogProps {
   onAddAccount: (account: Account) => void;

@@ -21,7 +21,7 @@ import {
 } from "recharts";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { getChartData } from "@/lib/actions";
-import type { TimePeriod } from "@/lib/data";
+import type { TimePeriod } from "@/lib/types";
 
 type ChartType = "total" | "accounts" | "sources";
 

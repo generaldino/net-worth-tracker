@@ -478,3 +478,120 @@ function getFilteredMonths(
       return months;
   }
 }
+
+export async function getCurrentValue(accountId: string) {
+  try {
+    // Get the latest monthly entry for the account
+    const latestEntry = await db
+      .select()
+      .from(monthlyEntries)
+      .where(eq(monthlyEntries.accountId, accountId))
+      .orderBy(desc(monthlyEntries.month))
+      .limit(1);
+
+    // Return the ending balance from the latest entry, or 0 if no entries exist
+    return latestEntry.length > 0 ? Number(latestEntry[0].endingBalance) : 0;
+  } catch (error) {
+    console.error("Error getting current value:", error);
+    return 0;
+  }
+}
+
+export async function getAccountHistory(accountId: string) {
+  try {
+    // Get all monthly entries for the account, ordered by month (desc)
+    const entries = await db
+      .select()
+      .from(monthlyEntries)
+      .where(eq(monthlyEntries.accountId, accountId))
+      .orderBy(desc(monthlyEntries.month));
+
+    // Transform the entries to include calculated fields
+    const history = entries.map((entry, index) => {
+      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
+      let accountGrowth = 0;
+
+      // Calculate accountGrowth by comparing with previous month's entry
+      if (index < entries.length - 1) {
+        const previousEntry = entries[index + 1];
+        accountGrowth =
+          Number(entry.endingBalance) -
+          Number(previousEntry.endingBalance) -
+          cashFlow;
+      }
+
+      return {
+        accountId: entry.accountId,
+        monthKey: entry.month,
+        month: entry.month,
+        endingBalance: Number(entry.endingBalance),
+        cashIn: Number(entry.cashIn),
+        cashOut: Number(entry.cashOut),
+        cashFlow,
+        accountGrowth,
+      };
+    });
+
+    return history;
+  } catch (error) {
+    console.error("Error getting account history:", error);
+    return [];
+  }
+}
+
+export async function calculateValueChange(
+  accountId: string,
+  timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "ALL"
+) {
+  try {
+    // Get all monthly entries for the account, ordered by month (desc)
+    const entries = await db
+      .select()
+      .from(monthlyEntries)
+      .where(eq(monthlyEntries.accountId, accountId))
+      .orderBy(desc(monthlyEntries.month));
+
+    if (entries.length === 0) {
+      return { absoluteChange: 0, percentageChange: 0 };
+    }
+
+    const currentValue = Number(entries[0].endingBalance);
+    let previousValue: number;
+
+    switch (timePeriod) {
+      case "1M":
+        previousValue = entries[1] ? Number(entries[1].endingBalance) : 0;
+        break;
+      case "3M":
+        previousValue = entries[3] ? Number(entries[3].endingBalance) : 0;
+        break;
+      case "6M":
+        previousValue = entries[6] ? Number(entries[6].endingBalance) : 0;
+        break;
+      case "1Y":
+        previousValue = entries[12] ? Number(entries[12].endingBalance) : 0;
+        break;
+      case "YTD":
+        const currentYear = new Date().getFullYear();
+        const ytdEntry = entries.find((entry) =>
+          entry.month.startsWith(`${currentYear}-01`)
+        );
+        previousValue = ytdEntry ? Number(ytdEntry.endingBalance) : 0;
+        break;
+      case "ALL":
+      default:
+        previousValue = entries[entries.length - 1]
+          ? Number(entries[entries.length - 1].endingBalance)
+          : 0;
+    }
+
+    const absoluteChange = currentValue - previousValue;
+    const percentageChange =
+      previousValue === 0 ? 0 : (absoluteChange / previousValue) * 100;
+
+    return { absoluteChange, percentageChange };
+  } catch (error) {
+    console.error("Error calculating value change:", error);
+    return { absoluteChange: 0, percentageChange: 0 };
+  }
+}

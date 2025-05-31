@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type Account, type MonthlyEntry, getCurrentValue } from "@/lib/data";
+import { type Account, type MonthlyEntry } from "@/lib/types";
 import { Plus } from "lucide-react";
-import { addMonthlyEntry } from "@/lib/actions";
+import { addMonthlyEntry, getCurrentValue } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 
 interface AddMonthDialogProps {
@@ -35,8 +35,15 @@ export function AddMonthDialog({
   const [cashIn, setCashIn] = useState("");
   const [cashOut, setCashOut] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentValue, setCurrentValue] = useState(0);
 
-  const currentValue = getCurrentValue(account.id, monthlyData);
+  useEffect(() => {
+    async function fetchCurrentValue() {
+      const value = await getCurrentValue(account.id);
+      setCurrentValue(value);
+    }
+    fetchCurrentValue();
+  }, [account.id]);
 
   const handleSubmit = async () => {
     if (!month) {
