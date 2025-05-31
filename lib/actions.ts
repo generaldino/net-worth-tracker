@@ -257,3 +257,59 @@ export async function addMonthlyEntry(
     };
   }
 }
+
+export async function updateMonthlyEntry(
+  accountId: string,
+  month: string,
+  entry: {
+    endingBalance: number;
+    cashIn: number;
+    cashOut: number;
+  }
+) {
+  try {
+    // Check if the entry exists
+    const existingEntry = await db
+      .select()
+      .from(monthlyEntries)
+      .where(
+        eq(monthlyEntries.accountId, accountId) &&
+          eq(monthlyEntries.month, month)
+      )
+      .limit(1);
+
+    if (existingEntry.length === 0) {
+      return {
+        success: false,
+        error: "Entry not found",
+      };
+    }
+
+    // Update the entry
+    await db
+      .update(monthlyEntries)
+      .set({
+        endingBalance: entry.endingBalance.toString(),
+        cashIn: entry.cashIn.toString(),
+        cashOut: entry.cashOut.toString(),
+        updatedAt: new Date(),
+      })
+      .where(
+        eq(monthlyEntries.accountId, accountId) &&
+          eq(monthlyEntries.month, month)
+      );
+
+    // Revalidate the page to show the updated data
+    revalidatePath("/");
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error updating monthly entry:", error);
+    return {
+      success: false,
+      error: "Failed to update monthly entry",
+    };
+  }
+}

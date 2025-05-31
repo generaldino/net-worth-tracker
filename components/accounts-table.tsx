@@ -34,7 +34,7 @@ import {
 } from "@/lib/data";
 import { ChevronDown, ChevronRight, Edit, Trash2, Save } from "lucide-react";
 import { AddMonthDialog } from "@/components/add-month-dialog";
-import { deleteAccount } from "@/lib/actions";
+import { deleteAccount, updateMonthlyEntry } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -108,32 +108,45 @@ export function AccountsTable({
     }));
   };
 
-  const handleSaveValue = (accountId: string, month: string) => {
+  const handleSaveValue = async (accountId: string, month: string) => {
     const editedEntry = editingValues[accountId]?.[month];
     if (editedEntry) {
-      const updatedEntry: Partial<MonthlyEntry> = {};
+      const updatedEntry = {
+        endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
+        cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
+        cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
+      };
 
-      if (editedEntry.endingBalance !== undefined) {
-        updatedEntry.endingBalance =
-          Number.parseFloat(editedEntry.endingBalance) || 0;
-      }
-      if (editedEntry.cashIn !== undefined) {
-        updatedEntry.cashIn = Number.parseFloat(editedEntry.cashIn) || 0;
-      }
-      if (editedEntry.cashOut !== undefined) {
-        updatedEntry.cashOut = Number.parseFloat(editedEntry.cashOut) || 0;
-      }
+      const result = await updateMonthlyEntry(accountId, month, updatedEntry);
 
-      onUpdateMonthlyEntry(accountId, month, updatedEntry);
+      if (result.success) {
+        // Update the local state through the callback
+        onUpdateMonthlyEntry(accountId, month, {
+          endingBalance: updatedEntry.endingBalance,
+          cashIn: updatedEntry.cashIn,
+          cashOut: updatedEntry.cashOut,
+        });
 
-      // Clear the editing state
-      setEditingValues((prev) => {
-        const newState = { ...prev };
-        if (newState[accountId]) {
-          delete newState[accountId][month];
-        }
-        return newState;
-      });
+        // Clear the editing state
+        setEditingValues((prev) => {
+          const newState = { ...prev };
+          if (newState[accountId]) {
+            delete newState[accountId][month];
+          }
+          return newState;
+        });
+
+        toast({
+          title: "Success",
+          description: "Monthly entry updated successfully",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "Failed to update monthly entry",
+        });
+      }
     }
   };
 
