@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddAccountDialog } from "@/components/add-account-dialog";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/chart-section";
 import type { Account, MonthlyData, MonthlyEntry } from "@/lib/data";
+import { useState } from "react";
 
 interface AccountsManagerClientProps {
   initialAccounts: Account[];
@@ -22,21 +22,10 @@ export function AccountsManagerClient({
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [monthlyData, setMonthlyData] =
     useState<MonthlyData>(initialMonthlyData);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-
-  const handleAddAccount = (newAccount: Omit<Account, "id">) => {
-    const account = {
-      ...newAccount,
-      id: Date.now().toString(),
-    };
-    setAccounts([...accounts, account]);
-  };
-
-  const handleEditAccount = (account: Account) => {
-    setEditingAccount(account);
-    setEditDialogOpen(true);
-  };
+  const [editDialogState, setEditDialogState] = useState<{
+    account: Account | null;
+    isOpen: boolean;
+  }>({ account: null, isOpen: false });
 
   const handleUpdateAccount = (updatedAccount: Account) => {
     setAccounts(
@@ -49,7 +38,6 @@ export function AccountsManagerClient({
   const handleDeleteAccount = (accountId: string) => {
     if (confirm("Are you sure you want to delete this account?")) {
       setAccounts(accounts.filter((account) => account.id !== accountId));
-      // Also remove from monthly data
       const updatedMonthlyData = { ...monthlyData };
       Object.keys(updatedMonthlyData).forEach((month) => {
         updatedMonthlyData[month] = updatedMonthlyData[month].filter(
@@ -76,7 +64,6 @@ export function AccountsManagerClient({
     );
 
     if (entryIndex >= 0) {
-      // Update existing entry
       const entry = updatedMonthlyData[month][entryIndex];
       const updatedEntryWithCalculations = {
         ...entry,
@@ -86,7 +73,6 @@ export function AccountsManagerClient({
           (updatedEntry.cashOut || entry.cashOut),
       };
 
-      // Find previous month's entry for this account
       const months = Object.keys(updatedMonthlyData).sort();
       const currentMonthIndex = months.indexOf(month);
       if (currentMonthIndex > 0) {
@@ -105,7 +91,6 @@ export function AccountsManagerClient({
 
       updatedMonthlyData[month][entryIndex] = updatedEntryWithCalculations;
     } else {
-      // Add new entry if it doesn't exist
       const cashFlow = (updatedEntry.cashIn || 0) - (updatedEntry.cashOut || 0);
       const newEntry: MonthlyEntry = {
         accountId,
@@ -115,7 +100,7 @@ export function AccountsManagerClient({
         cashIn: updatedEntry.cashIn || 0,
         cashOut: updatedEntry.cashOut || 0,
         cashFlow,
-        accountGrowth: 0, // Will be calculated by the server
+        accountGrowth: 0,
       };
       updatedMonthlyData[month].push(newEntry);
     }
@@ -123,26 +108,9 @@ export function AccountsManagerClient({
     setMonthlyData(updatedMonthlyData);
   };
 
-  const handleAddNewMonth = (
-    accountId: string,
-    month: string,
-    entry: MonthlyEntry
-  ) => {
-    // Check if month already exists for this account
-    if (monthlyData[month]?.some((e) => e.accountId === accountId)) {
-      alert(
-        "An entry for this month already exists. Please edit the existing entry instead."
-      );
-      return;
-    }
-
-    handleUpdateMonthlyEntry(accountId, month, entry);
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-4 px-4 max-w-7xl">
-        {/* Net Worth Display */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-600">
             £{netWorth.toLocaleString()}
@@ -156,17 +124,36 @@ export function AccountsManagerClient({
                 <CardTitle className="text-lg sm:text-xl">
                   Your Accounts
                 </CardTitle>
-                <AddAccountDialog onAddAccount={handleAddAccount} />
+                <AddAccountDialog
+                  onAddAccount={(newAccount) => {
+                    setAccounts([
+                      ...accounts,
+                      { ...newAccount, id: Date.now().toString() },
+                    ]);
+                  }}
+                />
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <AccountsTable
                 accounts={accounts}
                 monthlyData={monthlyData}
-                onEditAccount={handleEditAccount}
+                onEditAccount={(account) =>
+                  setEditDialogState({ account, isOpen: true })
+                }
                 onDeleteAccount={handleDeleteAccount}
                 onUpdateMonthlyEntry={handleUpdateMonthlyEntry}
-                onAddNewMonth={handleAddNewMonth}
+                onAddNewMonth={(accountId, month, entry) => {
+                  if (
+                    monthlyData[month]?.some((e) => e.accountId === accountId)
+                  ) {
+                    alert(
+                      "An entry for this month already exists. Please edit the existing entry instead."
+                    );
+                    return;
+                  }
+                  handleUpdateMonthlyEntry(accountId, month, entry);
+                }}
               />
             </CardContent>
           </Card>
@@ -175,9 +162,11 @@ export function AccountsManagerClient({
         </div>
 
         <EditAccountDialog
-          account={editingAccount}
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
+          account={editDialogState.account}
+          open={editDialogState.isOpen}
+          onOpenChange={(isOpen) =>
+            setEditDialogState((prev) => ({ ...prev, isOpen }))
+          }
           onUpdateAccount={handleUpdateAccount}
         />
       </div>
