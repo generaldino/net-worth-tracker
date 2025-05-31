@@ -174,3 +174,29 @@ export async function updateAccount(data: {
     return { success: false, error: "Failed to update account" };
   }
 }
+
+export async function deleteAccount(accountId: string) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // First delete all monthly entries for this account
+    await db
+      .delete(monthlyEntries)
+      .where(eq(monthlyEntries.accountId, accountId));
+
+    // Then delete the account
+    await db.delete(accountsTable).where(eq(accountsTable.id, accountId));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    return { success: false, error: "Failed to delete account" };
+  }
+}

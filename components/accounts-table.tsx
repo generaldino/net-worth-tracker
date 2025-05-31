@@ -34,6 +34,17 @@ import {
 } from "@/lib/data";
 import { ChevronDown, ChevronRight, Edit, Trash2, Save } from "lucide-react";
 import { AddMonthDialog } from "@/components/add-month-dialog";
+import { deleteAccount } from "@/lib/actions";
+import { toast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface AccountsTableProps {
   accounts: Account[];
@@ -219,16 +230,77 @@ export function AccountsTable({
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteAccount(account.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Delete Account</DialogTitle>
+                                <DialogDescription>
+                                  Are you sure you want to delete "
+                                  {account.name}"? This will permanently delete
+                                  the account and all its associated monthly
+                                  entries. This action cannot be undone.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogFooter>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    const dialog = document.querySelector(
+                                      '[data-slot="dialog-content"]'
+                                    );
+                                    if (dialog) {
+                                      (dialog as HTMLElement).click();
+                                    }
+                                  }}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  onClick={async () => {
+                                    const result = await deleteAccount(
+                                      account.id
+                                    );
+                                    if (result.success) {
+                                      toast({
+                                        title: "Success",
+                                        description:
+                                          "Account deleted successfully",
+                                      });
+                                      onDeleteAccount(account.id);
+                                      const dialog = document.querySelector(
+                                        '[data-slot="dialog-content"]'
+                                      );
+                                      if (dialog) {
+                                        (dialog as HTMLElement).click();
+                                      }
+                                    } else {
+                                      toast({
+                                        variant: "destructive",
+                                        title: "Error",
+                                        description:
+                                          result.error ||
+                                          "Failed to delete account",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  Delete Account
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
@@ -329,16 +401,77 @@ export function AccountsTable({
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteAccount(account.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Delete Account</DialogTitle>
+                              <DialogDescription>
+                                Are you sure you want to delete "{account.name}
+                                "? This will permanently delete the account and
+                                all its associated monthly entries. This action
+                                cannot be undone.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  const dialog = document.querySelector(
+                                    '[data-slot="dialog-content"]'
+                                  );
+                                  if (dialog) {
+                                    (dialog as HTMLElement).click();
+                                  }
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                onClick={async () => {
+                                  const result = await deleteAccount(
+                                    account.id
+                                  );
+                                  if (result.success) {
+                                    toast({
+                                      title: "Success",
+                                      description:
+                                        "Account deleted successfully",
+                                    });
+                                    onDeleteAccount(account.id);
+                                    const dialog = document.querySelector(
+                                      '[data-slot="dialog-content"]'
+                                    );
+                                    if (dialog) {
+                                      (dialog as HTMLElement).click();
+                                    }
+                                  } else {
+                                    toast({
+                                      variant: "destructive",
+                                      title: "Error",
+                                      description:
+                                        result.error ||
+                                        "Failed to delete account",
+                                    });
+                                  }
+                                }}
+                              >
+                                Delete Account
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </div>
                   </div>
