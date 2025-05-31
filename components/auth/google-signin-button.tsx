@@ -9,7 +9,7 @@ interface GoogleSignInButtonProps {
   onSuccess?: () => void;
 }
 
-export function GoogleSignInButton({ onSuccess }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({}: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignIn = async () => {

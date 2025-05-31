@@ -50,6 +50,8 @@
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.31.1",
+    "eslint": "9.28.0",
+    "eslint-config-next": "15.3.3",
     "supabase": "^2.22.12",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",
