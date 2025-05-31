@@ -29,14 +29,12 @@ interface EditAccountDialogProps {
   account: Account | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdateAccount: (account: Account) => void;
 }
 
 export function EditAccountDialog({
   account,
   open,
   onOpenChange,
-  onUpdateAccount,
 }: EditAccountDialogProps) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -71,8 +69,7 @@ export function EditAccountDialog({
         isISA,
       });
 
-      if (result.success && result.account) {
-        onUpdateAccount(result.account);
+      if (result.success) {
         onOpenChange(false);
         router.refresh();
         toast({

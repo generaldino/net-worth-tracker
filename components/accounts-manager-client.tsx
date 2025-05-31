@@ -111,9 +111,6 @@ export function AccountsManagerClient({
               <AccountsTable
                 accounts={initialAccounts}
                 monthlyData={monthlyData}
-                onEditAccount={(account) =>
-                  setEditDialogState({ account, isOpen: true })
-                }
                 onDeleteAccount={() => router.refresh()}
                 onUpdateMonthlyEntry={handleUpdateMonthlyEntry}
                 onAddNewMonth={(accountId, month, entry) => {
@@ -140,7 +137,6 @@ export function AccountsManagerClient({
           onOpenChange={(isOpen) =>
             setEditDialogState((prev) => ({ ...prev, isOpen }))
           }
-          onUpdateAccount={() => router.refresh()}
         />
       </div>
     </div>

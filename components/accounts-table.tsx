@@ -48,11 +48,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { EditAccountDialog } from "@/components/edit-account-dialog";
 
 interface AccountsTableProps {
   accounts: Account[];
   monthlyData: Record<string, MonthlyEntry[]>;
-  onEditAccount: (account: Account) => void;
   onDeleteAccount: (accountId: string) => void;
   onUpdateMonthlyEntry: (
     accountId: string,
@@ -69,7 +69,6 @@ interface AccountsTableProps {
 export function AccountsTable({
   accounts,
   monthlyData,
-  onEditAccount,
   onDeleteAccount,
   onUpdateMonthlyEntry,
   onAddNewMonth,
@@ -91,6 +90,7 @@ export function AccountsTable({
   const [valueChanges, setValueChanges] = useState<
     Record<string, { absoluteChange: number; percentageChange: number }>
   >({});
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
   // Fetch current values, histories, and value changes for all accounts
   useEffect(() => {
@@ -277,7 +277,7 @@ export function AccountsTable({
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onEditAccount(account);
+                              setEditingAccount(account);
                             }}
                           >
                             <Edit className="h-4 w-4" />
@@ -448,7 +448,7 @@ export function AccountsTable({
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onEditAccount(account);
+                            setEditingAccount(account);
                           }}
                         >
                           <Edit className="h-4 w-4" />
@@ -889,6 +889,14 @@ export function AccountsTable({
           <div>% Change</div>
         </div>
       </div>
+
+      <EditAccountDialog
+        account={editingAccount}
+        open={editingAccount !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingAccount(null);
+        }}
+      />
     </div>
   );
 }
