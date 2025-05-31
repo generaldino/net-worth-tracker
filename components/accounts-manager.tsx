@@ -111,11 +111,8 @@ export function AccountsManager() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-4 px-4 max-w-7xl">
-        {/* Mobile-optimized header */}
+        {/* Net Worth Display */}
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-            💰 Wealth Tracker
-          </h1>
           <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-600">
             £{netWorth.toLocaleString()}
           </div>
