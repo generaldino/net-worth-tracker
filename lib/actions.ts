@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { accounts as accountsTable, monthlyEntries } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
+import { createClient } from "@/utils/supabase/server";
 
 export async function calculateNetWorth() {
   try {
@@ -105,5 +106,37 @@ export async function getMonthlyData() {
   } catch (error) {
     console.error("Error getting monthly data:", error);
     return {};
+  }
+}
+
+export async function createAccount(data: {
+  name: string;
+  type: "current" | "savings" | "investment";
+  isISA: boolean;
+}) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const [account] = await db
+      .insert(accountsTable)
+      .values({
+        name: data.name,
+        type: data.type,
+        isISA: data.isISA,
+        userId: session.user.id,
+      })
+      .returning();
+
+    return { success: true, account };
+  } catch (error) {
+    console.error("Error creating account:", error);
+    return { success: false, error: "Failed to create account" };
   }
 }

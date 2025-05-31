@@ -23,34 +23,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { createAccount } from "@/lib/actions";
+import { useRouter } from "next/navigation";
+import { toast } from "@/components/ui/use-toast";
 
 interface AddAccountDialogProps {
-  onAddAccount: (account: Omit<Account, "id">) => void;
+  onAddAccount: (account: Account) => void;
 }
 
 export function AddAccountDialog({ onAddAccount }: AddAccountDialogProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("current");
   const [isISA, setIsISA] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name) {
-      alert("Please enter an account name");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter an account name",
+      });
       return;
     }
 
-    onAddAccount({
-      name,
-      type,
-      isISA,
-    });
+    setIsLoading(true);
+    try {
+      const result = await createAccount({
+        name,
+        type,
+        isISA,
+      });
 
-    // Reset form and close dialog
-    setName("");
-    setType("current");
-    setIsISA(false);
-    setOpen(false);
+      if (result.success && result.account) {
+        onAddAccount(result.account);
+        // Reset form and close dialog
+        setName("");
+        setType("current");
+        setIsISA(false);
+        setOpen(false);
+        router.refresh();
+        toast({
+          title: "Success",
+          description: "Account created successfully",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "Failed to create account",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred while creating the account",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -115,8 +149,9 @@ export function AddAccountDialog({ onAddAccount }: AddAccountDialogProps) {
             type="submit"
             onClick={handleSubmit}
             className="w-full sm:w-auto"
+            disabled={isLoading}
           >
-            Add Account
+            {isLoading ? "Adding..." : "Add Account"}
           </Button>
         </DialogFooter>
       </DialogContent>

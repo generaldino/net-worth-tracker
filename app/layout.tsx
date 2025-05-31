@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import { auth } from "@/lib/auth";
 import { GoogleSignInButton } from "@/components/auth/google-signin-button";
 import { Navbar } from "@/components/navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,6 +35,7 @@ export default async function RootLayout({
               <GoogleSignInButton />
             </div>
           </div>
+          <Toaster />
         </body>
       </html>
     );
@@ -44,6 +46,7 @@ export default async function RootLayout({
       <body className={inter.className}>
         <Navbar />
         {children}
+        <Toaster />
       </body>
     </html>
   );

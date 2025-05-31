@@ -8,9 +8,6 @@ export async function AccountsManager() {
     getMonthlyData(),
   ]);
 
-  console.log("Accounts:", accounts);
-  console.log("Monthly Data:", monthlyData);
-
   return (
     <AccountsManagerClient
       initialAccounts={accounts}
