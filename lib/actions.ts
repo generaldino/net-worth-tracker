@@ -5,6 +5,7 @@ import { accounts as accountsTable, monthlyEntries } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
 import { createClient } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
 
 export async function calculateNetWorth() {
   try {
@@ -134,6 +135,7 @@ export async function createAccount(data: {
       })
       .returning();
 
+    revalidatePath("/");
     return { success: true, account };
   } catch (error) {
     console.error("Error creating account:", error);
@@ -168,6 +170,7 @@ export async function updateAccount(data: {
       .where(eq(accountsTable.id, data.id))
       .returning();
 
+    revalidatePath("/");
     return { success: true, account };
   } catch (error) {
     console.error("Error updating account:", error);
@@ -194,9 +197,63 @@ export async function deleteAccount(accountId: string) {
     // Then delete the account
     await db.delete(accountsTable).where(eq(accountsTable.id, accountId));
 
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
     console.error("Error deleting account:", error);
     return { success: false, error: "Failed to delete account" };
+  }
+}
+
+export async function addMonthlyEntry(
+  accountId: string,
+  month: string,
+  entry: {
+    endingBalance: number;
+    cashIn: number;
+    cashOut: number;
+  }
+) {
+  try {
+    // Check if an entry already exists for this account and month
+    const existingEntry = await db
+      .select()
+      .from(monthlyEntries)
+      .where(
+        eq(monthlyEntries.accountId, accountId) &&
+          eq(monthlyEntries.month, month)
+      )
+      .limit(1);
+
+    if (existingEntry.length > 0) {
+      return {
+        success: false,
+        error: "An entry for this month already exists",
+      };
+    }
+
+    // Insert the new entry
+    const newEntry = {
+      accountId,
+      month,
+      endingBalance: entry.endingBalance.toString(),
+      cashIn: entry.cashIn.toString(),
+      cashOut: entry.cashOut.toString(),
+    };
+
+    await db.insert(monthlyEntries).values(newEntry);
+
+    // Revalidate the page to show the new data
+    revalidatePath("/");
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error adding monthly entry:", error);
+    return {
+      success: false,
+      error: "Failed to add monthly entry",
+    };
   }
 }

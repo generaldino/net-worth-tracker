@@ -7,6 +7,7 @@ import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/chart-section";
 import type { Account, MonthlyData, MonthlyEntry } from "@/lib/data";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface AccountsManagerClientProps {
   initialAccounts: Account[];
@@ -19,34 +20,13 @@ export function AccountsManagerClient({
   initialMonthlyData,
   netWorth,
 }: AccountsManagerClientProps) {
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [monthlyData, setMonthlyData] =
     useState<MonthlyData>(initialMonthlyData);
   const [editDialogState, setEditDialogState] = useState<{
     account: Account | null;
     isOpen: boolean;
   }>({ account: null, isOpen: false });
-
-  const handleUpdateAccount = (updatedAccount: Account) => {
-    setAccounts(
-      accounts.map((account) =>
-        account.id === updatedAccount.id ? updatedAccount : account
-      )
-    );
-  };
-
-  const handleDeleteAccount = (accountId: string) => {
-    if (confirm("Are you sure you want to delete this account?")) {
-      setAccounts(accounts.filter((account) => account.id !== accountId));
-      const updatedMonthlyData = { ...monthlyData };
-      Object.keys(updatedMonthlyData).forEach((month) => {
-        updatedMonthlyData[month] = updatedMonthlyData[month].filter(
-          (entry) => entry.accountId !== accountId
-        );
-      });
-      setMonthlyData(updatedMonthlyData);
-    }
-  };
+  const router = useRouter();
 
   const handleUpdateMonthlyEntry = (
     accountId: string,
@@ -124,24 +104,17 @@ export function AccountsManagerClient({
                 <CardTitle className="text-lg sm:text-xl">
                   Your Accounts
                 </CardTitle>
-                <AddAccountDialog
-                  onAddAccount={(newAccount) => {
-                    setAccounts([
-                      ...accounts,
-                      { ...newAccount, id: Date.now().toString() },
-                    ]);
-                  }}
-                />
+                <AddAccountDialog onAddAccount={() => router.refresh()} />
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <AccountsTable
-                accounts={accounts}
+                accounts={initialAccounts}
                 monthlyData={monthlyData}
                 onEditAccount={(account) =>
                   setEditDialogState({ account, isOpen: true })
                 }
-                onDeleteAccount={handleDeleteAccount}
+                onDeleteAccount={() => router.refresh()}
                 onUpdateMonthlyEntry={handleUpdateMonthlyEntry}
                 onAddNewMonth={(accountId, month, entry) => {
                   if (
@@ -167,7 +140,7 @@ export function AccountsManagerClient({
           onOpenChange={(isOpen) =>
             setEditDialogState((prev) => ({ ...prev, isOpen }))
           }
-          onUpdateAccount={handleUpdateAccount}
+          onUpdateAccount={() => router.refresh()}
         />
       </div>
     </div>

@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type Account, type MonthlyEntry, getCurrentValue } from "@/lib/data";
 import { Plus } from "lucide-react";
+import { addMonthlyEntry } from "@/lib/actions";
+import { toast } from "@/components/ui/use-toast";
 
 interface AddMonthDialogProps {
   account: Account;
@@ -32,35 +34,72 @@ export function AddMonthDialog({
   const [endingBalance, setEndingBalance] = useState("");
   const [cashIn, setCashIn] = useState("");
   const [cashOut, setCashOut] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentValue = getCurrentValue(account.id, monthlyData);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!month) {
-      alert("Please select a month");
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select a month",
+      });
       return;
     }
 
-    const entry: MonthlyEntry = {
-      accountId: account.id,
-      monthKey: month,
-      month,
-      endingBalance: Number.parseFloat(endingBalance) || 0,
-      cashIn: Number.parseFloat(cashIn) || 0,
-      cashOut: Number.parseFloat(cashOut) || 0,
-      cashFlow:
-        (Number.parseFloat(cashIn) || 0) - (Number.parseFloat(cashOut) || 0),
-      accountGrowth: 0, // This will be calculated by the server
-    };
+    setIsSubmitting(true);
 
-    onAddMonth(month, entry);
+    try {
+      const result = await addMonthlyEntry(account.id, month, {
+        endingBalance: Number.parseFloat(endingBalance) || 0,
+        cashIn: Number.parseFloat(cashIn) || 0,
+        cashOut: Number.parseFloat(cashOut) || 0,
+      });
 
-    // Reset form and close dialog
-    setMonth("");
-    setEndingBalance("");
-    setCashIn("");
-    setCashOut("");
-    setOpen(false);
+      if (result.success) {
+        const entry: MonthlyEntry = {
+          accountId: account.id,
+          monthKey: month,
+          month,
+          endingBalance: Number.parseFloat(endingBalance) || 0,
+          cashIn: Number.parseFloat(cashIn) || 0,
+          cashOut: Number.parseFloat(cashOut) || 0,
+          cashFlow:
+            (Number.parseFloat(cashIn) || 0) -
+            (Number.parseFloat(cashOut) || 0),
+          accountGrowth: 0, // This will be calculated by the server
+        };
+
+        onAddMonth(month, entry);
+
+        // Reset form and close dialog
+        setMonth("");
+        setEndingBalance("");
+        setCashIn("");
+        setCashOut("");
+        setOpen(false);
+
+        toast({
+          title: "Success",
+          description: "Monthly entry added successfully",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error || "Failed to add monthly entry",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An unexpected error occurred",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Get current month in YYYY-MM format for the month input max value
@@ -135,8 +174,9 @@ export function AddMonthDialog({
             type="submit"
             onClick={handleSubmit}
             className="w-full sm:w-auto"
+            disabled={isSubmitting}
           >
-            Add Month
+            {isSubmitting ? "Adding..." : "Add Month"}
           </Button>
         </DialogFooter>
       </DialogContent>
