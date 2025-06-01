@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import type { ClickedData } from "@/components/charts/types";
 import { COLORS, SOURCE_KEYS } from "@/components/charts/constants";
+import { useState } from "react";
 
 interface DataDetailsPanelProps {
   clickedData: ClickedData;
@@ -93,24 +94,63 @@ export function DataDetailsPanel({
           </div>
           {SOURCE_KEYS.map((source, index) => {
             const value = data[source];
+            const accounts = data.breakdown?.[source] || [];
+            const [showBreakdown, setShowBreakdown] = useState(false);
             return (
-              <div key={source} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-sm"
-                    style={{
-                      backgroundColor: COLORS[index % COLORS.length],
-                    }}
-                  />
-                  <span>{source}</span>
+              <div key={source} className="mb-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-sm"
+                      style={{
+                        backgroundColor: COLORS[index % COLORS.length],
+                      }}
+                    />
+                    <span>{source}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`font-medium ${
+                        value >= 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {value >= 0 ? "+" : "-"}£
+                      {Math.abs(value).toLocaleString()}
+                    </span>
+                    {accounts.length > 0 && (
+                      <button
+                        className="text-xs text-primary underline hover:text-primary-focus focus:outline-none"
+                        onClick={() => setShowBreakdown((open) => !open)}
+                        type="button"
+                      >
+                        {showBreakdown ? "See less" : "See more"}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <span
-                  className={`font-medium ${
-                    value >= 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {value >= 0 ? "+" : ""}£{value.toLocaleString()}
-                </span>
+                {showBreakdown && (
+                  <ul className="ml-7 mt-1 space-y-0.5">
+                    {accounts.map((acc: any) => (
+                      <li
+                        key={acc.accountId}
+                        className="flex justify-between text-sm"
+                      >
+                        <span className="text-muted-foreground">
+                          {acc.name}{" "}
+                          <span className="text-xs">({acc.type})</span>
+                        </span>
+                        <span
+                          className={
+                            acc.amount >= 0 ? "text-green-600" : "text-red-600"
+                          }
+                        >
+                          {acc.amount >= 0 ? "+" : "-"}£
+                          {Math.abs(acc.amount).toLocaleString()}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             );
           })}
@@ -118,7 +158,7 @@ export function DataDetailsPanel({
             <div className="flex justify-between font-medium">
               <span>Total Growth:</span>
               <span
-                className={`${
+                className={`$${
                   data["Savings from Income"] +
                     data["Interest Earned"] +
                     data["Capital Gains"] >=
@@ -132,12 +172,12 @@ export function DataDetailsPanel({
                   data["Capital Gains"] >=
                 0
                   ? "+"
-                  : ""}
+                  : "-"}
                 £
-                {(
+                {Math.abs(
                   data["Savings from Income"] +
-                  data["Interest Earned"] +
-                  data["Capital Gains"]
+                    data["Interest Earned"] +
+                    data["Capital Gains"]
                 ).toLocaleString()}
               </span>
             </div>

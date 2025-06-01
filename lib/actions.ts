@@ -538,30 +538,76 @@ export async function getChartData(
       let interestEarned = 0;
       let capitalGains = 0;
 
+      // Per-account breakdowns
+      const savingsAccounts: any[] = [];
+      const interestAccounts: any[] = [];
+      const capitalGainsAccounts: any[] = [];
+
       monthlyData[month].forEach((entry) => {
         const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (!account) return;
 
         switch (account.type) {
-          case "Current":
-            // For current accounts, count both growth and cash flow as savings from income
-            savingsFromIncome += entry.accountGrowth + entry.cashFlow;
+          case "Current": {
+            const value = entry.accountGrowth + entry.cashFlow;
+            savingsFromIncome += value;
+            if (value !== 0) {
+              savingsAccounts.push({
+                accountId: account.id,
+                name: account.name,
+                type: account.type,
+                amount: value,
+              });
+            }
             break;
-          case "Savings":
-            // For savings accounts, count cash flow as savings from income and growth as interest
-            savingsFromIncome += entry.cashFlow;
-            interestEarned += entry.accountGrowth;
+          }
+          case "Savings": {
+            if (entry.cashFlow !== 0) {
+              savingsFromIncome += entry.cashFlow;
+              savingsAccounts.push({
+                accountId: account.id,
+                name: account.name,
+                type: account.type,
+                amount: entry.cashFlow,
+              });
+            }
+            if (entry.accountGrowth !== 0) {
+              interestEarned += entry.accountGrowth;
+              interestAccounts.push({
+                accountId: account.id,
+                name: account.name,
+                type: account.type,
+                amount: entry.accountGrowth,
+              });
+            }
             break;
+          }
           case "Stock":
           case "Investment":
           case "Crypto":
           case "Pension":
           case "Commodity":
-          case "Stock_options":
-            // For all investment-type accounts, count cash flow as savings from income and growth as capital gains
-            savingsFromIncome += entry.cashFlow;
-            capitalGains += entry.accountGrowth;
+          case "Stock_options": {
+            if (entry.cashFlow !== 0) {
+              savingsFromIncome += entry.cashFlow;
+              savingsAccounts.push({
+                accountId: account.id,
+                name: account.name,
+                type: account.type,
+                amount: entry.cashFlow,
+              });
+            }
+            if (entry.accountGrowth !== 0) {
+              capitalGains += entry.accountGrowth;
+              capitalGainsAccounts.push({
+                accountId: account.id,
+                name: account.name,
+                type: account.type,
+                amount: entry.accountGrowth,
+              });
+            }
             break;
+          }
         }
       });
 
@@ -570,9 +616,14 @@ export async function getChartData(
           month: "short",
           year: "numeric",
         }),
-        "Savings from Income": Math.max(0, savingsFromIncome),
-        "Interest Earned": Math.max(0, interestEarned),
+        "Savings from Income": savingsFromIncome,
+        "Interest Earned": interestEarned,
         "Capital Gains": capitalGains,
+        breakdown: {
+          "Savings from Income": savingsAccounts,
+          "Interest Earned": interestAccounts,
+          "Capital Gains": capitalGainsAccounts,
+        },
       };
     });
 
