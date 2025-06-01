@@ -38,7 +38,7 @@ export function EditAccountDialog({
 }: EditAccountDialogProps) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [type, setType] = useState<AccountType>("current");
+  const [type, setType] = useState<AccountType>("Current");
   const [isISA, setIsISA] = useState(false);
   const [owner, setOwner] = useState("");
   const [isLoading, setIsLoading] = useState(false);

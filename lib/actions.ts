@@ -117,6 +117,8 @@ export async function createAccount(data: {
     | "Current"
     | "Savings"
     | "Investment"
+    | "Stock"
+    | "Crypto"
     | "Pension"
     | "Commodity"
     | "Stock_options";
@@ -159,6 +161,8 @@ export async function updateAccount(data: {
     | "Current"
     | "Savings"
     | "Investment"
+    | "Stock"
+    | "Crypto"
     | "Pension"
     | "Commodity"
     | "Stock_options";

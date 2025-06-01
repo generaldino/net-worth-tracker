@@ -15,6 +15,13 @@
       "when": 1748773438975,
       "tag": "0001_icy_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1748802775108,
+      "tag": "0002_superb_kinsey_walden",
+      "breakpoints": true
     }
   ]
 }

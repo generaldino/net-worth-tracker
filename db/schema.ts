@@ -13,9 +13,16 @@ export const accountTypeEnum = pgEnum("account_type", [
   "Current",
   "Savings",
   "Investment",
+  "Stock",
+  "Crypto",
   "Pension",
   "Commodity",
   "Stock_options",
+]);
+
+export const accountCategoryEnum = pgEnum("account_category", [
+  "Cash",
+  "Investments",
 ]);
 
 // Tables
@@ -36,6 +43,7 @@ export const accounts = pgTable("accounts", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   type: accountTypeEnum("type").notNull(),
+  category: accountCategoryEnum("category").notNull().default("Investments"),
   isISA: boolean("is_isa").notNull().default(false),
   owner: text("owner").notNull().default("all"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

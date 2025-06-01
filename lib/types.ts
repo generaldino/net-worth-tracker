@@ -9,6 +9,8 @@ export type AccountType =
   | "Current"
   | "Savings"
   | "Investment"
+  | "Stock"
+  | "Crypto"
   | "Pension"
   | "Commodity"
   | "Stock_options";
@@ -17,6 +19,8 @@ export const accountTypes: AccountType[] = [
   "Current",
   "Savings",
   "Investment",
+  "Stock",
+  "Crypto",
   "Pension",
   "Commodity",
   "Stock_options",
