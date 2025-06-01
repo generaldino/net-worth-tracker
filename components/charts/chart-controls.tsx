@@ -2,32 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
 import { getChartData } from "@/lib/actions";
+import { AccountSelector } from "./controls/account-selector";
+import { ChartTypeSelector } from "./controls/chart-type-selector";
+import { ChartFilters } from "./controls/chart-filters";
 
 interface ChartControlsProps {
   initialData: ChartData;
@@ -44,7 +25,6 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
     initialData.accounts.map((account) => account.id)
   );
-  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     async function loadChartData() {
@@ -55,8 +35,9 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
           selectedOwner,
           selectedAccounts
         );
+        console.log("data", data);
         setChartData(data);
-        setClickedData(null); // Reset clicked data when time period changes
+        setClickedData(null);
       } catch (error) {
         console.error("Error loading chart data:", error);
       } finally {
@@ -104,104 +85,28 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full sm:w-[200px] justify-between"
-                  disabled={isLoading}
-                >
-                  {selectedAccounts.length === initialData.accounts.length
-                    ? "All Accounts"
-                    : `${selectedAccounts.length} selected`}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full sm:w-[200px] p-0">
-                <Command>
-                  <CommandInput placeholder="Search accounts..." />
-                  <CommandEmpty>No account found.</CommandEmpty>
-                  <CommandGroup>
-                    {initialData.accounts.map((account) => (
-                      <CommandItem
-                        key={account.id}
-                        onSelect={() => {
-                          setSelectedAccounts((current) =>
-                            current.includes(account.id)
-                              ? current.filter((id) => id !== account.id)
-                              : [...current, account.id]
-                          );
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedAccounts.includes(account.id)
-                              ? "opacity-100"
-                              : "opacity-0"
-                          )}
-                        />
-                        {account.name} ({account.type})
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            <Select
-              value={selectedOwner}
-              onValueChange={(value: string) => setSelectedOwner(value)}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="w-full sm:w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                {owners.map((owner) => (
-                  <SelectItem key={owner} value={owner}>
-                    {owner}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={timePeriod}
-              onValueChange={(value: TimePeriod) => setTimePeriod(value)}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="w-full sm:w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="YTD">YTD</SelectItem>
-                <SelectItem value="1Y">1Y</SelectItem>
-                <SelectItem value="all">All</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
+            <AccountSelector
+              accounts={initialData.accounts}
+              selectedAccounts={selectedAccounts}
+              onAccountsChange={setSelectedAccounts}
+              isLoading={isLoading}
+            />
+            <ChartFilters
+              owners={owners}
+              selectedOwner={selectedOwner}
+              onOwnerChange={setSelectedOwner}
+              timePeriod={timePeriod}
+              onTimePeriodChange={setTimePeriod}
+              isLoading={isLoading}
+            />
+            <ChartTypeSelector
               value={chartType}
-              onValueChange={(value: ChartType) => {
+              onChange={(value) => {
                 setChartType(value);
                 setClickedData(null);
               }}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="total">Net Worth</SelectItem>
-                <SelectItem value="by-account">By Account</SelectItem>
-                <SelectItem value="by-account-type">By Account Type</SelectItem>
-                <SelectItem value="by-category">By Category</SelectItem>
-                <SelectItem value="by-wealth-source">
-                  By Wealth Source
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              isLoading={isLoading}
+            />
           </div>
         </div>
       </CardHeader>
