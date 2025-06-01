@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AddAccountDialog } from "@/components/add-account-dialog";
+
 import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/chart-section";
 import { calculateNetWorth, getAccounts, getMonthlyData } from "@/lib/actions";
+import { AddAccountButton } from "@/components/add-account-dialog";
 
 export async function AccountsManager() {
   const [netWorth, accounts, monthlyData] = await Promise.all([
@@ -27,7 +28,7 @@ export async function AccountsManager() {
                 <CardTitle className="text-lg sm:text-xl">
                   Your Accounts
                 </CardTitle>
-                <AddAccountDialog />
+                <AddAccountButton />
               </div>
             </CardHeader>
             <CardContent className="pt-0">
