@@ -9,6 +9,8 @@ import { getChartData } from "@/lib/actions";
 import { AccountSelector } from "./controls/account-selector";
 import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ChartFilters } from "./controls/chart-filters";
+import { AccountTypeSelector } from "./controls/account-type-selector";
+import { accountTypes } from "@/lib/types";
 
 interface ChartControlsProps {
   initialData: ChartData;
@@ -25,6 +27,7 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
     initialData.accounts.map((account) => account.id)
   );
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(accountTypes);
 
   useEffect(() => {
     async function loadChartData() {
@@ -33,7 +36,8 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
         const data = await getChartData(
           timePeriod,
           selectedOwner,
-          selectedAccounts
+          selectedAccounts,
+          selectedTypes
         );
         console.log("data", data);
         setChartData(data);
@@ -48,14 +52,15 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     if (
       timePeriod !== "all" ||
       selectedOwner !== "all" ||
-      selectedAccounts.length !== initialData.accounts.length
+      selectedAccounts.length !== initialData.accounts.length ||
+      selectedTypes.length !== accountTypes.length
     ) {
       loadChartData();
     } else {
       setChartData(initialData);
       setClickedData(null);
     }
-  }, [timePeriod, selectedOwner, selectedAccounts, initialData]);
+  }, [timePeriod, selectedOwner, selectedAccounts, selectedTypes, initialData]);
 
   const getChartDescription = () => {
     switch (chartType) {
@@ -89,6 +94,11 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
               accounts={initialData.accounts}
               selectedAccounts={selectedAccounts}
               onAccountsChange={setSelectedAccounts}
+              isLoading={isLoading}
+            />
+            <AccountTypeSelector
+              selectedTypes={selectedTypes}
+              onTypesChange={setSelectedTypes}
               isLoading={isLoading}
             />
             <ChartFilters

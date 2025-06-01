@@ -344,7 +344,8 @@ export async function updateMonthlyEntry(
 export async function getChartData(
   timePeriod: "YTD" | "1Y" | "all",
   owner: string = "all",
-  selectedAccountIds: string[] = []
+  selectedAccountIds: string[] = [],
+  selectedTypes: string[] = []
 ) {
   try {
     // Get all monthly entries ordered by month (desc)
@@ -366,6 +367,13 @@ export async function getChartData(
     if (selectedAccountIds.length > 0) {
       filteredAccounts = filteredAccounts.filter((account) =>
         selectedAccountIds.includes(account.id)
+      );
+    }
+
+    // Filter accounts by selected types if specified
+    if (selectedTypes.length > 0) {
+      filteredAccounts = filteredAccounts.filter((account) =>
+        selectedTypes.includes(account.type)
       );
     }
 
@@ -534,23 +542,13 @@ export async function getChartData(
             savingsFromIncome += entry.cashFlow;
             interestEarned += entry.accountGrowth;
             break;
+          case "Stock":
           case "Investment":
-            // For investment accounts, count cash flow as savings from income and growth as capital gains
-            savingsFromIncome += entry.cashFlow;
-            capitalGains += entry.accountGrowth;
-            break;
+          case "Crypto":
           case "Pension":
-            // For pension accounts, count cash flow as savings from income and growth as capital gains
-            savingsFromIncome += entry.cashFlow;
-            capitalGains += entry.accountGrowth;
-            break;
           case "Commodity":
-            // For commodity accounts, count cash flow as savings from income and growth as capital gains
-            savingsFromIncome += entry.cashFlow;
-            capitalGains += entry.accountGrowth;
-            break;
           case "Stock_options":
-            // For stock options accounts, count cash flow as savings from income and growth as capital gains
+            // For all investment-type accounts, count cash flow as savings from income and growth as capital gains
             savingsFromIncome += entry.cashFlow;
             capitalGains += entry.accountGrowth;
             break;
