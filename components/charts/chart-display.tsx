@@ -201,8 +201,12 @@ export function ChartDisplay({
             config={chartData.accounts.reduce(
               (config, account, index) => ({
                 ...config,
-                [`${account.name} (${account.type})`]: {
-                  label: `${account.name} (${account.type})`,
+                [`${account.name} (${account.type}${
+                  account.isISA ? " ISA" : ""
+                })`]: {
+                  label: `${account.name} (${account.type}${
+                    account.isISA ? " ISA" : ""
+                  })`,
                   color: COLORS[index % COLORS.length],
                 },
               }),
@@ -234,7 +238,9 @@ export function ChartDisplay({
                 />
                 <ChartTooltip content={<CustomTooltip />} />
                 {chartData.accounts.map((account, index) => {
-                  const uniqueName = `${account.name} (${account.type})`;
+                  const uniqueName = `${account.name} (${account.type}${
+                    account.isISA ? " ISA" : ""
+                  })`;
                   const hasData = chartData.accountData.some(
                     (monthData) => ((monthData[uniqueName] as number) || 0) > 0
                   );

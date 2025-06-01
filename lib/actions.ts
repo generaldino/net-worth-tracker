@@ -440,8 +440,10 @@ export async function getChartData(
       monthlyData[month].forEach((entry) => {
         const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (account) {
-          // Create a unique name by combining account name and type
-          const uniqueName = `${account.name} (${account.type})`;
+          // Create a unique name by combining account name, type, and ISA status
+          const uniqueName = `${account.name} (${account.type}${
+            account.isISA ? " ISA" : ""
+          })`;
           monthData[uniqueName] = entry.endingBalance;
         }
       });
