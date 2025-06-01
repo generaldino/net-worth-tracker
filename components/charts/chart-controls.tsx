@@ -76,33 +76,10 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     initialData,
   ]);
 
-  const getChartDescription = () => {
-    switch (chartType) {
-      case "total":
-        return "Track your total net worth growth over time";
-      case "by-account":
-        return "See how your wealth is distributed across different accounts over time";
-      case "by-account-type":
-        return "See your net worth by account type over time";
-      case "by-category":
-        return "See your net worth by category over time";
-      case "by-wealth-source":
-        return "Understand where your wealth growth is coming from each month";
-    }
-  };
-
   return (
     <Card>
       <CardHeader className="pb-3 sm:pb-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-          <div>
-            <CardTitle className="text-lg sm:text-xl">
-              Net Worth Analysis
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {getChartDescription()}
-            </p>
-          </div>
           <div className="flex flex-col sm:flex-row gap-2">
             <AccountSelector
               accounts={initialData.accounts}
