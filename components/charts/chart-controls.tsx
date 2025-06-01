@@ -10,7 +10,10 @@ import { AccountSelector } from "./controls/account-selector";
 import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ChartFilters } from "./controls/chart-filters";
 import { AccountTypeSelector } from "./controls/account-type-selector";
+import { CategorySelector } from "./controls/category-selector";
 import { accountTypes } from "@/lib/types";
+
+const accountCategories = ["Cash", "Investments"];
 
 interface ChartControlsProps {
   initialData: ChartData;
@@ -28,6 +31,8 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     initialData.accounts.map((account) => account.id)
   );
   const [selectedTypes, setSelectedTypes] = useState<string[]>(accountTypes);
+  const [selectedCategories, setSelectedCategories] =
+    useState<string[]>(accountCategories);
 
   useEffect(() => {
     async function loadChartData() {
@@ -37,7 +42,8 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
           timePeriod,
           selectedOwner,
           selectedAccounts,
-          selectedTypes
+          selectedTypes,
+          selectedCategories
         );
         console.log("data", data);
         setChartData(data);
@@ -53,14 +59,22 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
       timePeriod !== "all" ||
       selectedOwner !== "all" ||
       selectedAccounts.length !== initialData.accounts.length ||
-      selectedTypes.length !== accountTypes.length
+      selectedTypes.length !== accountTypes.length ||
+      selectedCategories.length !== accountCategories.length
     ) {
       loadChartData();
     } else {
       setChartData(initialData);
       setClickedData(null);
     }
-  }, [timePeriod, selectedOwner, selectedAccounts, selectedTypes, initialData]);
+  }, [
+    timePeriod,
+    selectedOwner,
+    selectedAccounts,
+    selectedTypes,
+    selectedCategories,
+    initialData,
+  ]);
 
   const getChartDescription = () => {
     switch (chartType) {
@@ -99,6 +113,11 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
             <AccountTypeSelector
               selectedTypes={selectedTypes}
               onTypesChange={setSelectedTypes}
+              isLoading={isLoading}
+            />
+            <CategorySelector
+              selectedCategories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
               isLoading={isLoading}
             />
             <ChartFilters

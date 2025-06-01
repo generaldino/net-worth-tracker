@@ -345,7 +345,8 @@ export async function getChartData(
   timePeriod: "YTD" | "1Y" | "all",
   owner: string = "all",
   selectedAccountIds: string[] = [],
-  selectedTypes: string[] = []
+  selectedTypes: string[] = [],
+  selectedCategories: string[] = []
 ) {
   try {
     // Get all monthly entries ordered by month (desc)
@@ -374,6 +375,13 @@ export async function getChartData(
     if (selectedTypes.length > 0) {
       filteredAccounts = filteredAccounts.filter((account) =>
         selectedTypes.includes(account.type)
+      );
+    }
+
+    // Filter accounts by selected categories if specified
+    if (selectedCategories.length > 0) {
+      filteredAccounts = filteredAccounts.filter((account) =>
+        selectedCategories.includes(account.category)
       );
     }
 
