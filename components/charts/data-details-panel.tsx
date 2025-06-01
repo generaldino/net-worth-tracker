@@ -51,6 +51,7 @@ export function DataDetailsPanel({
               typeof value === "number" &&
               value > 0
             ) {
+              const baseName = accountName.split(" (")[0];
               return (
                 <div
                   key={accountName}
@@ -63,7 +64,7 @@ export function DataDetailsPanel({
                         backgroundColor: COLORS[index % COLORS.length],
                       }}
                     />
-                    <span>{accountName}</span>
+                    <span>{baseName}</span>
                   </div>
                   <span className="font-medium">£{value.toLocaleString()}</span>
                 </div>

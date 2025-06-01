@@ -402,7 +402,9 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
       monthlyData[month].forEach((entry) => {
         const account = accounts.find((a) => a.id === entry.accountId);
         if (account) {
-          monthData[account.name] = entry.endingBalance;
+          // Create a unique name by combining account name and type
+          const uniqueName = `${account.name} (${account.type})`;
+          monthData[uniqueName] = entry.endingBalance;
         }
       });
 

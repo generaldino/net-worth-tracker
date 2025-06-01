@@ -178,8 +178,8 @@ export function ChartDisplay({
             config={chartData.accounts.reduce(
               (config, account, index) => ({
                 ...config,
-                [account.name]: {
-                  label: account.name,
+                [`${account.name} (${account.type})`]: {
+                  label: `${account.name} (${account.type})`,
                   color: COLORS[index % COLORS.length],
                 },
               }),
@@ -211,15 +211,15 @@ export function ChartDisplay({
                 />
                 <ChartTooltip content={<CustomTooltip />} />
                 {chartData.accounts.map((account, index) => {
+                  const uniqueName = `${account.name} (${account.type})`;
                   const hasData = chartData.accountData.some(
-                    (monthData) =>
-                      ((monthData[account.name] as number) || 0) > 0
+                    (monthData) => ((monthData[uniqueName] as number) || 0) > 0
                   );
                   if (hasData) {
                     return (
                       <Bar
                         key={account.id}
-                        dataKey={account.name}
+                        dataKey={uniqueName}
                         stackId="accounts"
                         fill={COLORS[index % COLORS.length]}
                         maxBarSize={accountBarSize}
