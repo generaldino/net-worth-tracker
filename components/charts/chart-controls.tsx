@@ -10,6 +10,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Check, ChevronsUpDown, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
@@ -29,12 +44,20 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [chartData, setChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
+    initialData.accounts.map((account) => account.id)
+  );
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     async function loadChartData() {
       setIsLoading(true);
       try {
-        const data = await getChartData(timePeriod, selectedOwner);
+        const data = await getChartData(
+          timePeriod,
+          selectedOwner,
+          selectedAccounts
+        );
         setChartData(data);
         setClickedData(null); // Reset clicked data when time period changes
       } catch (error) {
@@ -44,13 +67,17 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
       }
     }
 
-    if (timePeriod !== "all" || selectedOwner !== "all") {
+    if (
+      timePeriod !== "all" ||
+      selectedOwner !== "all" ||
+      selectedAccounts.length !== initialData.accounts.length
+    ) {
       loadChartData();
     } else {
       setChartData(initialData);
       setClickedData(null);
     }
-  }, [timePeriod, selectedOwner, initialData]);
+  }, [timePeriod, selectedOwner, selectedAccounts, initialData]);
 
   const getChartDescription = () => {
     switch (chartType) {
@@ -76,6 +103,52 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full sm:w-[200px] justify-between"
+                  disabled={isLoading}
+                >
+                  {selectedAccounts.length === initialData.accounts.length
+                    ? "All Accounts"
+                    : `${selectedAccounts.length} selected`}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full sm:w-[200px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search accounts..." />
+                  <CommandEmpty>No account found.</CommandEmpty>
+                  <CommandGroup>
+                    {initialData.accounts.map((account) => (
+                      <CommandItem
+                        key={account.id}
+                        onSelect={() => {
+                          setSelectedAccounts((current) =>
+                            current.includes(account.id)
+                              ? current.filter((id) => id !== account.id)
+                              : [...current, account.id]
+                          );
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedAccounts.includes(account.id)
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                        {account.name} ({account.type})
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <Select
               value={selectedOwner}
               onValueChange={(value: string) => setSelectedOwner(value)}

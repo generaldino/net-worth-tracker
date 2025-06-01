@@ -343,7 +343,8 @@ export async function updateMonthlyEntry(
 
 export async function getChartData(
   timePeriod: "YTD" | "1Y" | "all",
-  owner: string = "all"
+  owner: string = "all",
+  selectedAccountIds: string[] = []
 ) {
   try {
     // Get all monthly entries ordered by month (desc)
@@ -356,10 +357,17 @@ export async function getChartData(
     const accounts = await db.select().from(accountsTable);
 
     // Filter accounts by owner if specified
-    const filteredAccounts =
+    let filteredAccounts =
       owner === "all"
         ? accounts
         : accounts.filter((account) => account.owner === owner);
+
+    // Filter accounts by selected account IDs if specified
+    if (selectedAccountIds.length > 0) {
+      filteredAccounts = filteredAccounts.filter((account) =>
+        selectedAccountIds.includes(account.id)
+      );
+    }
 
     // Transform the data into the required format
     const monthlyData: Record<string, any[]> = {};
