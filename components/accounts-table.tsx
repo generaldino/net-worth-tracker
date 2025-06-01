@@ -2,13 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   type Account,
   type MonthlyEntry,
   type ValueTimePeriod,
