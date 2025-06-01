@@ -23,7 +23,13 @@ import {
 import { updateAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
-import { Account, AccountType, accountTypes } from "@/lib/types";
+import {
+  Account,
+  AccountType,
+  accountTypes,
+  AccountCategory,
+  accountCategories,
+} from "@/lib/types";
 
 interface EditAccountDialogProps {
   account: Account | null;
@@ -39,6 +45,7 @@ export function EditAccountDialog({
   const router = useRouter();
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("Current");
+  const [category, setCategory] = useState<AccountCategory>("Investments");
   const [isISA, setIsISA] = useState(false);
   const [owner, setOwner] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -47,6 +54,7 @@ export function EditAccountDialog({
     if (account) {
       setName(account.name);
       setType(account.type);
+      setCategory(account.category || "Investments");
       setIsISA(account.isISA);
       setOwner(account.owner);
     }
@@ -68,6 +76,7 @@ export function EditAccountDialog({
         id: account.id,
         name,
         type,
+        category,
         isISA,
         owner,
       });
@@ -138,6 +147,24 @@ export function EditAccountDialog({
                 {accountTypes.map((accountType) => (
                   <SelectItem key={accountType} value={accountType}>
                     {accountType}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-category">Account Category</Label>
+            <Select
+              value={category}
+              onValueChange={(value: AccountCategory) => setCategory(value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {accountCategories.map((accountCategory) => (
+                  <SelectItem key={accountCategory} value={accountCategory}>
+                    {accountCategory}
                   </SelectItem>
                 ))}
               </SelectContent>

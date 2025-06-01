@@ -2,7 +2,7 @@ import type { Account as DbAccount } from "@/db/schema";
 
 export type Account = Pick<
   DbAccount,
-  "id" | "name" | "type" | "isISA" | "owner"
+  "id" | "name" | "type" | "isISA" | "owner" | "category"
 >;
 
 export type AccountType =
@@ -14,6 +14,10 @@ export type AccountType =
   | "Pension"
   | "Commodity"
   | "Stock_options";
+
+export type AccountCategory = "Cash" | "Investments";
+
+export const accountCategories: AccountCategory[] = ["Cash", "Investments"];
 
 export const accountTypes: AccountType[] = [
   "Current",

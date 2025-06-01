@@ -12,7 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { AccountType, accountTypes } from "@/lib/types";
+import {
+  AccountType,
+  accountTypes,
+  AccountCategory,
+  accountCategories,
+} from "@/lib/types";
 import { createAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
@@ -21,6 +26,7 @@ import { useForm, Controller } from "react-hook-form";
 type FormData = {
   name: string;
   type: AccountType;
+  category: AccountCategory;
   isISA: boolean;
   owner: string;
 };
@@ -37,6 +43,7 @@ export function AddAccountFormFields() {
     defaultValues: {
       name: "",
       type: "Current",
+      category: "Investments",
       isISA: false,
       owner: "",
     },
@@ -103,6 +110,27 @@ export function AddAccountFormFields() {
                     {accountType
                       .replace(/_/g, " ")
                       .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="category">Account Category</Label>
+        <Controller
+          name="category"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select account category" />
+              </SelectTrigger>
+              <SelectContent>
+                {accountCategories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
                   </SelectItem>
                 ))}
               </SelectContent>

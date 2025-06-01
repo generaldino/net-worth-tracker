@@ -166,6 +166,7 @@ export async function updateAccount(data: {
     | "Pension"
     | "Commodity"
     | "Stock_options";
+  category: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
 }) {
@@ -184,6 +185,7 @@ export async function updateAccount(data: {
       .set({
         name: data.name,
         type: data.type,
+        category: data.category,
         isISA: data.isISA,
         owner: data.owner,
         updatedAt: new Date(),
