@@ -1,17 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { ClickedData } from "./types";
-
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884D8",
-  "#82CA9D",
-  "#FFC658",
-];
+import type { ClickedData } from "@/components/charts/types";
+import { COLORS, SOURCE_KEYS } from "@/components/charts/constants";
 
 interface DataDetailsPanelProps {
   clickedData: ClickedData;
@@ -103,31 +94,29 @@ export function DataDetailsPanel({
           <div className="text-sm text-muted-foreground mb-2">
             Growth Sources:
           </div>
-          {["Savings from Income", "Interest Earned", "Capital Gains"].map(
-            (source, index) => {
-              const value = data[source];
-              return (
-                <div key={source} className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-sm"
-                      style={{
-                        backgroundColor: COLORS[index % COLORS.length],
-                      }}
-                    />
-                    <span>{source}</span>
-                  </div>
-                  <span
-                    className={`font-medium ${
-                      value >= 0 ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {value >= 0 ? "+" : ""}£{value.toLocaleString()}
-                  </span>
+          {SOURCE_KEYS.map((source, index) => {
+            const value = data[source];
+            return (
+              <div key={source} className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-sm"
+                    style={{
+                      backgroundColor: COLORS[index % COLORS.length],
+                    }}
+                  />
+                  <span>{source}</span>
                 </div>
-              );
-            }
-          )}
+                <span
+                  className={`font-medium ${
+                    value >= 0 ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {value >= 0 ? "+" : ""}£{value.toLocaleString()}
+                </span>
+              </div>
+            );
+          })}
           <div className="border-t pt-2 mt-2">
             <div className="flex justify-between font-medium">
               <span>Total Growth:</span>

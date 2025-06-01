@@ -12,22 +12,14 @@ import {
 } from "recharts";
 import { ChartType, ChartData, ClickedData } from "@/components/charts/types";
 import { DataDetailsPanel } from "@/components/charts/data-details-panel";
-
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884D8",
-  "#82CA9D",
-  "#FFC658",
-];
+import { COLORS } from "./constants";
 
 interface ChartDisplayProps {
   chartType: ChartType;
   chartData: ChartData;
   clickedData: ClickedData | null;
   setClickedData: (data: ClickedData | null) => void;
+  isLoading: boolean;
 }
 
 export function ChartDisplay({
@@ -35,6 +27,7 @@ export function ChartDisplay({
   chartData,
   clickedData,
   setClickedData,
+  isLoading,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
 
@@ -119,6 +112,14 @@ export function ChartDisplay({
     }
     return null;
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
+        <div className="text-muted-foreground">Loading chart data...</div>
+      </div>
+    );
+  }
 
   const renderChart = () => {
     switch (chartType) {
@@ -309,7 +310,7 @@ export function ChartDisplay({
       )}
 
       {/* Show instruction text */}
-      {!clickedData && (
+      {!clickedData && !isLoading && (
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Hover over bars to see values, click to pin details
         </div>

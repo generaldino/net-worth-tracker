@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
+import { getChartData } from "@/lib/actions";
 
 type ChartType = "total" | "accounts" | "sources";
 
@@ -25,6 +26,29 @@ export function ChartControls({ initialData }: ChartControlsProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [chartData, setChartData] = useState<ChartData>(initialData);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadChartData() {
+      setIsLoading(true);
+      try {
+        const data = await getChartData(timePeriod);
+        setChartData(data);
+        setClickedData(null); // Reset clicked data when time period changes
+      } catch (error) {
+        console.error("Error loading chart data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    if (timePeriod !== "all") {
+      loadChartData();
+    } else {
+      setChartData(initialData);
+      setClickedData(null);
+    }
+  }, [timePeriod, initialData]);
 
   const getChartDescription = () => {
     switch (chartType) {
@@ -52,6 +76,7 @@ export function ChartControls({ initialData }: ChartControlsProps) {
           <Select
             value={timePeriod}
             onValueChange={(value: TimePeriod) => setTimePeriod(value)}
+            disabled={isLoading}
           >
             <SelectTrigger className="w-full sm:w-[120px]">
               <SelectValue />
@@ -73,6 +98,7 @@ export function ChartControls({ initialData }: ChartControlsProps) {
               setClickedData(null);
             }}
             className="w-full sm:w-auto text-sm"
+            disabled={isLoading}
           >
             Total Net Worth
           </Button>
@@ -83,6 +109,7 @@ export function ChartControls({ initialData }: ChartControlsProps) {
               setClickedData(null);
             }}
             className="w-full sm:w-auto text-sm"
+            disabled={isLoading}
           >
             By Account
           </Button>
@@ -93,6 +120,7 @@ export function ChartControls({ initialData }: ChartControlsProps) {
               setClickedData(null);
             }}
             className="w-full sm:w-auto text-sm"
+            disabled={isLoading}
           >
             By Source
           </Button>
@@ -103,6 +131,7 @@ export function ChartControls({ initialData }: ChartControlsProps) {
           chartData={chartData}
           clickedData={clickedData}
           setClickedData={setClickedData}
+          isLoading={isLoading}
         />
       </CardContent>
     </Card>
