@@ -1,7 +1,7 @@
 /**
  * Returns the site URL based on the current environment
  * In development: http://localhost:3000
- * In production: https://wespotnumberplates.com
+ * In production: https://v0-wealth-tracker-green.vercel.app
  */
 export function getSiteUrl(): string {
   const isDevelopment = process.env.NODE_ENV === "development";
@@ -10,5 +10,5 @@ export function getSiteUrl(): string {
     return "http://localhost:3000";
   }
 
-  return "https://wespotnumberplates.com";
+  return "https://v0-wealth-tracker-green.vercel.app";
 }
