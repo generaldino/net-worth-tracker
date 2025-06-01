@@ -16,6 +16,7 @@ import {
 } from "@/lib/types";
 import { AccountRow } from "./accounts/account-row";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
+import { TimePeriodSelector } from "./accounts/TimePeriodSelector";
 import {
   getCurrentValue,
   getAccountHistory,
@@ -144,32 +145,10 @@ export function AccountsTable({
 
   return (
     <div className="space-y-4">
-      {/* Time Period Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b">
-        <div className="text-sm text-muted-foreground">
-          Showing value changes over the selected time period
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Time Period:</span>
-          <Select
-            value={selectedTimePeriod}
-            onValueChange={(value: ValueTimePeriod) =>
-              setSelectedTimePeriod(value)
-            }
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {valueTimePeriods.map((period) => (
-                <SelectItem key={period.value} value={period.value}>
-                  {period.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <TimePeriodSelector
+        selectedTimePeriod={selectedTimePeriod}
+        onTimePeriodChange={setSelectedTimePeriod}
+      />
 
       <div className="space-y-3">
         {accounts.map((account) => (
