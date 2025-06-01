@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { AccountsTable } from "@/components/accounts-table";
-import { ChartSection } from "@/components/chart-section";
+import { ChartSection } from "@/components/charts/chart-section";
 import {
   calculateNetWorth,
   getAccounts,
