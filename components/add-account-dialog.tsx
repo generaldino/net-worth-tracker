@@ -27,11 +27,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
 import { AccountType, accountTypes, Account } from "@/lib/types";
 
-interface AddAccountDialogProps {
-  onAddAccount: (account: Account) => void;
-}
-
-export function AddAccountDialog({ onAddAccount }: AddAccountDialogProps) {
+export function AddAccountDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -58,7 +54,6 @@ export function AddAccountDialog({ onAddAccount }: AddAccountDialogProps) {
       });
 
       if (result.success && result.account) {
-        onAddAccount(result.account);
         // Reset form and close dialog
         setName("");
         setType("current");
