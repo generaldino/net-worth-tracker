@@ -10,11 +10,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useState } from "react";
 
 interface AccountRowProps {
   account: Account;
-  isExpanded: boolean;
-  onToggle: (accountId: string) => void;
   currentValue: number;
   valueChange: {
     absoluteChange: number;
@@ -39,8 +38,6 @@ interface AccountRowProps {
 
 export function AccountRow({
   account,
-  isExpanded,
-  onToggle,
   currentValue,
   valueChange,
   history,
@@ -54,8 +51,10 @@ export function AccountRow({
   onEditAccount,
   onDeleteAccount,
 }: AccountRowProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   return (
-    <Collapsible open={isExpanded} onOpenChange={() => onToggle(account.id)}>
+    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <div className="border rounded-lg bg-card">
         <CollapsibleTrigger asChild>
           <div className="w-full p-4 hover:bg-muted/50 cursor-pointer">

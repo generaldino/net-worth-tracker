@@ -39,9 +39,6 @@ export function AccountsTable({
   onUpdateMonthlyEntry,
   onAddNewMonth,
 }: AccountsTableProps) {
-  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
-    new Set()
-  );
   const [editingValues, setEditingValues] = useState<
     Record<string, Record<string, any>>
   >({});
@@ -85,16 +82,6 @@ export function AccountsTable({
     }
     fetchAccountData();
   }, [accounts, selectedTimePeriod]);
-
-  const toggleAccount = (accountId: string) => {
-    const newExpanded = new Set(expandedAccounts);
-    if (newExpanded.has(accountId)) {
-      newExpanded.delete(accountId);
-    } else {
-      newExpanded.add(accountId);
-    }
-    setExpandedAccounts(newExpanded);
-  };
 
   const handleValueChange = (
     accountId: string,
@@ -148,8 +135,6 @@ export function AccountsTable({
           <AccountRow
             key={account.id}
             account={account}
-            isExpanded={expandedAccounts.has(account.id)}
-            onToggle={toggleAccount}
             currentValue={currentValues[account.id] || 0}
             valueChange={
               valueChanges[account.id] || {
