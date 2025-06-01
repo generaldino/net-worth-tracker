@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type Account, type MonthlyEntry, getCurrentValue } from "@/lib/types";
+import { type Account, type MonthlyEntry } from "@/lib/types";
 import { CalendarIcon } from "lucide-react";
+import { getCurrentValue } from "@/lib/actions";
 
 interface MonthlyEntryDialogProps {
   accounts: Account[];
@@ -35,25 +36,37 @@ export function MonthlyEntryDialog({
 
   useEffect(() => {
     // Initialize entries with existing data or default values
-    const initialEntries = accounts.map((account) => {
-      const existingEntry = existingEntries.find(
-        (e) => e.accountId === account.id
+    const initializeEntries = async () => {
+      const initialEntries = await Promise.all(
+        accounts.map(async (account) => {
+          const existingEntry = existingEntries.find(
+            (e) => e.accountId === account.id
+          );
+          const endingBalance = existingEntry
+            ? existingEntry.endingBalance
+            : await getCurrentValue(account.id);
+          const cashIn = existingEntry ? existingEntry.cashIn : 0;
+          const cashOut = existingEntry ? existingEntry.cashOut : 0;
+          return {
+            accountId: account.id,
+            monthKey: month,
+            month,
+            endingBalance,
+            cashIn,
+            cashOut,
+            cashFlow: cashIn - cashOut,
+            accountGrowth: 0,
+          };
+        })
       );
-      return {
-        accountId: account.id,
-        endingBalance: existingEntry
-          ? existingEntry.endingBalance
-          : getCurrentValue(account.id),
-        cashIn: existingEntry ? existingEntry.cashIn : 0,
-        cashOut: existingEntry ? existingEntry.cashOut : 0,
-      };
-    });
-    setEntries(initialEntries);
+      setEntries(initialEntries);
+    };
+    initializeEntries();
     setMonth(selectedMonth);
-  }, [accounts, existingEntries, selectedMonth, open]);
+  }, [accounts, existingEntries, selectedMonth, open, month]);
 
   const handleEntryChange = (
-    accountId: number,
+    accountId: string,
     field: keyof MonthlyEntry,
     value: string
   ) => {
@@ -130,7 +143,7 @@ export function MonthlyEntryDialog({
                         value={entry?.endingBalance || 0}
                         onChange={(e) =>
                           handleEntryChange(
-                            account.id,
+                            account.id.toString(),
                             "endingBalance",
                             e.target.value
                           )
@@ -145,7 +158,7 @@ export function MonthlyEntryDialog({
                         value={entry?.cashIn || 0}
                         onChange={(e) =>
                           handleEntryChange(
-                            account.id,
+                            account.id.toString(),
                             "cashIn",
                             e.target.value
                           )
@@ -160,7 +173,7 @@ export function MonthlyEntryDialog({
                         value={entry?.cashOut || 0}
                         onChange={(e) =>
                           handleEntryChange(
-                            account.id,
+                            account.id.toString(),
                             "cashOut",
                             e.target.value
                           )

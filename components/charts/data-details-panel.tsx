@@ -5,6 +5,13 @@ import type { ClickedData } from "@/components/charts/types";
 import { COLORS, SOURCE_KEYS } from "@/components/charts/constants";
 import { useState } from "react";
 
+interface AccountBreakdown {
+  accountId: string;
+  name: string;
+  type: string;
+  amount: number;
+}
+
 interface DataDetailsPanelProps {
   clickedData: ClickedData;
   onClose: () => void;
@@ -15,6 +22,17 @@ export function DataDetailsPanel({
   onClose,
 }: DataDetailsPanelProps) {
   const { month, data, chartType } = clickedData;
+  const [breakdownStates, setBreakdownStates] = useState<Map<string, boolean>>(
+    new Map()
+  );
+
+  const toggleBreakdown = (source: string) => {
+    setBreakdownStates((prev) => {
+      const next = new Map(prev);
+      next.set(source, !prev.get(source));
+      return next;
+    });
+  };
 
   return (
     <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
@@ -35,7 +53,10 @@ export function DataDetailsPanel({
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total Net Worth:</span>
             <span className="font-medium">
-              £{data.netWorth.toLocaleString()}
+              £
+              {data.netWorth !== undefined
+                ? data.netWorth.toLocaleString()
+                : "—"}
             </span>
           </div>
         </div>
@@ -79,7 +100,7 @@ export function DataDetailsPanel({
                     ([key, value]) =>
                       key !== "month" && typeof value === "number"
                   )
-                  .reduce((sum, [_, value]) => sum + (value as number), 0)
+                  .reduce((sum, [, value]) => sum + (value as number), 0)
                   .toLocaleString()}
               </span>
             </div>
@@ -93,9 +114,19 @@ export function DataDetailsPanel({
             Growth Sources:
           </div>
           {SOURCE_KEYS.map((source, index) => {
-            const value = data[source];
-            const accounts = data.breakdown?.[source] || [];
-            const [showBreakdown, setShowBreakdown] = useState(false);
+            const dataRecord = data as Record<
+              string,
+              number | string | { [key: string]: unknown } | undefined
+            >;
+            const rawValue = dataRecord[source];
+            const value = typeof rawValue === "number" ? rawValue : undefined;
+            const breakdown =
+              typeof dataRecord.breakdown === "object" &&
+              dataRecord.breakdown !== null
+                ? (dataRecord.breakdown as Record<string, AccountBreakdown[]>)
+                : {};
+            const accounts = (breakdown[source] || []) as AccountBreakdown[];
+            const showBreakdown = breakdownStates.get(source) || false;
             return (
               <div key={source} className="mb-2">
                 <div className="flex justify-between items-center">
@@ -111,16 +142,20 @@ export function DataDetailsPanel({
                   <div className="flex items-center gap-2">
                     <span
                       className={`font-medium ${
-                        value >= 0 ? "text-green-600" : "text-red-600"
+                        value !== undefined && value >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
                       }`}
                     >
-                      {value >= 0 ? "+" : "-"}£
-                      {Math.abs(value).toLocaleString()}
+                      {value !== undefined ? (value >= 0 ? "+" : "-") : "—"}£
+                      {value !== undefined
+                        ? Math.abs(value).toLocaleString()
+                        : "—"}
                     </span>
                     {accounts.length > 0 && (
                       <button
                         className="text-xs text-primary underline hover:text-primary-focus focus:outline-none"
-                        onClick={() => setShowBreakdown((open) => !open)}
+                        onClick={() => toggleBreakdown(source)}
                         type="button"
                       >
                         {showBreakdown ? "See less" : "See more"}
@@ -130,7 +165,7 @@ export function DataDetailsPanel({
                 </div>
                 {showBreakdown && (
                   <ul className="ml-7 mt-1 space-y-0.5">
-                    {accounts.map((acc: any) => (
+                    {accounts.map((acc) => (
                       <li
                         key={acc.accountId}
                         className="flex justify-between text-sm"
@@ -157,29 +192,28 @@ export function DataDetailsPanel({
           <div className="border-t pt-2 mt-2">
             <div className="flex justify-between font-medium">
               <span>Total Growth:</span>
-              <span
-                className={`$${
-                  data["Savings from Income"] +
-                    data["Interest Earned"] +
-                    data["Capital Gains"] >=
-                  0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {data["Savings from Income"] +
-                  data["Interest Earned"] +
-                  data["Capital Gains"] >=
-                0
-                  ? "+"
-                  : "-"}
-                £
-                {Math.abs(
-                  data["Savings from Income"] +
-                    data["Interest Earned"] +
-                    data["Capital Gains"]
-                ).toLocaleString()}
-              </span>
+              {(() => {
+                const sfi =
+                  typeof data["Savings from Income"] === "number"
+                    ? data["Savings from Income"]
+                    : 0;
+                const ie =
+                  typeof data["Interest Earned"] === "number"
+                    ? data["Interest Earned"]
+                    : 0;
+                const cg =
+                  typeof data["Capital Gains"] === "number"
+                    ? data["Capital Gains"]
+                    : 0;
+                const total = sfi + ie + cg;
+                return (
+                  <span
+                    className={total >= 0 ? "text-green-600" : "text-red-600"}
+                  >
+                    {total >= 0 ? "+" : "-"}£{Math.abs(total).toLocaleString()}
+                  </span>
+                );
+              })()}
             </div>
           </div>
         </div>

@@ -20,15 +20,10 @@ import { toast } from "@/components/ui/use-toast";
 
 interface AddMonthDialogProps {
   account: Account;
-  monthlyData: Record<string, MonthlyEntry[]>;
   onAddMonth: (month: string, entry: MonthlyEntry) => void;
 }
 
-export function AddMonthDialog({
-  account,
-  monthlyData,
-  onAddMonth,
-}: AddMonthDialogProps) {
+export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState("");
   const [endingBalance, setEndingBalance] = useState("");
@@ -98,7 +93,7 @@ export function AddMonthDialog({
           description: result.error || "Failed to add monthly entry",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",

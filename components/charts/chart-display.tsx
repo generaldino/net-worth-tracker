@@ -5,8 +5,6 @@ import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -78,7 +76,7 @@ export function ChartDisplay({
 
   // Handle bar click
   const handleBarClick = (
-    data: { month: string } & Record<string, any>,
+    data: { month: string; netWorth: number },
     month: string
   ) => {
     if (chartType === "by-account") {
@@ -93,21 +91,38 @@ export function ChartDisplay({
   };
 
   // Custom tooltip content
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: Array<{
+      name: string;
+      value: number;
+      color: string;
+    }>;
+    label?: string;
+  }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
           <p className="font-medium mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-2 text-sm">
-              <div
-                className="w-3 h-3 rounded-sm"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="font-medium">{entry.name}:</span>
-              <span>£{entry.value.toLocaleString()}</span>
-            </div>
-          ))}
+          {payload.map(
+            (
+              entry: { name: string; value: number; color: string },
+              index: number
+            ) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="font-medium">{entry.name}:</span>
+                <span>£{entry.value.toLocaleString()}</span>
+              </div>
+            )
+          )}
           <p className="text-xs text-muted-foreground mt-2">
             Click to pin details
           </p>
@@ -128,7 +143,6 @@ export function ChartDisplay({
   const renderChart = () => {
     switch (chartType) {
       case "total":
-        const totalBarSize = getBarSize(chartData.netWorthData.length);
         return (
           <ChartContainer
             config={{
@@ -184,9 +198,18 @@ export function ChartDisplay({
                   stroke="hsl(var(--chart-1))"
                   fill="url(#netWorthGradient)"
                   strokeWidth={2}
-                  onClick={(data: any) =>
-                    handleBarClick(data.payload, data.payload.month)
-                  }
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        netWorth: number;
+                      };
+                      handleBarClick(
+                        { month: payload.month, netWorth: payload.netWorth },
+                        payload.month
+                      );
+                    }
+                  }}
                   style={{ cursor: "pointer" }}
                 />
               </AreaChart>

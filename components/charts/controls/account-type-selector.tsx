@@ -36,7 +36,7 @@ export function AccountTypeSelector({
     if (selectedTypes.length === 0) {
       onTypesChange(accountTypes);
     }
-  }, []);
+  }, [selectedTypes.length, onTypesChange]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -37,7 +37,7 @@ export function CategorySelector({
     if (selectedCategories.length === 0) {
       onCategoriesChange(accountCategories);
     }
-  }, []);
+  }, [selectedCategories.length, onCategoriesChange]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

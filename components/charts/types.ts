@@ -37,6 +37,10 @@ export interface ChartData {
 
 export interface ClickedData {
   month: string;
-  data: any;
+  data: {
+    month: string;
+    netWorth?: number;
+    [key: string]: number | string | undefined;
+  };
   chartType: ChartType;
 }

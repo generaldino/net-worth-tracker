@@ -95,11 +95,11 @@ export function EditAccountDialog({
           description: result.error || "Failed to update account",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An error occurred while updating the account",
+        description: "An unexpected error occurred",
       });
     } finally {
       setIsLoading(false);

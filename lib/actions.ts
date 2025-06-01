@@ -64,7 +64,19 @@ export async function getMonthlyData() {
       .orderBy(desc(monthlyEntries.month), monthlyEntries.accountId);
 
     // Transform the data into the required format
-    const monthlyData: Record<string, any[]> = {};
+    const monthlyData: Record<
+      string,
+      Array<{
+        accountId: string;
+        monthKey: string;
+        month: string;
+        endingBalance: number;
+        cashIn: number;
+        cashOut: number;
+        cashFlow: number;
+        accountGrowth: number;
+      }>
+    > = {};
 
     // First pass: organize entries by month
     entries.forEach((entry) => {
@@ -389,7 +401,19 @@ export async function getChartData(
     }
 
     // Transform the data into the required format
-    const monthlyData: Record<string, any[]> = {};
+    const monthlyData: Record<
+      string,
+      Array<{
+        accountId: string;
+        monthKey: string;
+        month: string;
+        endingBalance: number;
+        cashIn: number;
+        cashOut: number;
+        cashFlow: number;
+        accountGrowth: number;
+      }>
+    > = {};
 
     // First pass: organize entries by month
     entries.forEach((entry) => {
@@ -430,9 +454,6 @@ export async function getChartData(
     }
 
     const filteredMonths = getFilteredMonths(months, timePeriod);
-    const filteredData = Object.fromEntries(
-      filteredMonths.map((month) => [month, monthlyData[month]])
-    );
 
     // Calculate net worth over time
     const netWorthData = filteredMonths.map((month) => ({
@@ -449,7 +470,10 @@ export async function getChartData(
 
     // Calculate net worth by account over time
     const accountData = filteredMonths.map((month) => {
-      const monthData: any = {
+      const monthData: {
+        month: string;
+        [key: string]: number | string;
+      } = {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
           month: "short",
           year: "numeric",
@@ -472,7 +496,10 @@ export async function getChartData(
 
     // Calculate net worth by account type over time
     const accountTypeData = filteredMonths.map((month) => {
-      const monthData: any = {
+      const monthData: {
+        month: string;
+        [key: string]: number | string;
+      } = {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
           month: "short",
           year: "numeric",
@@ -503,7 +530,10 @@ export async function getChartData(
 
     // Calculate net worth by category over time
     const categoryData = filteredMonths.map((month) => {
-      const monthData: any = {
+      const monthData: {
+        month: string;
+        [key: string]: number | string;
+      } = {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
           month: "short",
           year: "numeric",
@@ -540,9 +570,24 @@ export async function getChartData(
       let capitalGains = 0;
 
       // Per-account breakdowns
-      const savingsAccounts: any[] = [];
-      const interestAccounts: any[] = [];
-      const capitalGainsAccounts: any[] = [];
+      const savingsAccounts: Array<{
+        accountId: string;
+        name: string;
+        type: string;
+        amount: number;
+      }> = [];
+      const interestAccounts: Array<{
+        accountId: string;
+        name: string;
+        type: string;
+        amount: number;
+      }> = [];
+      const capitalGainsAccounts: Array<{
+        accountId: string;
+        name: string;
+        type: string;
+        amount: number;
+      }> = [];
 
       monthlyData[month].forEach((entry) => {
         const account = filteredAccounts.find((a) => a.id === entry.accountId);

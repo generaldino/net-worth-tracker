@@ -1,7 +1,6 @@
 "use client";
 
 import { ProfileDropdown } from "@/components/auth/profile-dropdown";
-import { auth } from "@/lib/auth";
 
 export function Navbar() {
   return (

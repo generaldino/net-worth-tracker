@@ -57,8 +57,8 @@ export function AccountActions({
           <DialogHeader>
             <DialogTitle>Delete Account</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{account.name}"? This will
-              permanently delete the account and all its associated monthly
+              Are you sure you want to delete &quot;{account.name}&quot;? This
+              will permanently delete the account and all its associated monthly
               entries. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>

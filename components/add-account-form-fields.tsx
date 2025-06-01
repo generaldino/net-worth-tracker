@@ -67,7 +67,7 @@ export function AddAccountFormFields() {
           description: result.error || "Failed to create account",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",

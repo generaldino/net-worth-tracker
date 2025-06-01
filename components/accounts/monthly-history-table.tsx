@@ -1,7 +1,6 @@
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -11,7 +10,17 @@ import { type MonthlyEntry } from "@/lib/types";
 
 interface MonthlyHistoryTableProps {
   history: MonthlyEntry[];
-  editingValues: Record<string, Record<string, any>>;
+  editingValues: Record<
+    string,
+    Record<
+      string,
+      {
+        endingBalance: string;
+        cashIn: string;
+        cashOut: string;
+      }
+    >
+  >;
   accountId: string;
   onValueChange: (
     accountId: string,
@@ -35,7 +44,9 @@ export function MonthlyHistoryTable({
     return (
       <div className="text-center py-8 text-muted-foreground">
         <p>No monthly data yet.</p>
-        <p className="text-sm">Use the "Add Month" button to get started.</p>
+        <p className="text-sm">
+          Use the &quot;Add Month&quot; button to get started.
+        </p>
       </div>
     );
   }

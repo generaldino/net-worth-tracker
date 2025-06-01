@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";

@@ -20,7 +20,17 @@ interface AccountRowProps {
     percentageChange: number;
   };
   history: MonthlyEntry[];
-  editingValues: Record<string, Record<string, any>>;
+  editingValues: Record<
+    string,
+    Record<
+      string,
+      {
+        endingBalance: string;
+        cashIn: string;
+        cashOut: string;
+      }
+    >
+  >;
   monthlyData: Record<string, MonthlyEntry[]>;
   selectedTimePeriod: string;
   onValueChange: (
@@ -42,7 +52,6 @@ export function AccountRow({
   valueChange,
   history,
   editingValues,
-  monthlyData,
   selectedTimePeriod,
   onValueChange,
   onSave,
@@ -132,7 +141,6 @@ export function AccountRow({
               <h4 className="font-medium">Monthly History</h4>
               <AddMonthDialog
                 account={account}
-                monthlyData={monthlyData}
                 onAddMonth={(month, entry) =>
                   onAddMonth(account.id, month, entry)
                 }

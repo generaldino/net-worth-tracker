@@ -44,7 +44,17 @@ export function AccountsTable({
   onAddNewMonth,
 }: AccountsTableProps) {
   const [editingValues, setEditingValues] = useState<
-    Record<string, Record<string, any>>
+    Record<
+      string,
+      Record<
+        string,
+        {
+          endingBalance: string;
+          cashIn: string;
+          cashOut: string;
+        }
+      >
+    >
   >({});
   const [selectedTimePeriod, setSelectedTimePeriod] =
     useState<ValueTimePeriod>("3M");
