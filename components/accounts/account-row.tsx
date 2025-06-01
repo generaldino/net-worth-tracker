@@ -66,7 +66,7 @@ export function AccountRow({
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <div className="border rounded-lg bg-card">
         <CollapsibleTrigger asChild>
-          <div className="w-full p-4 hover:bg-muted/50 cursor-pointer">
+          <div className="w-full p-3 sm:p-4 hover:bg-muted/50 cursor-pointer">
             {/* Mobile Layout */}
             <div className="block sm:hidden">
               <div className="flex items-start justify-between mb-2">
@@ -78,8 +78,11 @@ export function AccountRow({
                   )}
                   <div>
                     <div className="font-medium text-base">{account.name}</div>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-1">
                       <AccountTypeBadge account={account} />
+                      <span className="text-sm text-muted-foreground">
+                        {account.owner}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -90,7 +93,7 @@ export function AccountRow({
                   stopPropagation
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-3 text-sm mt-3">
                 <div>
                   <span className="text-muted-foreground">Current Value:</span>
                   <div className="font-medium text-lg">
@@ -136,8 +139,8 @@ export function AccountRow({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <div className="px-4 pb-4 border-t">
-            <div className="flex justify-between items-center mb-3 mt-3">
+          <div className="px-3 sm:px-4 pb-4 border-t">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 mt-3">
               <h4 className="font-medium">Monthly History</h4>
               <AddMonthDialog
                 account={account}

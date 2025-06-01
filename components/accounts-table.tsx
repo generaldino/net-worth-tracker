@@ -101,11 +101,13 @@ export function AccountsTable({
   };
 
   return (
-    <div className="space-y-4">
-      <TimePeriodSelector
-        selectedTimePeriod={selectedTimePeriod}
-        onTimePeriodChange={setSelectedTimePeriod}
-      />
+    <div className="space-y-4 px-2 sm:px-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <TimePeriodSelector
+          selectedTimePeriod={selectedTimePeriod}
+          onTimePeriodChange={setSelectedTimePeriod}
+        />
+      </div>
 
       <div className="space-y-3">
         {accounts.map((account) => (

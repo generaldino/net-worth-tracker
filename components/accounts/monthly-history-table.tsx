@@ -42,9 +42,9 @@ export function MonthlyHistoryTable({
 }: MonthlyHistoryTableProps) {
   if (history.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className="text-center py-6 sm:py-8 text-muted-foreground">
         <p>No monthly data yet.</p>
-        <p className="text-sm">
+        <p className="text-sm mt-1">
           Use the &quot;Add Month&quot; button to get started.
         </p>
       </div>
@@ -85,16 +85,16 @@ export function MonthlyHistoryTable({
       </div>
 
       {/* Desktop History Layout */}
-      <div className="hidden sm:block">
+      <div className="hidden sm:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Month</TableHead>
-              <TableHead>Balance</TableHead>
-              <TableHead>Cash In</TableHead>
-              <TableHead>Cash Out</TableHead>
-              <TableHead>Cash Flow</TableHead>
-              <TableHead>Growth</TableHead>
+              <TableHead className="w-[120px]">Month</TableHead>
+              <TableHead className="w-[140px]">Balance</TableHead>
+              <TableHead className="w-[120px]">Cash In</TableHead>
+              <TableHead className="w-[120px]">Cash Out</TableHead>
+              <TableHead className="w-[120px]">Cash Flow</TableHead>
+              <TableHead className="w-[120px]">Growth</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>

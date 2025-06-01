@@ -29,12 +29,13 @@ export function MonthlyHistoryRow({
   if (isMobile) {
     return (
       <div className="bg-muted/30 rounded-lg p-3">
-        <div className="flex justify-between items-start mb-2">
+        <div className="flex justify-between items-start mb-3">
           <div className="font-medium">{entry.month}</div>
           <Button
             variant="ghost"
             size="sm"
             onClick={isEditing ? onSave : onEdit}
+            className="h-8 w-8 p-0"
           >
             {isEditing ? (
               <Save className="h-4 w-4" />
@@ -43,15 +44,15 @@ export function MonthlyHistoryRow({
             )}
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span className="text-muted-foreground">Balance:</span>
+            <span className="text-muted-foreground block mb-1">Balance:</span>
             {isEditing ? (
               <Input
                 type="number"
                 value={editingValues.endingBalance}
                 onChange={(e) => onValueChange("endingBalance", e.target.value)}
-                className="mt-1"
+                className="h-8"
               />
             ) : (
               <div className="font-medium">
@@ -60,7 +61,7 @@ export function MonthlyHistoryRow({
             )}
           </div>
           <div>
-            <span className="text-muted-foreground">Growth:</span>
+            <span className="text-muted-foreground block mb-1">Growth:</span>
             <div
               className={
                 entry.accountGrowth >= 0
@@ -73,13 +74,13 @@ export function MonthlyHistoryRow({
             </div>
           </div>
           <div>
-            <span className="text-muted-foreground">Cash In:</span>
+            <span className="text-muted-foreground block mb-1">Cash In:</span>
             {isEditing ? (
               <Input
                 type="number"
                 value={editingValues.cashIn}
                 onChange={(e) => onValueChange("cashIn", e.target.value)}
-                className="mt-1"
+                className="h-8"
               />
             ) : (
               <div className="font-medium">
@@ -88,13 +89,13 @@ export function MonthlyHistoryRow({
             )}
           </div>
           <div>
-            <span className="text-muted-foreground">Cash Out:</span>
+            <span className="text-muted-foreground block mb-1">Cash Out:</span>
             {isEditing ? (
               <Input
                 type="number"
                 value={editingValues.cashOut}
                 onChange={(e) => onValueChange("cashOut", e.target.value)}
-                className="mt-1"
+                className="h-8"
               />
             ) : (
               <div className="font-medium">
