@@ -1,4 +1,9 @@
-export type ChartType = "total" | "accounts" | "sources";
+export type ChartType =
+  | "total"
+  | "by-account"
+  | "by-account-type"
+  | "by-category"
+  | "by-wealth-source";
 
 export interface Account {
   id: string;
@@ -6,6 +11,7 @@ export interface Account {
   type: string;
   isISA: boolean;
   owner: string;
+  category?: string;
 }
 
 export interface SourceData {
@@ -23,6 +29,8 @@ export interface AccountData {
 export interface ChartData {
   netWorthData: Array<{ month: string; netWorth: number }>;
   accountData: Array<AccountData>;
+  accountTypeData: Array<AccountData>;
+  categoryData: Array<AccountData>;
   sourceData: Array<SourceData>;
   accounts: Array<Account>;
 }

@@ -40,23 +40,19 @@ export function DataDetailsPanel({
         </div>
       )}
 
-      {chartType === "accounts" && (
+      {(chartType === "by-account" ||
+        chartType === "by-account-type" ||
+        chartType === "by-category") && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground mb-2">
-            Account Breakdown:
+            {chartType === "by-account" && "Account Breakdown:"}
+            {chartType === "by-account-type" && "Account Type Breakdown:"}
+            {chartType === "by-category" && "Category Breakdown:"}
           </div>
-          {Object.entries(data).map(([accountName, value], index) => {
-            if (
-              accountName !== "month" &&
-              typeof value === "number" &&
-              value > 0
-            ) {
-              const baseName = accountName.split(" (")[0];
+          {Object.entries(data).map(([key, value], index) => {
+            if (key !== "month" && typeof value === "number" && value > 0) {
               return (
-                <div
-                  key={accountName}
-                  className="flex justify-between items-center"
-                >
+                <div key={key} className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <div
                       className="w-3 h-3 rounded-sm"
@@ -64,7 +60,7 @@ export function DataDetailsPanel({
                         backgroundColor: COLORS[index % COLORS.length],
                       }}
                     />
-                    <span>{baseName}</span>
+                    <span>{key}</span>
                   </div>
                   <span className="font-medium">£{value.toLocaleString()}</span>
                 </div>
@@ -90,7 +86,7 @@ export function DataDetailsPanel({
         </div>
       )}
 
-      {chartType === "sources" && (
+      {chartType === "by-wealth-source" && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground mb-2">
             Growth Sources:

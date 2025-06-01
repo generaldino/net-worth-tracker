@@ -77,7 +77,7 @@ export function ChartDisplay({
     data: { month: string } & Record<string, any>,
     month: string
   ) => {
-    if (chartType === "accounts") {
+    if (chartType === "by-account") {
       // For accounts view, we need to find the month's data
       const monthData = chartData.accountData.find((d) => d.month === month);
       if (monthData) {
@@ -171,7 +171,7 @@ export function ChartDisplay({
           </ChartContainer>
         );
 
-      case "accounts":
+      case "by-account":
         const accountBarSize = getBarSize(chartData.accountData.length);
         return (
           <ChartContainer
@@ -235,7 +235,143 @@ export function ChartDisplay({
           </ChartContainer>
         );
 
-      case "sources":
+      case "by-account-type":
+        const accountTypeBarSize = getBarSize(chartData.accountTypeData.length);
+        const accountTypes = Array.from(
+          new Set(chartData.accounts.map((account) => account.type))
+        );
+        return (
+          <ChartContainer
+            config={accountTypes.reduce(
+              (config, type, index) => ({
+                ...config,
+                [type]: {
+                  label: type,
+                  color: COLORS[index % COLORS.length],
+                },
+              }),
+              {}
+            )}
+            className="h-[300px] sm:h-[400px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData.accountTypeData}
+                margin={margins}
+                barCategoryGap="15%"
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  fontSize={fontSize}
+                  angle={-45}
+                  textAnchor="end"
+                  height={margins.bottom + 10}
+                  interval={0}
+                  tick={{ fontSize }}
+                />
+                <YAxis
+                  tickFormatter={(value) => `£${(value / 1000).toFixed(0)}K`}
+                  fontSize={fontSize}
+                  width={width && width < 640 ? 50 : 60}
+                  tick={{ fontSize }}
+                />
+                <ChartTooltip content={<CustomTooltip />} />
+                {accountTypes.map((type, index) => {
+                  const hasData = chartData.accountTypeData.some(
+                    (monthData) => ((monthData[type] as number) || 0) > 0
+                  );
+                  if (hasData) {
+                    return (
+                      <Bar
+                        key={type}
+                        dataKey={type}
+                        stackId="accountTypes"
+                        fill={COLORS[index % COLORS.length]}
+                        maxBarSize={accountTypeBarSize}
+                        onClick={(data) => handleBarClick(data, data.month)}
+                        style={{ cursor: "pointer" }}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        );
+
+      case "by-category":
+        const categoryBarSize = getBarSize(chartData.categoryData.length);
+        const categories = Array.from(
+          new Set(
+            chartData.accounts.map(
+              (account) => account.category || "Uncategorized"
+            )
+          )
+        );
+        return (
+          <ChartContainer
+            config={categories.reduce(
+              (config, category, index) => ({
+                ...config,
+                [category]: {
+                  label: category,
+                  color: COLORS[index % COLORS.length],
+                },
+              }),
+              {}
+            )}
+            className="h-[300px] sm:h-[400px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData.categoryData}
+                margin={margins}
+                barCategoryGap="15%"
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  fontSize={fontSize}
+                  angle={-45}
+                  textAnchor="end"
+                  height={margins.bottom + 10}
+                  interval={0}
+                  tick={{ fontSize }}
+                />
+                <YAxis
+                  tickFormatter={(value) => `£${(value / 1000).toFixed(0)}K`}
+                  fontSize={fontSize}
+                  width={width && width < 640 ? 50 : 60}
+                  tick={{ fontSize }}
+                />
+                <ChartTooltip content={<CustomTooltip />} />
+                {categories.map((category, index) => {
+                  const hasData = chartData.categoryData.some(
+                    (monthData) => ((monthData[category] as number) || 0) > 0
+                  );
+                  if (hasData) {
+                    return (
+                      <Bar
+                        key={category}
+                        dataKey={category}
+                        stackId="categories"
+                        fill={COLORS[index % COLORS.length]}
+                        maxBarSize={categoryBarSize}
+                        onClick={(data) => handleBarClick(data, data.month)}
+                        style={{ cursor: "pointer" }}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        );
+
+      case "by-wealth-source":
         const sourceKeys = [
           "Savings from Income",
           "Interest Earned",

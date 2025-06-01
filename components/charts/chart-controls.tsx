@@ -26,11 +26,9 @@ import { Badge } from "@/components/ui/badge";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TimePeriod } from "@/lib/types";
-import { ClickedData, ChartData } from "@/components/charts/types";
+import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
 import { getChartData } from "@/lib/actions";
-
-type ChartType = "total" | "accounts" | "sources";
 
 interface ChartControlsProps {
   initialData: ChartData;
@@ -83,9 +81,13 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     switch (chartType) {
       case "total":
         return "Track your total net worth growth over time";
-      case "accounts":
+      case "by-account":
         return "See how your wealth is distributed across different accounts over time";
-      case "sources":
+      case "by-account-type":
+        return "See your net worth by account type over time";
+      case "by-category":
+        return "See your net worth by category over time";
+      case "by-wealth-source":
         return "Understand where your wealth growth is coming from each month";
     }
   };
@@ -180,46 +182,31 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
                 <SelectItem value="all">All</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={chartType}
+              onValueChange={(value: ChartType) => {
+                setChartType(value);
+                setClickedData(null);
+              }}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="total">Net Worth</SelectItem>
+                <SelectItem value="by-account">By Account</SelectItem>
+                <SelectItem value="by-account-type">By Account Type</SelectItem>
+                <SelectItem value="by-category">By Category</SelectItem>
+                <SelectItem value="by-wealth-source">
+                  By Wealth Source
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="flex flex-col sm:flex-row gap-2 mb-4 sm:mb-6 sm:justify-center">
-          <Button
-            variant={chartType === "total" ? "default" : "outline"}
-            onClick={() => {
-              setChartType("total");
-              setClickedData(null);
-            }}
-            className="w-full sm:w-auto text-sm"
-            disabled={isLoading}
-          >
-            Total Net Worth
-          </Button>
-          <Button
-            variant={chartType === "accounts" ? "default" : "outline"}
-            onClick={() => {
-              setChartType("accounts");
-              setClickedData(null);
-            }}
-            className="w-full sm:w-auto text-sm"
-            disabled={isLoading}
-          >
-            By Account
-          </Button>
-          <Button
-            variant={chartType === "sources" ? "default" : "outline"}
-            onClick={() => {
-              setChartType("sources");
-              setClickedData(null);
-            }}
-            className="w-full sm:w-auto text-sm"
-            disabled={isLoading}
-          >
-            By Source
-          </Button>
-        </div>
-
         <ChartDisplay
           chartType={chartType}
           chartData={chartData}

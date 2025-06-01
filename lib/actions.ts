@@ -449,6 +449,69 @@ export async function getChartData(
       return monthData;
     });
 
+    // Calculate net worth by account type over time
+    const accountTypeData = filteredMonths.map((month) => {
+      const monthData: any = {
+        month: new Date(month + "-01").toLocaleDateString("en-GB", {
+          month: "short",
+          year: "numeric",
+        }),
+      };
+
+      // Group accounts by type
+      const accountsByType = filteredAccounts.reduce((acc, account) => {
+        if (!acc[account.type]) {
+          acc[account.type] = [];
+        }
+        acc[account.type].push(account);
+        return acc;
+      }, {} as Record<string, typeof filteredAccounts>);
+
+      // Calculate total for each account type
+      Object.entries(accountsByType).forEach(([type, accounts]) => {
+        monthData[type] = accounts.reduce((sum, account) => {
+          const entry = monthlyData[month].find(
+            (e) => e.accountId === account.id
+          );
+          return sum + (entry?.endingBalance || 0);
+        }, 0);
+      });
+
+      return monthData;
+    });
+
+    // Calculate net worth by category over time
+    const categoryData = filteredMonths.map((month) => {
+      const monthData: any = {
+        month: new Date(month + "-01").toLocaleDateString("en-GB", {
+          month: "short",
+          year: "numeric",
+        }),
+      };
+
+      // Group accounts by category
+      const accountsByCategory = filteredAccounts.reduce((acc, account) => {
+        const category = account.category || "Uncategorized";
+        if (!acc[category]) {
+          acc[category] = [];
+        }
+        acc[category].push(account);
+        return acc;
+      }, {} as Record<string, typeof filteredAccounts>);
+
+      // Calculate total for each category
+      Object.entries(accountsByCategory).forEach(([category, accounts]) => {
+        monthData[category] = accounts.reduce((sum, account) => {
+          const entry = monthlyData[month].find(
+            (e) => e.accountId === account.id
+          );
+          return sum + (entry?.endingBalance || 0);
+        }, 0);
+      });
+
+      return monthData;
+    });
+
     // Calculate growth by source over time
     const sourceData = filteredMonths.map((month) => {
       let savingsFromIncome = 0;
@@ -506,6 +569,8 @@ export async function getChartData(
     return {
       netWorthData,
       accountData,
+      accountTypeData,
+      categoryData,
       sourceData,
       accounts: filteredAccounts.map((account) => ({
         id: account.id,
@@ -513,6 +578,7 @@ export async function getChartData(
         type: account.type,
         isISA: account.isISA,
         owner: account.owner,
+        category: account.category,
       })),
     };
   } catch (error) {
@@ -520,6 +586,8 @@ export async function getChartData(
     return {
       netWorthData: [],
       accountData: [],
+      accountTypeData: [],
+      categoryData: [],
       sourceData: [],
       accounts: [],
     };
