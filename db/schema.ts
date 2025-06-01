@@ -10,9 +10,12 @@ import {
 
 // Enums
 export const accountTypeEnum = pgEnum("account_type", [
-  "current",
-  "savings",
-  "investment",
+  "Current",
+  "Savings",
+  "Investment",
+  "Pension",
+  "Commodity",
+  "Stock_options",
 ]);
 
 // Tables
@@ -34,6 +37,7 @@ export const accounts = pgTable("accounts", {
   name: text("name").notNull(),
   type: accountTypeEnum("type").notNull(),
   isISA: boolean("is_isa").notNull().default(false),
+  owner: text("owner").notNull().default("all"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -5,6 +5,7 @@ export interface Account {
   name: string;
   type: string;
   isISA: boolean;
+  owner: string;
 }
 
 export interface SourceData {

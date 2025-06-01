@@ -1,10 +1,26 @@
 import type { Account as DbAccount } from "@/db/schema";
 
-export type Account = Pick<DbAccount, "id" | "name" | "type" | "isISA">;
+export type Account = Pick<
+  DbAccount,
+  "id" | "name" | "type" | "isISA" | "owner"
+>;
 
-export type AccountType = "current" | "savings" | "investment";
+export type AccountType =
+  | "Current"
+  | "Savings"
+  | "Investment"
+  | "Pension"
+  | "Commodity"
+  | "Stock_options";
 
-export const accountTypes: AccountType[] = ["current", "savings", "investment"];
+export const accountTypes: AccountType[] = [
+  "Current",
+  "Savings",
+  "Investment",
+  "Pension",
+  "Commodity",
+  "Stock_options",
+];
 
 export type MonthlyEntry = {
   accountId: string;

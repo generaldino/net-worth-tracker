@@ -1,10 +1,11 @@
-CREATE TYPE "public"."account_type" AS ENUM('current', 'savings', 'investment');--> statement-breakpoint
+CREATE TYPE "public"."account_type" AS ENUM('Current', 'Savings', 'Investment');--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"type" "account_type" NOT NULL,
 	"is_isa" boolean DEFAULT false NOT NULL,
+	"owner" text DEFAULT 'all' NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );

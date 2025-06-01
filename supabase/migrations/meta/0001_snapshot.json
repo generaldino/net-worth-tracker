@@ -1,6 +1,6 @@
 {
-  "id": "7bc2f292-44a7-4b52-b6fd-7c90c09e9cba",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "91659286-6587-4f7c-b206-71d61323bf8a",
+  "prevId": "1855e398-ff7e-4eb8-96a9-5959d60da49e",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -40,6 +40,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "owner": {
+          "name": "owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'all'"
         },
         "created_at": {
           "name": "created_at",
@@ -229,9 +236,12 @@
       "name": "account_type",
       "schema": "public",
       "values": [
-        "current",
-        "savings",
-        "investment"
+        "Current",
+        "Savings",
+        "Investment",
+        "Pension",
+        "Commodity",
+        "Stock_options"
       ]
     }
   },

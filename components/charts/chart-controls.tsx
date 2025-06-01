@@ -19,11 +19,13 @@ type ChartType = "total" | "accounts" | "sources";
 
 interface ChartControlsProps {
   initialData: ChartData;
+  owners: string[];
 }
 
-export function ChartControls({ initialData }: ChartControlsProps) {
+export function ChartControls({ initialData, owners }: ChartControlsProps) {
   const [chartType, setChartType] = useState<ChartType>("total");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
+  const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [chartData, setChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +34,7 @@ export function ChartControls({ initialData }: ChartControlsProps) {
     async function loadChartData() {
       setIsLoading(true);
       try {
-        const data = await getChartData(timePeriod);
+        const data = await getChartData(timePeriod, selectedOwner);
         setChartData(data);
         setClickedData(null); // Reset clicked data when time period changes
       } catch (error) {
@@ -42,13 +44,13 @@ export function ChartControls({ initialData }: ChartControlsProps) {
       }
     }
 
-    if (timePeriod !== "all") {
+    if (timePeriod !== "all" || selectedOwner !== "all") {
       loadChartData();
     } else {
       setChartData(initialData);
       setClickedData(null);
     }
-  }, [timePeriod, initialData]);
+  }, [timePeriod, selectedOwner, initialData]);
 
   const getChartDescription = () => {
     switch (chartType) {
@@ -73,20 +75,39 @@ export function ChartControls({ initialData }: ChartControlsProps) {
               {getChartDescription()}
             </p>
           </div>
-          <Select
-            value={timePeriod}
-            onValueChange={(value: TimePeriod) => setTimePeriod(value)}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="w-full sm:w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="YTD">YTD</SelectItem>
-              <SelectItem value="1Y">1Y</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select
+              value={selectedOwner}
+              onValueChange={(value: string) => setSelectedOwner(value)}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-full sm:w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Owners</SelectItem>
+                {owners.map((owner) => (
+                  <SelectItem key={owner} value={owner}>
+                    {owner}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={timePeriod}
+              onValueChange={(value: TimePeriod) => setTimePeriod(value)}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-full sm:w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="YTD">YTD</SelectItem>
+                <SelectItem value="1Y">1Y</SelectItem>
+                <SelectItem value="all">All</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">

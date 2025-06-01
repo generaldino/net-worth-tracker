@@ -1,13 +1,19 @@
 import { ChartControls } from "@/components/charts/chart-controls";
 import { getChartData } from "@/lib/actions";
+import { getAccounts } from "@/lib/actions";
 
 export async function ChartSection() {
-  const initialData = await getChartData("all");
-  console.log("initialData", initialData);
+  const [initialData, accounts] = await Promise.all([
+    getChartData("all"),
+    getAccounts(),
+  ]);
+
+  // Get unique owners from accounts
+  const owners = Array.from(new Set(accounts.map((account) => account.owner)));
 
   return (
     <div className="space-y-4">
-      <ChartControls initialData={initialData} />
+      <ChartControls initialData={initialData} owners={owners} />
     </div>
   );
 }

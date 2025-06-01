@@ -135,8 +135,9 @@ export function AccountsTable({
         ))}
 
         {/* Header row for desktop reference */}
-        <div className="hidden sm:grid grid-cols-5 gap-4 px-4 py-2 text-sm font-medium text-muted-foreground border-b">
+        <div className="hidden sm:grid grid-cols-6 gap-4 px-4 py-2 text-sm font-medium text-muted-foreground border-b">
           <div>Account Name</div>
+          <div>Owner</div>
           <div>Type</div>
           <div>Current Value</div>
           <div>

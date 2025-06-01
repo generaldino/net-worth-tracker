@@ -40,6 +40,7 @@ export function EditAccountDialog({
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("current");
   const [isISA, setIsISA] = useState(false);
+  const [owner, setOwner] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export function EditAccountDialog({
       setName(account.name);
       setType(account.type);
       setIsISA(account.isISA);
+      setOwner(account.owner);
     }
   }, [account]);
 
@@ -67,6 +69,7 @@ export function EditAccountDialog({
         name,
         type,
         isISA,
+        owner,
       });
 
       if (result.success) {
@@ -112,6 +115,14 @@ export function EditAccountDialog({
               id="edit-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-owner">Account Owner</Label>
+            <Input
+              id="edit-owner"
+              value={owner}
+              onChange={(e) => setOwner(e.target.value)}
             />
           </div>
           <div className="space-y-2">

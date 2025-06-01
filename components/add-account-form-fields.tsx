@@ -16,12 +16,13 @@ import { AccountType, accountTypes } from "@/lib/types";
 import { createAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 
 type FormData = {
   name: string;
   type: AccountType;
   isISA: boolean;
+  owner: string;
 };
 
 export function AddAccountFormFields() {
@@ -30,12 +31,14 @@ export function AddAccountFormFields() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
       name: "",
-      type: "current",
+      type: "Current",
       isISA: false,
+      owner: "",
     },
   });
 
@@ -77,27 +80,48 @@ export function AddAccountFormFields() {
         />
       </div>
       <div className="space-y-2">
+        <Label htmlFor="owner">Account Owner</Label>
+        <Input
+          id="owner"
+          {...register("owner", { required: "Please enter an account owner" })}
+          placeholder="e.g., John Doe"
+        />
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="type">Account Type</Label>
-        <Select
-          {...register("type")}
-          onValueChange={(value: AccountType) =>
-            register("type").onChange({ target: { value } })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select account type" />
-          </SelectTrigger>
-          <SelectContent>
-            {accountTypes.map((accountType) => (
-              <SelectItem key={accountType} value={accountType}>
-                {accountType}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Controller
+          name="type"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select account type" />
+              </SelectTrigger>
+              <SelectContent>
+                {accountTypes.map((accountType) => (
+                  <SelectItem key={accountType} value={accountType}>
+                    {accountType
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
       <div className="flex items-center space-x-2">
-        <Checkbox id="isa" {...register("isISA")} />
+        <Controller
+          name="isISA"
+          control={control}
+          render={({ field }) => (
+            <Checkbox
+              id="isa"
+              checked={field.value}
+              onCheckedChange={field.onChange}
+            />
+          )}
+        />
         <Label
           htmlFor="isa"
           className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

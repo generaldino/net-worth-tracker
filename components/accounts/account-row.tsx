@@ -104,8 +104,9 @@ export function AccountRow({
                 ) : (
                   <ChevronRight className="h-4 w-4" />
                 )}
-                <div className="grid grid-cols-5 gap-4 flex-1 items-center">
+                <div className="grid grid-cols-6 gap-4 flex-1 items-center">
                   <div className="font-medium">{account.name}</div>
+                  <div className="text-muted-foreground">{account.owner}</div>
                   <AccountTypeBadge account={account} />
                   <div className="font-medium">
                     £{currentValue.toLocaleString()}

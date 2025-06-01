@@ -42,10 +42,11 @@ export async function getAccounts() {
 
     // Transform the data to match the client-side Account type
     return dbAccounts.map((account) => ({
-      id: account.id, // Keep as UUID string, don't convert to string
+      id: account.id,
       name: account.name,
       type: account.type,
       isISA: account.isISA,
+      owner: account.owner,
     }));
   } catch (error) {
     console.error("Error fetching accounts:", error);
@@ -112,8 +113,15 @@ export async function getMonthlyData() {
 
 export async function createAccount(data: {
   name: string;
-  type: "current" | "savings" | "investment";
+  type:
+    | "Current"
+    | "Savings"
+    | "Investment"
+    | "Pension"
+    | "Commodity"
+    | "Stock_options";
   isISA: boolean;
+  owner: string;
 }) {
   try {
     const supabase = await createClient();
@@ -131,6 +139,7 @@ export async function createAccount(data: {
         name: data.name,
         type: data.type,
         isISA: data.isISA,
+        owner: data.owner,
         userId: session.user.id,
       })
       .returning();
@@ -146,8 +155,15 @@ export async function createAccount(data: {
 export async function updateAccount(data: {
   id: string;
   name: string;
-  type: "current" | "savings" | "investment";
+  type:
+    | "Current"
+    | "Savings"
+    | "Investment"
+    | "Pension"
+    | "Commodity"
+    | "Stock_options";
   isISA: boolean;
+  owner: string;
 }) {
   try {
     const supabase = await createClient();
@@ -165,6 +181,7 @@ export async function updateAccount(data: {
         name: data.name,
         type: data.type,
         isISA: data.isISA,
+        owner: data.owner,
         updatedAt: new Date(),
       })
       .where(eq(accountsTable.id, data.id))
@@ -320,7 +337,10 @@ export async function updateMonthlyEntry(
   }
 }
 
-export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
+export async function getChartData(
+  timePeriod: "YTD" | "1Y" | "all",
+  owner: string = "all"
+) {
   try {
     // Get all monthly entries ordered by month (desc)
     const entries = await db
@@ -330,6 +350,12 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
 
     // Get all accounts
     const accounts = await db.select().from(accountsTable);
+
+    // Filter accounts by owner if specified
+    const filteredAccounts =
+      owner === "all"
+        ? accounts
+        : accounts.filter((account) => account.owner === owner);
 
     // Transform the data into the required format
     const monthlyData: Record<string, any[]> = {};
@@ -372,7 +398,6 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
       });
     }
 
-    // Filter months based on timePeriod
     const filteredMonths = getFilteredMonths(months, timePeriod);
     const filteredData = Object.fromEntries(
       filteredMonths.map((month) => [month, monthlyData[month]])
@@ -384,10 +409,11 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
         month: "short",
         year: "numeric",
       }),
-      netWorth: monthlyData[month].reduce(
-        (sum, entry) => sum + entry.endingBalance,
-        0
-      ),
+      netWorth: monthlyData[month]
+        .filter((entry) =>
+          filteredAccounts.some((account) => account.id === entry.accountId)
+        )
+        .reduce((sum, entry) => sum + entry.endingBalance, 0),
     }));
 
     // Calculate net worth by account over time
@@ -400,7 +426,7 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
       };
 
       monthlyData[month].forEach((entry) => {
-        const account = accounts.find((a) => a.id === entry.accountId);
+        const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (account) {
           // Create a unique name by combining account name and type
           const uniqueName = `${account.name} (${account.type})`;
@@ -418,21 +444,36 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
       let capitalGains = 0;
 
       monthlyData[month].forEach((entry) => {
-        const account = accounts.find((a) => a.id === entry.accountId);
+        const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (!account) return;
 
         switch (account.type) {
-          case "current":
+          case "Current":
             // For current accounts, count both growth and cash flow as savings from income
             savingsFromIncome += entry.accountGrowth + entry.cashFlow;
             break;
-          case "savings":
+          case "Savings":
             // For savings accounts, count cash flow as savings from income and growth as interest
             savingsFromIncome += entry.cashFlow;
             interestEarned += entry.accountGrowth;
             break;
-          case "investment":
+          case "Investment":
             // For investment accounts, count cash flow as savings from income and growth as capital gains
+            savingsFromIncome += entry.cashFlow;
+            capitalGains += entry.accountGrowth;
+            break;
+          case "Pension":
+            // For pension accounts, count cash flow as savings from income and growth as capital gains
+            savingsFromIncome += entry.cashFlow;
+            capitalGains += entry.accountGrowth;
+            break;
+          case "Commodity":
+            // For commodity accounts, count cash flow as savings from income and growth as capital gains
+            savingsFromIncome += entry.cashFlow;
+            capitalGains += entry.accountGrowth;
+            break;
+          case "Stock_options":
+            // For stock options accounts, count cash flow as savings from income and growth as capital gains
             savingsFromIncome += entry.cashFlow;
             capitalGains += entry.accountGrowth;
             break;
@@ -454,11 +495,12 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
       netWorthData,
       accountData,
       sourceData,
-      accounts: accounts.map((account) => ({
+      accounts: filteredAccounts.map((account) => ({
         id: account.id,
         name: account.name,
         type: account.type,
         isISA: account.isISA,
+        owner: account.owner,
       })),
     };
   } catch (error) {
