@@ -47,6 +47,7 @@ export async function getAccounts() {
       type: account.type,
       isISA: account.isISA,
       owner: account.owner,
+      category: account.category,
     }));
   } catch (error) {
     console.error("Error fetching accounts:", error);

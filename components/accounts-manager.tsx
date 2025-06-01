@@ -60,6 +60,8 @@ export async function AccountsManager() {
         </div>
 
         <div className="space-y-4 sm:space-y-6">
+          <ChartSection />
+
           <Card>
             <CardHeader className="pb-3 sm:pb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -104,8 +106,6 @@ export async function AccountsManager() {
               />
             </CardContent>
           </Card>
-
-          <ChartSection />
         </div>
       </div>
     </div>
