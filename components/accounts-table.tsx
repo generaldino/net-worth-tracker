@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   type Account,
   type MonthlyEntry,
@@ -10,15 +10,16 @@ import {
 import { AccountRow } from "./accounts/account-row";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { TimePeriodSelector } from "./accounts/TimePeriodSelector";
-import {
-  getCurrentValue,
-  getAccountHistory,
-  calculateValueChange,
-} from "@/lib/actions";
 
 interface AccountsTableProps {
   accounts: Account[];
   monthlyData: Record<string, MonthlyEntry[]>;
+  currentValues: Record<string, number>;
+  accountHistories: Record<string, MonthlyEntry[]>;
+  valueChanges: Record<
+    string,
+    { absoluteChange: number; percentageChange: number }
+  >;
   onDeleteAccount: (accountId: string) => void;
   onUpdateMonthlyEntry: (
     accountId: string,
@@ -35,6 +36,9 @@ interface AccountsTableProps {
 export function AccountsTable({
   accounts,
   monthlyData,
+  currentValues,
+  accountHistories,
+  valueChanges,
   onDeleteAccount,
   onUpdateMonthlyEntry,
   onAddNewMonth,
@@ -44,44 +48,7 @@ export function AccountsTable({
   >({});
   const [selectedTimePeriod, setSelectedTimePeriod] =
     useState<ValueTimePeriod>("3M");
-  const [currentValues, setCurrentValues] = useState<Record<string, number>>(
-    {}
-  );
-  const [accountHistories, setAccountHistories] = useState<
-    Record<string, MonthlyEntry[]>
-  >({});
-  const [valueChanges, setValueChanges] = useState<
-    Record<string, { absoluteChange: number; percentageChange: number }>
-  >({});
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-
-  // Fetch current values, histories, and value changes for all accounts
-  useEffect(() => {
-    async function fetchAccountData() {
-      const values: Record<string, number> = {};
-      const histories: Record<string, MonthlyEntry[]> = {};
-      const changes: Record<
-        string,
-        { absoluteChange: number; percentageChange: number }
-      > = {};
-
-      for (const account of accounts) {
-        const [value, history, change] = await Promise.all([
-          getCurrentValue(account.id),
-          getAccountHistory(account.id),
-          calculateValueChange(account.id, selectedTimePeriod),
-        ]);
-        values[account.id] = value;
-        histories[account.id] = history;
-        changes[account.id] = change;
-      }
-
-      setCurrentValues(values);
-      setAccountHistories(histories);
-      setValueChanges(changes);
-    }
-    fetchAccountData();
-  }, [accounts, selectedTimePeriod]);
 
   const handleValueChange = (
     accountId: string,

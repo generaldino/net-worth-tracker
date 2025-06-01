@@ -12,6 +12,7 @@ import {
 import { type Account } from "@/lib/types";
 import { deleteAccount } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
+import { useState } from "react";
 
 interface AccountActionsProps {
   account: Account;
@@ -26,6 +27,8 @@ export function AccountActions({
   onDelete,
   stopPropagation = false,
 }: AccountActionsProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   const handleClick = (e: React.MouseEvent) => {
     if (stopPropagation) {
       e.stopPropagation();
@@ -44,7 +47,7 @@ export function AccountActions({
       >
         <Edit className="h-4 w-4" />
       </Button>
-      <Dialog>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button variant="ghost" size="sm" onClick={handleClick}>
             <Trash2 className="h-4 w-4" />
@@ -60,17 +63,7 @@ export function AccountActions({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                const dialog = document.querySelector(
-                  '[data-slot="dialog-content"]'
-                );
-                if (dialog) {
-                  (dialog as HTMLElement).click();
-                }
-              }}
-            >
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -83,12 +76,7 @@ export function AccountActions({
                     description: "Account deleted successfully",
                   });
                   onDelete(account.id);
-                  const dialog = document.querySelector(
-                    '[data-slot="dialog-content"]'
-                  );
-                  if (dialog) {
-                    (dialog as HTMLElement).click();
-                  }
+                  setIsOpen(false);
                 } else {
                   toast({
                     variant: "destructive",

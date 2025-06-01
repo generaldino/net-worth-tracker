@@ -2,7 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/chart-section";
-import { calculateNetWorth, getAccounts, getMonthlyData } from "@/lib/actions";
+import {
+  calculateNetWorth,
+  getAccounts,
+  getMonthlyData,
+  getCurrentValue,
+  getAccountHistory,
+  calculateValueChange,
+} from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 
 export async function AccountsManager() {
@@ -11,6 +18,37 @@ export async function AccountsManager() {
     getAccounts(),
     getMonthlyData(),
   ]);
+
+  // Fetch all account data in parallel
+  const accountData = await Promise.all(
+    accounts.map(async (account) => {
+      const [currentValue, history, valueChange] = await Promise.all([
+        getCurrentValue(account.id),
+        getAccountHistory(account.id),
+        calculateValueChange(account.id, "3M"), // Default to 3M period
+      ]);
+
+      return {
+        accountId: account.id,
+        currentValue,
+        history,
+        valueChange,
+      };
+    })
+  );
+
+  // Transform the data into the format expected by AccountsTable
+  const currentValues = Object.fromEntries(
+    accountData.map(({ accountId, currentValue }) => [accountId, currentValue])
+  );
+
+  const accountHistories = Object.fromEntries(
+    accountData.map(({ accountId, history }) => [accountId, history])
+  );
+
+  const valueChanges = Object.fromEntries(
+    accountData.map(({ accountId, valueChange }) => [accountId, valueChange])
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,6 +73,9 @@ export async function AccountsManager() {
               <AccountsTable
                 accounts={accounts}
                 monthlyData={monthlyData}
+                currentValues={currentValues}
+                accountHistories={accountHistories}
+                valueChanges={valueChanges}
                 onDeleteAccount={async (accountId) => {
                   "use server";
                   const { deleteAccount } = await import("@/lib/actions");
