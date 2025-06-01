@@ -421,12 +421,17 @@ export async function getChartData(timePeriod: "YTD" | "1Y" | "all") {
 
         switch (account.type) {
           case "current":
-            savingsFromIncome += entry.accountGrowth;
+            // For current accounts, count both growth and cash flow as savings from income
+            savingsFromIncome += entry.accountGrowth + entry.cashFlow;
             break;
           case "savings":
+            // For savings accounts, count cash flow as savings from income and growth as interest
+            savingsFromIncome += entry.cashFlow;
             interestEarned += entry.accountGrowth;
             break;
           case "investment":
+            // For investment accounts, count cash flow as savings from income and growth as capital gains
+            savingsFromIncome += entry.cashFlow;
             capitalGains += entry.accountGrowth;
             break;
         }
