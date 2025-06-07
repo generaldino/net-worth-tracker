@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/table";
 import { MonthlyHistoryRow } from "./monthly-history-row";
 import { type MonthlyEntry } from "@/lib/types";
+import { updateMonthlyEntry } from "@/lib/actions";
+import { toast } from "@/components/ui/use-toast";
 
 interface MonthlyHistoryTableProps {
   history: MonthlyEntry[];
@@ -51,6 +53,39 @@ export function MonthlyHistoryTable({
     );
   }
 
+  const handleSave = async (month: string) => {
+    const editedEntry = editingValues[accountId]?.[month];
+    if (editedEntry) {
+      try {
+        const result = await updateMonthlyEntry(accountId, month, {
+          endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
+          cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
+          cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
+        });
+
+        if (result.success) {
+          onSave(accountId, month);
+          toast({
+            title: "Success",
+            description: "Monthly entry updated successfully",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: result.error || "Failed to update monthly entry",
+          });
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "An unexpected error occurred",
+        });
+      }
+    }
+  };
+
   return (
     <>
       {/* Mobile History Layout */}
@@ -76,7 +111,7 @@ export function MonthlyHistoryTable({
               onValueChange={(field, value) =>
                 onValueChange(accountId, entry.monthKey, field, value)
               }
-              onSave={() => onSave(accountId, entry.monthKey)}
+              onSave={() => handleSave(entry.monthKey)}
               onEdit={() => onEdit(accountId, entry.monthKey, entry)}
               isMobile
             />
@@ -120,7 +155,7 @@ export function MonthlyHistoryTable({
                   onValueChange={(field, value) =>
                     onValueChange(accountId, entry.monthKey, field, value)
                   }
-                  onSave={() => onSave(accountId, entry.monthKey)}
+                  onSave={() => handleSave(entry.monthKey)}
                   onEdit={() => onEdit(accountId, entry.monthKey, entry)}
                 />
               );
