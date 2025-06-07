@@ -629,8 +629,12 @@ export async function getChartData(
           });
         }
 
-        // Calculate capital gains (remaining growth)
-        if (entry.accountGrowth !== 0) {
+        // Calculate capital gains (remaining growth, excluding current and savings accounts)
+        if (
+          entry.accountGrowth !== 0 &&
+          account.type !== "Current" &&
+          account.type !== "Savings"
+        ) {
           capitalGains += entry.accountGrowth;
           capitalGainsAccounts.push({
             accountId: account.id,
