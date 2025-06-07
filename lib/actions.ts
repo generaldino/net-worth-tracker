@@ -584,85 +584,61 @@ export async function getChartData(
         name: string;
         type: string;
         amount: number;
+        owner: string;
       }> = [];
       const interestAccounts: Array<{
         accountId: string;
         name: string;
         type: string;
         amount: number;
+        owner: string;
       }> = [];
       const capitalGainsAccounts: Array<{
         accountId: string;
         name: string;
         type: string;
         amount: number;
+        owner: string;
       }> = [];
 
       monthlyData[month].forEach((entry) => {
         const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (!account) return;
 
-        switch (account.type) {
-          case "Current": {
-            const value = entry.accountGrowth + entry.cashFlow;
-            savingsFromIncome += value;
-            if (value !== 0) {
-              savingsAccounts.push({
-                accountId: account.id,
-                name: account.name,
-                type: account.type,
-                amount: value,
-              });
-            }
-            break;
-          }
-          case "Savings": {
-            if (entry.cashFlow !== 0) {
-              savingsFromIncome += entry.cashFlow;
-              savingsAccounts.push({
-                accountId: account.id,
-                name: account.name,
-                type: account.type,
-                amount: entry.cashFlow,
-              });
-            }
-            if (entry.accountGrowth !== 0) {
-              interestEarned += entry.accountGrowth;
-              interestAccounts.push({
-                accountId: account.id,
-                name: account.name,
-                type: account.type,
-                amount: entry.accountGrowth,
-              });
-            }
-            break;
-          }
-          case "Stock":
-          case "Investment":
-          case "Crypto":
-          case "Pension":
-          case "Commodity":
-          case "Stock_options": {
-            if (entry.cashFlow !== 0) {
-              savingsFromIncome += entry.cashFlow;
-              savingsAccounts.push({
-                accountId: account.id,
-                name: account.name,
-                type: account.type,
-                amount: entry.cashFlow,
-              });
-            }
-            if (entry.accountGrowth !== 0) {
-              capitalGains += entry.accountGrowth;
-              capitalGainsAccounts.push({
-                accountId: account.id,
-                name: account.name,
-                type: account.type,
-                amount: entry.accountGrowth,
-              });
-            }
-            break;
-          }
+        // Calculate savings from income (cash flow)
+        if (entry.cashFlow !== 0) {
+          savingsFromIncome += entry.cashFlow;
+          savingsAccounts.push({
+            accountId: account.id,
+            name: account.name,
+            type: account.type,
+            amount: entry.cashFlow,
+            owner: account.owner || "Unknown",
+          });
+        }
+
+        // Calculate interest earned (if applicable)
+        if (account.type === "Savings" && entry.accountGrowth > 0) {
+          interestEarned += entry.accountGrowth;
+          interestAccounts.push({
+            accountId: account.id,
+            name: account.name,
+            type: account.type,
+            amount: entry.accountGrowth,
+            owner: account.owner || "Unknown",
+          });
+        }
+
+        // Calculate capital gains (remaining growth)
+        if (entry.accountGrowth !== 0) {
+          capitalGains += entry.accountGrowth;
+          capitalGainsAccounts.push({
+            accountId: account.id,
+            name: account.name,
+            type: account.type,
+            amount: entry.accountGrowth,
+            owner: account.owner || "Unknown",
+          });
         }
       });
 

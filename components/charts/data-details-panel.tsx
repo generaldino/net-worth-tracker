@@ -10,6 +10,7 @@ interface AccountBreakdown {
   name: string;
   type: string;
   amount: number;
+  owner: string;
 }
 
 interface DataDetailsPanelProps {
@@ -176,7 +177,7 @@ export function DataDetailsPanel({
                         className="flex justify-between text-sm"
                       >
                         <span className="text-muted-foreground">
-                          {acc.name}{" "}
+                          {acc.name} ({acc.owner}){" "}
                           <span className="text-xs">({acc.type})</span>
                         </span>
                         <span
