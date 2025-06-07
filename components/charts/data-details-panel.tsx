@@ -72,7 +72,12 @@ export function DataDetailsPanel({
             {chartType === "by-category" && "Category Breakdown:"}
           </div>
           {Object.entries(data).map(([key, value], index) => {
-            if (key !== "month" && typeof value === "number" && value > 0) {
+            if (
+              key !== "month" &&
+              typeof value === "number" &&
+              value > 0 &&
+              !["x", "y", "width", "height"].includes(key)
+            ) {
               return (
                 <div key={key} className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
