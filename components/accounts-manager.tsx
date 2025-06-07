@@ -15,7 +15,7 @@ import { AddAccountButton } from "@/components/add-account-dialog";
 export async function AccountsManager() {
   const [netWorth, accounts, monthlyData] = await Promise.all([
     calculateNetWorth(),
-    getAccounts(),
+    getAccounts(true), // Always fetch all accounts, including closed ones
     getMonthlyData(),
   ]);
 

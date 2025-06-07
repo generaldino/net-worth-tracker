@@ -33,12 +33,19 @@ export async function calculateNetWorth() {
   }
 }
 
-export async function getAccounts() {
+export async function getAccounts(includeClosed: boolean = false) {
   try {
-    const dbAccounts = await db
+    const query = db
       .select()
       .from(accountsTable)
       .orderBy(accountsTable.createdAt);
+
+    // If not including closed accounts, filter them out
+    if (!includeClosed) {
+      query.where(eq(accountsTable.isClosed, false));
+    }
+
+    const dbAccounts = await query;
 
     // Transform the data to match the client-side Account type
     return dbAccounts.map((account) => ({
@@ -48,6 +55,8 @@ export async function getAccounts() {
       isISA: account.isISA,
       owner: account.owner,
       category: account.category,
+      isClosed: account.isClosed,
+      closedAt: account.closedAt,
     }));
   } catch (error) {
     console.error("Error fetching accounts:", error);
@@ -835,5 +844,61 @@ export async function calculateValueChange(
   } catch (error) {
     console.error("Error calculating value change:", error);
     return { absoluteChange: 0, percentageChange: 0 };
+  }
+}
+
+export async function toggleAccountClosed(
+  accountId: string,
+  isClosed: boolean
+) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const [account] = await db
+      .update(accountsTable)
+      .set({
+        isClosed,
+        closedAt: isClosed ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(accountsTable.id, accountId))
+      .returning();
+
+    revalidatePath("/");
+    return { success: true, account };
+  } catch (error) {
+    console.error("Error toggling account closed status:", error);
+    return { success: false, error: "Failed to update account status" };
+  }
+}
+
+export async function getClosedAccounts() {
+  try {
+    const dbAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(eq(accountsTable.isClosed, true))
+      .orderBy(accountsTable.closedAt);
+
+    return dbAccounts.map((account) => ({
+      id: account.id,
+      name: account.name,
+      type: account.type,
+      isISA: account.isISA,
+      owner: account.owner,
+      category: account.category,
+      isClosed: account.isClosed,
+      closedAt: account.closedAt,
+    }));
+  } catch (error) {
+    console.error("Error fetching closed accounts:", error);
+    return [];
   }
 }

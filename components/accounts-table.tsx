@@ -9,6 +9,8 @@ import {
 import { AccountRow } from "./accounts/account-row";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { TimePeriodSelector } from "./accounts/TimePeriodSelector";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface AccountsTableProps {
   accounts: Account[];
@@ -58,6 +60,11 @@ export function AccountsTable({
   const [selectedTimePeriod, setSelectedTimePeriod] =
     useState<ValueTimePeriod>("3M");
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [showClosedAccounts, setShowClosedAccounts] = useState(false);
+
+  const filteredAccounts = accounts.filter(
+    (account) => showClosedAccounts || !account.isClosed
+  );
 
   const handleValueChange = (
     accountId: string,
@@ -102,14 +109,24 @@ export function AccountsTable({
   return (
     <div className="space-y-4 px-2 sm:px-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <TimePeriodSelector
-          selectedTimePeriod={selectedTimePeriod}
-          onTimePeriodChange={setSelectedTimePeriod}
-        />
+        <div className="flex items-center gap-4">
+          <TimePeriodSelector
+            selectedTimePeriod={selectedTimePeriod}
+            onTimePeriodChange={setSelectedTimePeriod}
+          />
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="show-closed"
+              checked={showClosedAccounts}
+              onCheckedChange={setShowClosedAccounts}
+            />
+            <Label htmlFor="show-closed">Show closed accounts</Label>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-3">
-        {accounts.map((account) => (
+        {filteredAccounts.map((account) => (
           <AccountRow
             key={account.id}
             account={account}

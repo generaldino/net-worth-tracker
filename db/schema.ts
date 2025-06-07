@@ -46,6 +46,8 @@ export const accounts = pgTable("accounts", {
   category: accountCategoryEnum("category").notNull().default("Investments"),
   isISA: boolean("is_isa").notNull().default(false),
   owner: text("owner").notNull().default("all"),
+  isClosed: boolean("is_closed").notNull().default(false),
+  closedAt: timestamp("closed_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

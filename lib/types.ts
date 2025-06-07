@@ -2,7 +2,14 @@ import type { Account as DbAccount } from "@/db/schema";
 
 export type Account = Pick<
   DbAccount,
-  "id" | "name" | "type" | "isISA" | "owner" | "category"
+  | "id"
+  | "name"
+  | "type"
+  | "isISA"
+  | "owner"
+  | "category"
+  | "isClosed"
+  | "closedAt"
 >;
 
 export type AccountType =

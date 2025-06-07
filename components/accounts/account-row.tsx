@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Archive } from "lucide-react";
 import { type Account, type MonthlyEntry } from "@/lib/types";
 import { AccountTypeBadge } from "./account-type-badge";
 import { AccountActions } from "./account-actions";
@@ -11,6 +11,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface AccountRowProps {
   account: Account;
@@ -64,7 +65,12 @@ export function AccountRow({
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <div className="border rounded-lg bg-card">
+      <div
+        className={cn(
+          "border rounded-lg bg-card",
+          account.isClosed && "opacity-60"
+        )}
+      >
         <CollapsibleTrigger asChild>
           <div className="w-full p-3 sm:p-4 hover:bg-muted/50 cursor-pointer">
             {/* Mobile Layout */}
@@ -77,7 +83,12 @@ export function AccountRow({
                     <ChevronRight className="h-4 w-4 mt-1" />
                   )}
                   <div>
-                    <div className="font-medium text-base">{account.name}</div>
+                    <div className="font-medium text-base flex items-center gap-2">
+                      {account.name}
+                      {account.isClosed && (
+                        <Archive className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-2 mt-1">
                       <AccountTypeBadge account={account} />
                       <span className="text-sm text-muted-foreground">
@@ -117,7 +128,12 @@ export function AccountRow({
                   <ChevronRight className="h-4 w-4" />
                 )}
                 <div className="grid grid-cols-6 gap-4 flex-1 items-center">
-                  <div className="font-medium">{account.name}</div>
+                  <div className="font-medium flex items-center gap-2">
+                    {account.name}
+                    {account.isClosed && (
+                      <Archive className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                   <div className="text-muted-foreground">{account.owner}</div>
                   <AccountTypeBadge account={account} />
                   <div className="font-medium">
