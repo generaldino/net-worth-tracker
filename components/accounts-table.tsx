@@ -5,7 +5,6 @@ import {
   type Account,
   type MonthlyEntry,
   type ValueTimePeriod,
-  valueTimePeriods,
 } from "@/lib/types";
 import { AccountRow } from "./accounts/account-row";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
