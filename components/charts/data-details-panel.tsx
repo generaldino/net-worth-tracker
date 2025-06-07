@@ -77,7 +77,7 @@ export function DataDetailsPanel({
               key !== "month" &&
               typeof value === "number" &&
               value > 0 &&
-              !["x", "y", "width", "height"].includes(key)
+              !["x", "y", "width", "height", "value"].includes(key)
             ) {
               return (
                 <div key={key} className="flex justify-between items-center">
@@ -104,7 +104,10 @@ export function DataDetailsPanel({
                 {Object.entries(data)
                   .filter(
                     ([key, value]) =>
-                      key !== "month" && typeof value === "number"
+                      key !== "month" &&
+                      typeof value === "number" &&
+                      value > 0 &&
+                      !["x", "y", "width", "height", "value"].includes(key)
                   )
                   .reduce((sum, [, value]) => sum + (value as number), 0)
                   .toLocaleString()}

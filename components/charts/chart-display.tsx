@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
+  ReferenceLine,
 } from "recharts";
 import { ChartType, ChartData, ClickedData } from "@/components/charts/types";
 import { DataDetailsPanel } from "@/components/charts/data-details-panel";
@@ -190,7 +191,10 @@ export function ChartDisplay({
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
+                  domain={["auto", "auto"]}
+                  allowDataOverflow={true}
                 />
+                <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
@@ -259,6 +263,7 @@ export function ChartDisplay({
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
                 />
+                <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
                 {chartData.accounts.map((account, index) => {
                   const uniqueName = `${account.name} (${account.type}${
@@ -272,11 +277,11 @@ export function ChartDisplay({
                       <Bar
                         key={account.id}
                         dataKey={uniqueName}
-                        stackId="accounts"
                         fill={COLORS[index % COLORS.length]}
                         maxBarSize={accountBarSize}
                         onClick={(data) => handleBarClick(data, data.month)}
                         style={{ cursor: "pointer" }}
+                        isAnimationActive={true}
                       />
                     );
                   }
@@ -328,6 +333,7 @@ export function ChartDisplay({
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
                 />
+                <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
                 {accountTypes.map((type, index) => {
                   const hasData = chartData.accountTypeData.some(
@@ -338,11 +344,11 @@ export function ChartDisplay({
                       <Bar
                         key={type}
                         dataKey={type}
-                        stackId="accountTypes"
                         fill={COLORS[index % COLORS.length]}
                         maxBarSize={accountTypeBarSize}
                         onClick={(data) => handleBarClick(data, data.month)}
                         style={{ cursor: "pointer" }}
+                        isAnimationActive={true}
                       />
                     );
                   }
@@ -398,6 +404,7 @@ export function ChartDisplay({
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
                 />
+                <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
                 {categories.map((category, index) => {
                   const hasData = chartData.categoryData.some(
@@ -408,11 +415,11 @@ export function ChartDisplay({
                       <Bar
                         key={category}
                         dataKey={category}
-                        stackId="categories"
                         fill={COLORS[index % COLORS.length]}
                         maxBarSize={categoryBarSize}
                         onClick={(data) => handleBarClick(data, data.month)}
                         style={{ cursor: "pointer" }}
+                        isAnimationActive={true}
                       />
                     );
                   }
@@ -466,16 +473,17 @@ export function ChartDisplay({
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
                 />
+                <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
                 {sourceKeys.map((source, index) => (
                   <Bar
                     key={source}
                     dataKey={source}
-                    stackId="sources"
                     fill={COLORS[index % COLORS.length]}
                     maxBarSize={sourceBarSize}
                     onClick={(data) => handleBarClick(data, data.month)}
                     style={{ cursor: "pointer" }}
+                    isAnimationActive={true}
                   />
                 ))}
               </BarChart>
