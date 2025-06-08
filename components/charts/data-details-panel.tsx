@@ -248,11 +248,7 @@ export function DataDetailsPanel({
                       string,
                       AccountBreakdown[]
                     >) || {};
-                  const workIncome =
-                    breakdown["Savings from Income"]?.reduce(
-                      (sum, acc) => sum + (acc.amount >= 0 ? acc.amount : 0),
-                      0
-                    ) || 0;
+                  const workIncome = data["Total Income"] || 0;
                   return workIncome.toLocaleString();
                 })()}
               </span>
@@ -280,23 +276,12 @@ export function DataDetailsPanel({
               <span className="text-muted-foreground">Savings Rate:</span>
               <span className="font-medium text-green-600">
                 {(() => {
-                  const breakdown =
-                    (data.breakdown as unknown as Record<
-                      string,
-                      AccountBreakdown[]
-                    >) || {};
-                  const workIncome =
-                    breakdown["Savings from Income"]?.reduce(
-                      (sum, acc) => sum + (acc.amount >= 0 ? acc.amount : 0),
-                      0
-                    ) || 0;
-                  const savings =
-                    breakdown["Savings from Income"]?.reduce(
-                      (sum, acc) => sum + acc.amount,
-                      0
-                    ) || 0;
+                  const workIncome = Number(data["Total Income"]) || 0;
+                  const savings = Number(data["Savings from Income"]) || 0;
                   return workIncome > 0
-                    ? `${Math.round((Math.abs(savings) / workIncome) * 100)}%`
+                    ? `${Number(
+                        ((Math.abs(savings) / workIncome) * 100).toFixed(1)
+                      )}%`
                     : "0%";
                 })()}
               </span>

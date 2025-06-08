@@ -8,7 +8,7 @@ export async function ChartSection() {
     getAccounts(),
   ]);
 
-  // console.log("initialData", initialData);
+  console.log("initialData", initialData);
 
   // Get unique owners from accounts
   const owners = Array.from(new Set(accounts.map((account) => account.owner)));

@@ -46,8 +46,6 @@ export async function AccountsManager() {
     accountData.map(({ accountId, history }) => [accountId, history])
   );
 
-  console.log("accountHistories", accountHistories);
-
   const valueChanges = Object.fromEntries(
     accountData.map(({ accountId, valueChange }) => [accountId, valueChange])
   );

@@ -123,7 +123,7 @@ export function ChartDisplay({
                 <span className="font-medium">{entry.name}:</span>
                 <span>
                   {entry.name === "Savings Rate"
-                    ? `${Math.round(entry.value)}%`
+                    ? `${Number(entry.value.toFixed(1))}%`
                     : `£${entry.value.toLocaleString()}`}
                 </span>
               </div>

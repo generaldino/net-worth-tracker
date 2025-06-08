@@ -672,8 +672,15 @@ export async function getChartData(
         "Savings from Income": savingsFromIncome,
         "Interest Earned": interestEarned,
         "Capital Gains": capitalGains,
+        "Total Income": totalWorkIncome,
         "Savings Rate":
-          totalWorkIncome > 0 ? (savingsFromIncome / totalWorkIncome) * 100 : 0,
+          totalWorkIncome > 0
+            ? Number(
+                ((Math.abs(savingsFromIncome) / totalWorkIncome) * 100).toFixed(
+                  1
+                )
+              )
+            : 0,
         breakdown: {
           "Savings from Income": savingsAccounts,
           "Interest Earned": interestAccounts,
