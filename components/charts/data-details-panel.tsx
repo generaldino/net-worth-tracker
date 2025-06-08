@@ -243,11 +243,6 @@ export function DataDetailsPanel({
               <span className="font-medium">
                 £
                 {(() => {
-                  const breakdown =
-                    (data.breakdown as unknown as Record<
-                      string,
-                      AccountBreakdown[]
-                    >) || {};
                   const workIncome = data["Total Income"] || 0;
                   return workIncome.toLocaleString();
                 })()}

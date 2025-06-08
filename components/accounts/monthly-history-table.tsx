@@ -78,7 +78,7 @@ export function MonthlyHistoryTable({
             description: result.error || "Failed to update monthly entry",
           });
         }
-      } catch (error) {
+      } catch {
         toast({
           variant: "destructive",
           title: "Error",
