@@ -1,0 +1,1 @@
+ALTER TABLE "monthly_entries" ADD COLUMN "work_income" numeric DEFAULT '0' NOT NULL;

@@ -53,6 +53,7 @@ export function AccountsTable({
           endingBalance: string;
           cashIn: string;
           cashOut: string;
+          workIncome: string;
         }
       >
     >
@@ -91,6 +92,7 @@ export function AccountsTable({
         endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
         cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
         cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
+        workIncome: Number.parseFloat(editedEntry.workIncome) || 0,
       };
 
       await onUpdateMonthlyEntry(accountId, month, updatedEntry);
@@ -152,6 +154,7 @@ export function AccountsTable({
                     endingBalance: entry.endingBalance.toString(),
                     cashIn: entry.cashIn.toString(),
                     cashOut: entry.cashOut.toString(),
+                    workIncome: (entry.workIncome || 0).toString(),
                   },
                 },
               }));

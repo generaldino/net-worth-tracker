@@ -44,6 +44,7 @@ export type MonthlyEntry = {
   endingBalance: number;
   cashIn: number;
   cashOut: number;
+  workIncome: number;
   cashFlow: number;
   accountGrowth: number;
 };

@@ -82,6 +82,7 @@ export async function getMonthlyData() {
         endingBalance: number;
         cashIn: number;
         cashOut: number;
+        workIncome: number;
         cashFlow: number;
         accountGrowth: number;
       }>
@@ -94,7 +95,10 @@ export async function getMonthlyData() {
         monthlyData[month] = [];
       }
 
-      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
+      const cashFlow =
+        Number(entry.cashIn) -
+        Number(entry.cashOut) +
+        Number(entry.workIncome || 0);
       monthlyData[month].push({
         accountId: entry.accountId,
         monthKey: month,
@@ -102,6 +106,7 @@ export async function getMonthlyData() {
         endingBalance: Number(entry.endingBalance),
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
+        workIncome: Number(entry.workIncome || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
       });
@@ -257,6 +262,7 @@ export async function addMonthlyEntry(
     endingBalance: number;
     cashIn: number;
     cashOut: number;
+    workIncome: number;
   }
 ) {
   try {
@@ -286,6 +292,7 @@ export async function addMonthlyEntry(
       endingBalance: entry.endingBalance.toString(),
       cashIn: entry.cashIn.toString(),
       cashOut: entry.cashOut.toString(),
+      workIncome: entry.workIncome.toString(),
     };
 
     await db.insert(monthlyEntries).values(newEntry);
@@ -312,6 +319,7 @@ export async function updateMonthlyEntry(
     endingBalance: number;
     cashIn: number;
     cashOut: number;
+    workIncome: number;
   }
 ) {
   try {
@@ -341,6 +349,7 @@ export async function updateMonthlyEntry(
         endingBalance: entry.endingBalance.toString(),
         cashIn: entry.cashIn.toString(),
         cashOut: entry.cashOut.toString(),
+        workIncome: (entry.workIncome || 0).toString(),
         updatedAt: new Date(),
       })
       .where(
@@ -419,6 +428,7 @@ export async function getChartData(
         endingBalance: number;
         cashIn: number;
         cashOut: number;
+        workIncome: number;
         cashFlow: number;
         accountGrowth: number;
       }>
@@ -431,7 +441,10 @@ export async function getChartData(
         monthlyData[month] = [];
       }
 
-      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
+      const cashFlow =
+        Number(entry.cashIn) -
+        Number(entry.cashOut) +
+        Number(entry.workIncome || 0);
       monthlyData[month].push({
         accountId: entry.accountId,
         monthKey: month,
@@ -439,6 +452,7 @@ export async function getChartData(
         endingBalance: Number(entry.endingBalance),
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
+        workIncome: Number(entry.workIncome || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
       });
@@ -577,6 +591,7 @@ export async function getChartData(
       let savingsFromIncome = 0;
       let interestEarned = 0;
       let capitalGains = 0;
+      let totalWorkIncome = 0;
 
       // Per-account breakdowns
       const savingsAccounts: Array<{
@@ -604,6 +619,9 @@ export async function getChartData(
       monthlyData[month].forEach((entry) => {
         const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (!account) return;
+
+        // Add work income to total
+        totalWorkIncome += Number(entry.workIncome || 0);
 
         // Calculate savings from income (cash flow)
         if (entry.cashFlow !== 0) {
@@ -654,6 +672,8 @@ export async function getChartData(
         "Savings from Income": savingsFromIncome,
         "Interest Earned": interestEarned,
         "Capital Gains": capitalGains,
+        "Savings Rate":
+          totalWorkIncome > 0 ? (savingsFromIncome / totalWorkIncome) * 100 : 0,
         breakdown: {
           "Savings from Income": savingsAccounts,
           "Interest Earned": interestAccounts,
@@ -739,7 +759,10 @@ export async function getAccountHistory(accountId: string) {
 
     // Transform the entries to include calculated fields
     const history = entries.map((entry, index) => {
-      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
+      const cashFlow =
+        Number(entry.cashIn) -
+        Number(entry.cashOut) +
+        Number(entry.workIncome || 0);
       let accountGrowth = 0;
 
       // Calculate accountGrowth by comparing with previous month's entry
@@ -758,6 +781,7 @@ export async function getAccountHistory(accountId: string) {
         endingBalance: Number(entry.endingBalance),
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
+        workIncome: Number(entry.workIncome || 0),
         cashFlow,
         accountGrowth,
       };

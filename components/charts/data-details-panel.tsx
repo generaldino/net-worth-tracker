@@ -156,10 +156,14 @@ export function DataDetailsPanel({
                           : "text-red-600"
                       }`}
                     >
-                      {value !== undefined ? (value >= 0 ? "+" : "-") : "—"}£
-                      {value !== undefined
-                        ? Math.abs(value).toLocaleString()
-                        : "—"}
+                      {value !== undefined ? (value >= 0 ? "+" : "-") : "—"}
+                      {source === "Savings Rate"
+                        ? `${Math.round(Math.abs(value || 0))}%`
+                        : `£${
+                            value !== undefined
+                              ? Math.abs(value).toLocaleString()
+                              : "—"
+                          }`}
                     </span>
                     {accounts.length > 0 && (
                       <button

@@ -31,6 +31,7 @@ export function ChartTypeSelector({
         <SelectItem value="by-account-type">By Account Type</SelectItem>
         <SelectItem value="by-category">By Category</SelectItem>
         <SelectItem value="by-wealth-source">By Wealth Source</SelectItem>
+        <SelectItem value="savings-rate">Savings Rate</SelectItem>
       </SelectContent>
     </Select>
   );

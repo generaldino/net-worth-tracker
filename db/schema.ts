@@ -61,6 +61,7 @@ export const monthlyEntries = pgTable("monthly_entries", {
   endingBalance: numeric("ending_balance").notNull(),
   cashIn: numeric("cash_in").notNull(),
   cashOut: numeric("cash_out").notNull(),
+  workIncome: numeric("work_income").notNull().default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

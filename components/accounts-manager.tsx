@@ -46,6 +46,8 @@ export async function AccountsManager() {
     accountData.map(({ accountId, history }) => [accountId, history])
   );
 
+  console.log("accountHistories", accountHistories);
+
   const valueChanges = Object.fromEntries(
     accountData.map(({ accountId, valueChange }) => [accountId, valueChange])
   );
@@ -92,6 +94,7 @@ export async function AccountsManager() {
                     endingBalance: entry.endingBalance,
                     cashIn: entry.cashIn,
                     cashOut: entry.cashOut,
+                    workIncome: entry.workIncome || 0,
                   });
                 }}
                 onAddNewMonth={async (accountId, month, entry) => {
@@ -101,6 +104,7 @@ export async function AccountsManager() {
                     endingBalance: entry.endingBalance,
                     cashIn: entry.cashIn,
                     cashOut: entry.cashOut,
+                    workIncome: entry.workIncome || 0,
                   });
                 }}
               />

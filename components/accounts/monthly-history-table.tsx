@@ -20,6 +20,7 @@ interface MonthlyHistoryTableProps {
         endingBalance: string;
         cashIn: string;
         cashOut: string;
+        workIncome: string;
       }
     >
   >;
@@ -61,6 +62,7 @@ export function MonthlyHistoryTable({
           endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
           cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
           cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
+          workIncome: Number.parseFloat(editedEntry.workIncome) || 0,
         });
 
         if (result.success) {
@@ -92,27 +94,28 @@ export function MonthlyHistoryTable({
       <div className="block sm:hidden space-y-3">
         {history.map((entry) => {
           const isEditing =
-            editingValues[accountId]?.[entry.monthKey] !== undefined;
+            editingValues[accountId]?.[entry.month] !== undefined;
 
           return (
             <MonthlyHistoryRow
-              key={entry.monthKey}
+              key={entry.month}
               entry={entry}
               isEditing={isEditing}
               editingValues={
                 isEditing
-                  ? editingValues[accountId][entry.monthKey]
+                  ? editingValues[accountId][entry.month]
                   : {
                       endingBalance: entry.endingBalance.toString(),
                       cashIn: entry.cashIn.toString(),
                       cashOut: entry.cashOut.toString(),
+                      workIncome: (entry.workIncome || 0).toString(),
                     }
               }
               onValueChange={(field, value) =>
-                onValueChange(accountId, entry.monthKey, field, value)
+                onValueChange(accountId, entry.month, field, value)
               }
-              onSave={() => handleSave(entry.monthKey)}
-              onEdit={() => onEdit(accountId, entry.monthKey, entry)}
+              onSave={() => handleSave(entry.month)}
+              onEdit={() => onEdit(accountId, entry.month, entry)}
               isMobile
             />
           );
@@ -126,6 +129,7 @@ export function MonthlyHistoryTable({
             <TableRow>
               <TableHead className="w-[120px]">Month</TableHead>
               <TableHead className="w-[140px]">Balance</TableHead>
+              <TableHead className="w-[120px]">Work Income</TableHead>
               <TableHead className="w-[120px]">Cash In</TableHead>
               <TableHead className="w-[120px]">Cash Out</TableHead>
               <TableHead className="w-[120px]">Cash Flow</TableHead>
@@ -136,27 +140,28 @@ export function MonthlyHistoryTable({
           <TableBody>
             {history.map((entry) => {
               const isEditing =
-                editingValues[accountId]?.[entry.monthKey] !== undefined;
+                editingValues[accountId]?.[entry.month] !== undefined;
 
               return (
                 <MonthlyHistoryRow
-                  key={entry.monthKey}
+                  key={entry.month}
                   entry={entry}
                   isEditing={isEditing}
                   editingValues={
                     isEditing
-                      ? editingValues[accountId][entry.monthKey]
+                      ? editingValues[accountId][entry.month]
                       : {
                           endingBalance: entry.endingBalance.toString(),
                           cashIn: entry.cashIn.toString(),
                           cashOut: entry.cashOut.toString(),
+                          workIncome: (entry.workIncome || 0).toString(),
                         }
                   }
                   onValueChange={(field, value) =>
-                    onValueChange(accountId, entry.monthKey, field, value)
+                    onValueChange(accountId, entry.month, field, value)
                   }
-                  onSave={() => handleSave(entry.monthKey)}
-                  onEdit={() => onEdit(accountId, entry.monthKey, entry)}
+                  onSave={() => handleSave(entry.month)}
+                  onEdit={() => onEdit(accountId, entry.month, entry)}
                 />
               );
             })}

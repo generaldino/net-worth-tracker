@@ -47,6 +47,7 @@ export function MonthlyEntryDialog({
             : await getCurrentValue(account.id);
           const cashIn = existingEntry ? existingEntry.cashIn : 0;
           const cashOut = existingEntry ? existingEntry.cashOut : 0;
+          const workIncome = existingEntry ? existingEntry.workIncome : 0;
           return {
             accountId: account.id,
             monthKey: month,
@@ -54,6 +55,7 @@ export function MonthlyEntryDialog({
             endingBalance,
             cashIn,
             cashOut,
+            workIncome,
             cashFlow: cashIn - cashOut,
             accountGrowth: 0,
           };
@@ -80,7 +82,18 @@ export function MonthlyEntryDialog({
   };
 
   const handleSubmit = () => {
-    onSaveEntries(month, entries);
+    const entriesToSave = entries.map((entry) => ({
+      accountId: entry.accountId,
+      monthKey: entry.month,
+      month: entry.month,
+      endingBalance: entry.endingBalance,
+      cashIn: entry.cashIn,
+      cashOut: entry.cashOut,
+      workIncome: entry.workIncome,
+      cashFlow: entry.cashIn - entry.cashOut,
+      accountGrowth: 0, // This will be calculated on the server
+    }));
+    onSaveEntries(month, entriesToSave);
     setOpen(false);
   };
 
@@ -145,6 +158,21 @@ export function MonthlyEntryDialog({
                           handleEntryChange(
                             account.id.toString(),
                             "endingBalance",
+                            e.target.value
+                          )
+                        }
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">Work Income</Label>
+                      <Input
+                        type="number"
+                        value={entry?.workIncome || 0}
+                        onChange={(e) =>
+                          handleEntryChange(
+                            account.id.toString(),
+                            "workIncome",
                             e.target.value
                           )
                         }

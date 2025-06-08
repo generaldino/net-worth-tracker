@@ -3,7 +3,8 @@ export type ChartType =
   | "by-account"
   | "by-account-type"
   | "by-category"
-  | "by-wealth-source";
+  | "by-wealth-source"
+  | "savings-rate";
 
 export interface Account {
   id: string;
@@ -19,6 +20,7 @@ export interface SourceData {
   "Savings from Income": number;
   "Interest Earned": number;
   "Capital Gains": number;
+  "Savings Rate": number;
 }
 
 export interface AccountData {

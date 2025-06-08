@@ -10,6 +10,7 @@ interface MonthlyHistoryRowProps {
     endingBalance: string;
     cashIn: string;
     cashOut: string;
+    workIncome: string;
   };
   onValueChange: (field: string, value: string) => void;
   onSave: () => void;
@@ -57,6 +58,23 @@ export function MonthlyHistoryRow({
             ) : (
               <div className="font-medium">
                 £{entry.endingBalance.toLocaleString()}
+              </div>
+            )}
+          </div>
+          <div>
+            <span className="text-muted-foreground block mb-1">
+              Work Income:
+            </span>
+            {isEditing ? (
+              <Input
+                type="number"
+                value={editingValues.workIncome}
+                onChange={(e) => onValueChange("workIncome", e.target.value)}
+                className="h-8"
+              />
+            ) : (
+              <div className="font-medium">
+                £{(entry.workIncome || 0).toLocaleString()}
               </div>
             )}
           </div>
@@ -121,6 +139,18 @@ export function MonthlyHistoryRow({
           />
         ) : (
           `£${entry.endingBalance.toLocaleString()}`
+        )}
+      </td>
+      <td>
+        {isEditing ? (
+          <Input
+            type="number"
+            value={editingValues.workIncome}
+            onChange={(e) => onValueChange("workIncome", e.target.value)}
+            className="w-[100px]"
+          />
+        ) : (
+          `£${(entry.workIncome || 0).toLocaleString()}`
         )}
       </td>
       <td>

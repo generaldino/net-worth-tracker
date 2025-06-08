@@ -45,7 +45,6 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
           selectedTypes,
           selectedCategories
         );
-        console.log("data", data);
         setChartData(data);
         setClickedData(null);
       } catch (error) {

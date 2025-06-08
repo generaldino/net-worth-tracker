@@ -29,6 +29,7 @@ interface AccountRowProps {
         endingBalance: string;
         cashIn: string;
         cashOut: string;
+        workIncome: string;
       }
     >
   >;

@@ -33,6 +33,7 @@ export function ChartDisplay({
   isLoading,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
+  console.log("chartData", chartData);
 
   // Calculate responsive bar size based on data length and screen size
   const getBarSize = (dataLength: number) => {
@@ -120,7 +121,11 @@ export function ChartDisplay({
                   style={{ backgroundColor: entry.color }}
                 />
                 <span className="font-medium">{entry.name}:</span>
-                <span>£{entry.value.toLocaleString()}</span>
+                <span>
+                  {entry.name === "Savings Rate"
+                    ? `${Math.round(entry.value)}%`
+                    : `£${entry.value.toLocaleString()}`}
+                </span>
               </div>
             )
           )}
@@ -435,7 +440,7 @@ export function ChartDisplay({
           "Savings from Income",
           "Interest Earned",
           "Capital Gains",
-        ];
+        ] as const;
         const sourceBarSize = getBarSize(chartData.sourceData.length);
         return (
           <ChartContainer
@@ -475,17 +480,74 @@ export function ChartDisplay({
                 />
                 <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
-                {sourceKeys.map((source, index) => (
-                  <Bar
-                    key={source}
-                    dataKey={source}
-                    fill={COLORS[index % COLORS.length]}
-                    maxBarSize={sourceBarSize}
-                    onClick={(data) => handleBarClick(data, data.month)}
-                    style={{ cursor: "pointer" }}
-                    isAnimationActive={true}
-                  />
-                ))}
+                {sourceKeys.map((source, index) => {
+                  const hasData = chartData.sourceData.some(
+                    (monthData) => (monthData[source] || 0) > 0
+                  );
+                  if (hasData) {
+                    return (
+                      <Bar
+                        key={source}
+                        dataKey={source}
+                        fill={COLORS[index % COLORS.length]}
+                        maxBarSize={sourceBarSize}
+                        onClick={(data) => handleBarClick(data, data.month)}
+                        style={{ cursor: "pointer" }}
+                        isAnimationActive={true}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        );
+
+      case "savings-rate":
+        const savingsRateBarSize = getBarSize(chartData.sourceData.length);
+        return (
+          <ChartContainer
+            config={{
+              "Savings Rate": {
+                label: "Savings Rate",
+                color: "hsl(var(--chart-1))",
+              },
+            }}
+            className="h-[300px] sm:h-[400px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={chartData.sourceData}
+                margin={margins}
+                barCategoryGap="15%"
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  fontSize={fontSize}
+                  angle={-45}
+                  textAnchor="end"
+                  height={margins.bottom + 10}
+                  interval={0}
+                  tick={{ fontSize }}
+                />
+                <YAxis
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  fontSize={fontSize}
+                  width={width && width < 640 ? 50 : 60}
+                  tick={{ fontSize }}
+                />
+                <ReferenceLine y={0} stroke="#666" />
+                <ChartTooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey="Savings Rate"
+                  fill="hsl(var(--chart-1))"
+                  maxBarSize={savingsRateBarSize}
+                  onClick={(data) => handleBarClick(data, data.month)}
+                  style={{ cursor: "pointer" }}
+                  isAnimationActive={true}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
