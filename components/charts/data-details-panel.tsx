@@ -231,6 +231,114 @@ export function DataDetailsPanel({
           </div>
         </div>
       )}
+
+      {chartType === "savings-rate" && (
+        <div className="space-y-2">
+          <div className="text-sm text-muted-foreground mb-2">
+            Savings Rate Details:
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total Income:</span>
+              <span className="font-medium">
+                £
+                {(() => {
+                  const breakdown =
+                    (data.breakdown as unknown as Record<
+                      string,
+                      AccountBreakdown[]
+                    >) || {};
+                  const workIncome =
+                    breakdown["Savings from Income"]?.reduce(
+                      (sum, acc) => sum + (acc.amount >= 0 ? acc.amount : 0),
+                      0
+                    ) || 0;
+                  return workIncome.toLocaleString();
+                })()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Total Savings:</span>
+              <span className="font-medium text-green-600">
+                £
+                {(() => {
+                  const breakdown =
+                    (data.breakdown as unknown as Record<
+                      string,
+                      AccountBreakdown[]
+                    >) || {};
+                  const savings =
+                    breakdown["Savings from Income"]?.reduce(
+                      (sum, acc) => sum + acc.amount,
+                      0
+                    ) || 0;
+                  return Math.abs(savings).toLocaleString();
+                })()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Savings Rate:</span>
+              <span className="font-medium text-green-600">
+                {(() => {
+                  const breakdown =
+                    (data.breakdown as unknown as Record<
+                      string,
+                      AccountBreakdown[]
+                    >) || {};
+                  const workIncome =
+                    breakdown["Savings from Income"]?.reduce(
+                      (sum, acc) => sum + (acc.amount >= 0 ? acc.amount : 0),
+                      0
+                    ) || 0;
+                  const savings =
+                    breakdown["Savings from Income"]?.reduce(
+                      (sum, acc) => sum + acc.amount,
+                      0
+                    ) || 0;
+                  return workIncome > 0
+                    ? `${Math.round((Math.abs(savings) / workIncome) * 100)}%`
+                    : "0%";
+                })()}
+              </span>
+            </div>
+          </div>
+          <div className="border-t pt-2 mt-2">
+            <div className="text-sm text-muted-foreground mb-2">
+              Account Breakdown:
+            </div>
+            <ul className="space-y-1">
+              {(() => {
+                const breakdown =
+                  (data.breakdown as unknown as Record<
+                    string,
+                    AccountBreakdown[]
+                  >) || {};
+                return (
+                  breakdown["Savings from Income"]?.map((acc) => (
+                    <li
+                      key={acc.accountId}
+                      className="flex justify-between text-sm"
+                    >
+                      <span className="text-muted-foreground">
+                        {acc.name} ({acc.owner}){" "}
+                        <span className="text-xs">({acc.type})</span>
+                      </span>
+                      <span
+                        className={
+                          acc.amount >= 0 ? "text-green-600" : "text-red-600"
+                        }
+                      >
+                        {acc.amount >= 0 ? "+" : "-"}£
+                        {Math.abs(acc.amount).toLocaleString()}
+                      </span>
+                    </li>
+                  )) || []
+                );
+              })()}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

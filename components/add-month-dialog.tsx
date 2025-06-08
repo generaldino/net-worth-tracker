@@ -29,6 +29,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [endingBalance, setEndingBalance] = useState("");
   const [cashIn, setCashIn] = useState("");
   const [cashOut, setCashOut] = useState("");
+  const [workIncome, setWorkIncome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
 
@@ -57,6 +58,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         endingBalance: Number.parseFloat(endingBalance) || 0,
         cashIn: Number.parseFloat(cashIn) || 0,
         cashOut: Number.parseFloat(cashOut) || 0,
+        workIncome: Number.parseFloat(workIncome) || 0,
       });
 
       if (result.success) {
@@ -67,6 +69,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           endingBalance: Number.parseFloat(endingBalance) || 0,
           cashIn: Number.parseFloat(cashIn) || 0,
           cashOut: Number.parseFloat(cashOut) || 0,
+          workIncome: Number.parseFloat(workIncome) || 0,
           cashFlow:
             (Number.parseFloat(cashIn) || 0) -
             (Number.parseFloat(cashOut) || 0),
@@ -80,6 +83,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         setEndingBalance("");
         setCashIn("");
         setCashOut("");
+        setWorkIncome("");
         setOpen(false);
 
         toast({
@@ -147,6 +151,16 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               type="number"
               value={endingBalance}
               onChange={(e) => setEndingBalance(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="work-income">Work Income</Label>
+            <Input
+              id="work-income"
+              type="number"
+              value={workIncome}
+              onChange={(e) => setWorkIncome(e.target.value)}
               placeholder="0"
             />
           </div>
