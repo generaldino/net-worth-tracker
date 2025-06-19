@@ -5,12 +5,25 @@ import {
   type Account,
   type MonthlyEntry,
   type ValueTimePeriod,
+  type TimePeriod,
+  accountTypes,
+  accountCategories,
 } from "@/lib/types";
 import { AccountRow } from "./accounts/account-row";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { TimePeriodSelector } from "./accounts/TimePeriodSelector";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { AccountSelector } from "@/components/charts/controls/account-selector";
+import { AccountTypeSelector } from "@/components/charts/controls/account-type-selector";
+import { CategorySelector } from "@/components/charts/controls/category-selector";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AccountsTableProps {
   accounts: Account[];
@@ -63,9 +76,50 @@ export function AccountsTable({
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [showClosedAccounts, setShowClosedAccounts] = useState(false);
 
-  const filteredAccounts = accounts.filter(
-    (account) => showClosedAccounts || !account.isClosed
+  // Filter states
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
+    accounts.map((account) => account.id)
   );
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(accountTypes);
+  const [selectedCategories, setSelectedCategories] =
+    useState<string[]>(accountCategories);
+  const [selectedOwner, setSelectedOwner] = useState<string>("all");
+
+  // Get unique owners from accounts
+  const owners = Array.from(new Set(accounts.map((account) => account.owner)));
+
+  // Filter accounts based on selected filters
+  const filteredAccounts = accounts.filter((account) => {
+    // Filter by closed status
+    if (!showClosedAccounts && account.isClosed) {
+      return false;
+    }
+
+    // Filter by selected accounts
+    if (selectedAccounts.length > 0 && !selectedAccounts.includes(account.id)) {
+      return false;
+    }
+
+    // Filter by selected types
+    if (selectedTypes.length > 0 && !selectedTypes.includes(account.type)) {
+      return false;
+    }
+
+    // Filter by selected categories
+    if (
+      selectedCategories.length > 0 &&
+      !selectedCategories.includes(account.category || "Uncategorized")
+    ) {
+      return false;
+    }
+
+    // Filter by selected owner
+    if (selectedOwner !== "all" && account.owner !== selectedOwner) {
+      return false;
+    }
+
+    return true;
+  });
 
   const handleValueChange = (
     accountId: string,
@@ -110,12 +164,45 @@ export function AccountsTable({
 
   return (
     <div className="space-y-4 px-2 sm:px-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <TimePeriodSelector
-            selectedTimePeriod={selectedTimePeriod}
-            onTimePeriodChange={setSelectedTimePeriod}
-          />
+      <div className="flex flex-col gap-4">
+        {/* Filters Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <AccountSelector
+              accounts={accounts}
+              selectedAccounts={selectedAccounts}
+              onAccountsChange={setSelectedAccounts}
+            />
+            <AccountTypeSelector
+              selectedTypes={selectedTypes}
+              onTypesChange={setSelectedTypes}
+            />
+            <CategorySelector
+              selectedCategories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
+            />
+            <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+              <SelectTrigger className="w-full sm:w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Owners</SelectItem>
+                {owners.map((owner) => (
+                  <SelectItem key={owner} value={owner}>
+                    {owner}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <TimePeriodSelector
+              selectedTimePeriod={selectedTimePeriod}
+              onTimePeriodChange={setSelectedTimePeriod}
+            />
+          </div>
+        </div>
+
+        {/* Additional Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-2">
             <Switch
               id="show-closed"
@@ -123,6 +210,11 @@ export function AccountsTable({
               onCheckedChange={setShowClosedAccounts}
             />
             <Label htmlFor="show-closed">Show closed accounts</Label>
+          </div>
+
+          {/* Results count */}
+          <div className="text-sm text-muted-foreground">
+            Showing {filteredAccounts.length} of {accounts.length} accounts
           </div>
         </div>
       </div>
@@ -165,6 +257,14 @@ export function AccountsTable({
           />
         ))}
       </div>
+
+      {/* No results message */}
+      {filteredAccounts.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          No accounts match the current filters. Try adjusting your filter
+          criteria.
+        </div>
+      )}
 
       <EditAccountDialog
         account={editingAccount}
