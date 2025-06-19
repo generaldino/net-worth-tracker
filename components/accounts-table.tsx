@@ -5,7 +5,6 @@ import {
   type Account,
   type MonthlyEntry,
   type ValueTimePeriod,
-  type TimePeriod,
   accountTypes,
   accountCategories,
 } from "@/lib/types";
@@ -30,10 +29,6 @@ interface AccountsTableProps {
   monthlyData: Record<string, MonthlyEntry[]>;
   currentValues: Record<string, number>;
   accountHistories: Record<string, MonthlyEntry[]>;
-  valueChanges: Record<
-    string,
-    { absoluteChange: number; percentageChange: number }
-  >;
   onDeleteAccount: (accountId: string) => void;
   onUpdateMonthlyEntry: (
     accountId: string,
@@ -47,12 +42,57 @@ interface AccountsTableProps {
   ) => void;
 }
 
+// Client-side function to calculate value change
+function calculateValueChangeClient(
+  history: MonthlyEntry[],
+  timePeriod: ValueTimePeriod
+): { absoluteChange: number; percentageChange: number } {
+  if (history.length === 0) {
+    return { absoluteChange: 0, percentageChange: 0 };
+  }
+
+  const currentValue = Number(history[0].endingBalance);
+  let previousValue: number;
+
+  switch (timePeriod) {
+    case "1M":
+      previousValue = history[1] ? Number(history[1].endingBalance) : 0;
+      break;
+    case "3M":
+      previousValue = history[3] ? Number(history[3].endingBalance) : 0;
+      break;
+    case "6M":
+      previousValue = history[6] ? Number(history[6].endingBalance) : 0;
+      break;
+    case "1Y":
+      previousValue = history[12] ? Number(history[12].endingBalance) : 0;
+      break;
+    case "YTD":
+      const currentYear = new Date().getFullYear();
+      const ytdEntry = history.find((entry) =>
+        entry.month.startsWith(`${currentYear}-01`)
+      );
+      previousValue = ytdEntry ? Number(ytdEntry.endingBalance) : 0;
+      break;
+    case "ALL":
+    default:
+      previousValue = history[history.length - 1]
+        ? Number(history[history.length - 1].endingBalance)
+        : 0;
+  }
+
+  const absoluteChange = currentValue - previousValue;
+  const percentageChange =
+    previousValue === 0 ? 0 : (absoluteChange / previousValue) * 100;
+
+  return { absoluteChange, percentageChange };
+}
+
 export function AccountsTable({
   accounts,
   monthlyData,
   currentValues,
   accountHistories,
-  valueChanges,
   onDeleteAccount,
   onUpdateMonthlyEntry,
   onAddNewMonth,
@@ -87,6 +127,17 @@ export function AccountsTable({
 
   // Get unique owners from accounts
   const owners = Array.from(new Set(accounts.map((account) => account.owner)));
+
+  // Calculate value changes based on selected time period (derived state)
+  const calculatedValueChanges = Object.fromEntries(
+    accounts.map((account) => [
+      account.id,
+      calculateValueChangeClient(
+        accountHistories[account.id] || [],
+        selectedTimePeriod
+      ),
+    ])
+  );
 
   // Filter accounts based on selected filters
   const filteredAccounts = accounts.filter((account) => {
@@ -226,7 +277,7 @@ export function AccountsTable({
             account={account}
             currentValue={currentValues[account.id] || 0}
             valueChange={
-              valueChanges[account.id] || {
+              calculatedValueChanges[account.id] || {
                 absoluteChange: 0,
                 percentageChange: 0,
               }

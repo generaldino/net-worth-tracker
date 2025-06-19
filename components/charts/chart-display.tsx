@@ -33,7 +33,6 @@ export function ChartDisplay({
   isLoading,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
-  console.log("chartData", chartData);
 
   // Calculate responsive bar size based on data length and screen size
   const getBarSize = (dataLength: number) => {

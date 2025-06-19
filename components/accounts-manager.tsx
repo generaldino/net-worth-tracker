@@ -8,7 +8,6 @@ import {
   getMonthlyData,
   getCurrentValue,
   getAccountHistory,
-  calculateValueChange,
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 
@@ -22,17 +21,15 @@ export async function AccountsManager() {
   // Fetch all account data in parallel
   const accountData = await Promise.all(
     accounts.map(async (account) => {
-      const [currentValue, history, valueChange] = await Promise.all([
+      const [currentValue, history] = await Promise.all([
         getCurrentValue(account.id),
         getAccountHistory(account.id),
-        calculateValueChange(account.id, "3M"), // Default to 3M period
       ]);
 
       return {
         accountId: account.id,
         currentValue,
         history,
-        valueChange,
       };
     })
   );
@@ -44,10 +41,6 @@ export async function AccountsManager() {
 
   const accountHistories = Object.fromEntries(
     accountData.map(({ accountId, history }) => [accountId, history])
-  );
-
-  const valueChanges = Object.fromEntries(
-    accountData.map(({ accountId, valueChange }) => [accountId, valueChange])
   );
 
   return (
@@ -77,7 +70,6 @@ export async function AccountsManager() {
                 monthlyData={monthlyData}
                 currentValues={currentValues}
                 accountHistories={accountHistories}
-                valueChanges={valueChanges}
                 onDeleteAccount={async (accountId) => {
                   "use server";
                   const { deleteAccount } = await import("@/lib/actions");
