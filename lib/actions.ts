@@ -26,8 +26,8 @@ export async function calculateNetWorth() {
       );
       const balance = Number(latestEntry?.endingBalance || 0);
 
-      // Credit cards are liabilities - subtract from net worth
-      if (account.type === "Credit_Card") {
+      // Credit cards and loans are liabilities - subtract from net worth
+      if (account.type === "Credit_Card" || account.type === "Loan") {
         return total - balance;
       }
 
@@ -158,7 +158,8 @@ export async function createAccount(data: {
     | "Pension"
     | "Commodity"
     | "Stock_options"
-    | "Credit_Card";
+    | "Credit_Card"
+    | "Loan";
   isISA: boolean;
   owner: string;
 }) {
@@ -203,7 +204,8 @@ export async function updateAccount(data: {
     | "Pension"
     | "Commodity"
     | "Stock_options"
-    | "Credit_Card";
+    | "Credit_Card"
+    | "Loan";
   category: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
@@ -503,8 +505,8 @@ export async function getChartData(
           const account = filteredAccounts.find(
             (acc) => acc.id === entry.accountId
           );
-          // Credit cards are liabilities - subtract from net worth
-          if (account?.type === "Credit_Card") {
+          // Credit cards and loans are liabilities - subtract from net worth
+          if (account?.type === "Credit_Card" || account?.type === "Loan") {
             return sum - entry.endingBalance;
           }
           // All other accounts are assets - add to net worth
@@ -531,8 +533,8 @@ export async function getChartData(
           const uniqueName = `${account.name} (${account.type}${
             account.isISA ? " ISA" : ""
           })`;
-          // Credit cards are liabilities - show as negative values
-          if (account.type === "Credit_Card") {
+          // Credit cards and loans are liabilities - show as negative values
+          if (account.type === "Credit_Card" || account.type === "Loan") {
             monthData[uniqueName] = -entry.endingBalance;
           } else {
             monthData[uniqueName] = entry.endingBalance;
@@ -571,8 +573,8 @@ export async function getChartData(
             (e) => e.accountId === account.id
           );
           const balance = entry?.endingBalance || 0;
-          // Credit cards are liabilities - subtract from totals
-          if (account.type === "Credit_Card") {
+          // Credit cards and loans are liabilities - subtract from totals
+          if (account.type === "Credit_Card" || account.type === "Loan") {
             return sum - balance;
           }
           // All other accounts are assets - add to totals
@@ -612,8 +614,8 @@ export async function getChartData(
             (e) => e.accountId === account.id
           );
           const balance = entry?.endingBalance || 0;
-          // Credit cards are liabilities - subtract from totals
-          if (account.type === "Credit_Card") {
+          // Credit cards and loans are liabilities - subtract from totals
+          if (account.type === "Credit_Card" || account.type === "Loan") {
             return sum - balance;
           }
           // All other accounts are assets - add to totals
