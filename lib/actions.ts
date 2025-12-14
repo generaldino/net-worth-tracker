@@ -19,11 +19,20 @@ export async function calculateNetWorth() {
       .orderBy(desc(monthlyEntries.month));
 
     // Calculate total net worth from the latest entries
+    // Credit cards are liabilities, so subtract their balances
     const netWorth = allAccounts.reduce((total: number, account: Account) => {
       const latestEntry = latestEntries.find(
         (entry: MonthlyEntry) => entry.accountId === account.id
       );
-      return total + Number(latestEntry?.endingBalance || 0);
+      const balance = Number(latestEntry?.endingBalance || 0);
+
+      // Credit cards are liabilities - subtract from net worth
+      if (account.type === "Credit_Card") {
+        return total - balance;
+      }
+
+      // All other accounts are assets - add to net worth
+      return total + balance;
     }, 0);
 
     return netWorth;
@@ -148,7 +157,8 @@ export async function createAccount(data: {
     | "Crypto"
     | "Pension"
     | "Commodity"
-    | "Stock_options";
+    | "Stock_options"
+    | "Credit_Card";
   isISA: boolean;
   owner: string;
 }) {
@@ -192,7 +202,8 @@ export async function updateAccount(data: {
     | "Crypto"
     | "Pension"
     | "Commodity"
-    | "Stock_options";
+    | "Stock_options"
+    | "Credit_Card";
   category: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
@@ -488,7 +499,17 @@ export async function getChartData(
         .filter((entry) =>
           filteredAccounts.some((account) => account.id === entry.accountId)
         )
-        .reduce((sum, entry) => sum + entry.endingBalance, 0),
+        .reduce((sum, entry) => {
+          const account = filteredAccounts.find(
+            (acc) => acc.id === entry.accountId
+          );
+          // Credit cards are liabilities - subtract from net worth
+          if (account?.type === "Credit_Card") {
+            return sum - entry.endingBalance;
+          }
+          // All other accounts are assets - add to net worth
+          return sum + entry.endingBalance;
+        }, 0),
     }));
 
     // Calculate net worth by account over time
@@ -510,7 +531,12 @@ export async function getChartData(
           const uniqueName = `${account.name} (${account.type}${
             account.isISA ? " ISA" : ""
           })`;
-          monthData[uniqueName] = entry.endingBalance;
+          // Credit cards are liabilities - show as negative values
+          if (account.type === "Credit_Card") {
+            monthData[uniqueName] = -entry.endingBalance;
+          } else {
+            monthData[uniqueName] = entry.endingBalance;
+          }
         }
       });
 
@@ -544,7 +570,13 @@ export async function getChartData(
           const entry = monthlyData[month].find(
             (e) => e.accountId === account.id
           );
-          return sum + (entry?.endingBalance || 0);
+          const balance = entry?.endingBalance || 0;
+          // Credit cards are liabilities - subtract from totals
+          if (account.type === "Credit_Card") {
+            return sum - balance;
+          }
+          // All other accounts are assets - add to totals
+          return sum + balance;
         }, 0);
       });
 
@@ -579,7 +611,13 @@ export async function getChartData(
           const entry = monthlyData[month].find(
             (e) => e.accountId === account.id
           );
-          return sum + (entry?.endingBalance || 0);
+          const balance = entry?.endingBalance || 0;
+          // Credit cards are liabilities - subtract from totals
+          if (account.type === "Credit_Card") {
+            return sum - balance;
+          }
+          // All other accounts are assets - add to totals
+          return sum + balance;
         }, 0);
       });
 

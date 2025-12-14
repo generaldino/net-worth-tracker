@@ -20,7 +20,8 @@ export type AccountType =
   | "Crypto"
   | "Pension"
   | "Commodity"
-  | "Stock_options";
+  | "Stock_options"
+  | "Credit_Card";
 
 export type AccountCategory = "Cash" | "Investments";
 
@@ -35,6 +36,7 @@ export const accountTypes: AccountType[] = [
   "Pension",
   "Commodity",
   "Stock_options",
+  "Credit_Card",
 ];
 
 export type MonthlyEntry = {
