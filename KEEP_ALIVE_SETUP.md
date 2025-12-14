@@ -7,7 +7,7 @@ This setup prevents your Supabase project from auto-pausing by pinging it daily 
 ✅ **Secret Token Authentication** - Only requests with the correct token can access the endpoint  
 ✅ **Rate Limiting** - Prevents abuse (max 10 requests per minute per IP)  
 ✅ **Minimal Resource Usage** - Makes a lightweight query that doesn't access real data  
-✅ **No Sensitive Data** - Endpoint doesn't expose any application data  
+✅ **No Sensitive Data** - Endpoint doesn't expose any application data
 
 ## Setup Instructions
 
@@ -60,6 +60,7 @@ curl -X GET \
 ```
 
 You should receive a response like:
+
 ```json
 {
   "status": "ok",
@@ -91,12 +92,13 @@ Edit `.github/workflows/keep-alive.yml` and modify the cron schedule:
 
 ```yaml
 schedule:
-  - cron: '0 2 * * *'  # 2 AM UTC daily
+  - cron: "0 2 * * *" # 2 AM UTC daily
 ```
 
 Cron format: `minute hour day month weekday`
 
 Examples:
+
 - `'0 2 * * *'` - 2 AM UTC daily
 - `'0 */6 * * *'` - Every 6 hours
 - `'0 0 * * 0'` - Every Sunday at midnight UTC
@@ -113,20 +115,24 @@ const MAX_REQUESTS_PER_WINDOW = 10; // Max requests per window
 ## Troubleshooting
 
 ### Endpoint returns 401 Unauthorized
+
 - Verify `KEEP_ALIVE_SECRET_TOKEN` is set in your deployment environment
 - Ensure the token in GitHub Actions secrets matches the deployment token
 
 ### Endpoint returns 429 Too Many Requests
+
 - You've exceeded the rate limit (10 requests per minute)
 - Wait a minute and try again
 - If this happens frequently, consider increasing `MAX_REQUESTS_PER_WINDOW`
 
 ### GitHub Actions workflow fails
+
 - Check that both secrets are set in GitHub repository settings
 - Verify the endpoint URL is correct and accessible
 - Check GitHub Actions logs for detailed error messages
 
 ### Supabase still auto-pauses
+
 - Ensure the GitHub Actions workflow is running successfully
 - Verify the endpoint is making successful requests (check logs)
 - Consider running the workflow more frequently (e.g., every 6 hours)

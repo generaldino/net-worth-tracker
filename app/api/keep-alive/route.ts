@@ -55,10 +55,7 @@ export async function GET(request: NextRequest) {
       request.nextUrl.searchParams.get("token");
 
     if (!token || token !== expectedToken) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 2. Rate limiting
@@ -68,15 +65,12 @@ export async function GET(request: NextRequest) {
       "unknown";
 
     if (!checkRateLimit(ip)) {
-      return NextResponse.json(
-        { error: "Too many requests" },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
     // 3. Make minimal Supabase query to keep connection alive
     const supabase = createClient();
-    
+
     // Make a simple query to Supabase REST API
     // This will wake up the Supabase project if it's paused
     // We use a query that will fail gracefully but still establish a connection

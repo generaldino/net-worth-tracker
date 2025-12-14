@@ -3,7 +3,7 @@ name: Keep Supabase Alive
 on:
   schedule:
     # Run once daily at 2 AM UTC (adjust timezone as needed)
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
   workflow_dispatch: # Allow manual triggering
 
 jobs:
@@ -11,12 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Keep-Alive Endpoint
-        run: |
-          curl -X GET \
-            -H "Authorization: Bearer ${{ secrets.KEEP_ALIVE_SECRET_TOKEN }}" \
-            "${{ secrets.KEEP_ALIVE_ENDPOINT_URL }}"
-        
-      - name: Verify Response
         run: |
           response=$(curl -s -w "\n%{http_code}" -X GET \
             -H "Authorization: Bearer ${{ secrets.KEEP_ALIVE_SECRET_TOKEN }}" \
