@@ -15,10 +15,10 @@ jobs:
           response=$(curl -s -w "\n%{http_code}" -X GET \
             -H "Authorization: Bearer ${{ secrets.KEEP_ALIVE_SECRET_TOKEN }}" \
             "${{ secrets.KEEP_ALIVE_ENDPOINT_URL }}")
-          
+
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
-          
+
           if [ "$http_code" -eq 200 ]; then
             echo "✅ Keep-alive ping successful"
             echo "Response: $body"

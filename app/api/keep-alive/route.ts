@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     // Make a simple query to Supabase REST API
     // This will wake up the Supabase project if it's paused
     // We use a query that will fail gracefully but still establish a connection
-    const { error } = await supabase
+    await supabase
       .from("_keep_alive_ping")
       .select("1")
       .limit(0)
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
 
     // We expect an error (table doesn't exist), but the connection attempt
     // is what matters - it wakes up Supabase from auto-pause
-    // The error is expected and harmless
+    // The error is expected and harmless, so we don't need to handle it
 
     return NextResponse.json(
       {
