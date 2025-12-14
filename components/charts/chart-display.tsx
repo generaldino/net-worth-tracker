@@ -273,9 +273,10 @@ export function ChartDisplay({
                   const uniqueName = `${account.name} (${account.type}${
                     account.isISA ? " ISA" : ""
                   })`;
-                  const hasData = chartData.accountData.some(
-                    (monthData) => ((monthData[uniqueName] as number) || 0) > 0
-                  );
+                  const hasData = chartData.accountData.some((monthData) => {
+                    const value = monthData[uniqueName] as number | undefined;
+                    return value !== undefined && value !== null && value !== 0;
+                  });
                   if (hasData) {
                     return (
                       <Bar
@@ -341,7 +342,12 @@ export function ChartDisplay({
                 <ChartTooltip content={<CustomTooltip />} />
                 {accountTypes.map((type, index) => {
                   const hasData = chartData.accountTypeData.some(
-                    (monthData) => ((monthData[type] as number) || 0) > 0
+                    (monthData) => {
+                      const value = monthData[type] as number | undefined;
+                      return (
+                        value !== undefined && value !== null && value !== 0
+                      );
+                    }
                   );
                   if (hasData) {
                     return (
@@ -411,9 +417,10 @@ export function ChartDisplay({
                 <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
                 {categories.map((category, index) => {
-                  const hasData = chartData.categoryData.some(
-                    (monthData) => ((monthData[category] as number) || 0) > 0
-                  );
+                  const hasData = chartData.categoryData.some((monthData) => {
+                    const value = monthData[category] as number | undefined;
+                    return value !== undefined && value !== null && value !== 0;
+                  });
                   if (hasData) {
                     return (
                       <Bar
