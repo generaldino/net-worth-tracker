@@ -74,11 +74,7 @@ export async function GET(request: NextRequest) {
     // Make a simple query to Supabase REST API
     // This will wake up the Supabase project if it's paused
     // We use a query that will fail gracefully but still establish a connection
-    await supabase
-      .from("_keep_alive_ping")
-      .select("1")
-      .limit(0)
-      .single();
+    await supabase.from("_keep_alive_ping").select("1").limit(0).single();
 
     // We expect an error (table doesn't exist), but the connection attempt
     // is what matters - it wakes up Supabase from auto-pause
