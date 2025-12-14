@@ -12,12 +12,12 @@ jobs:
     steps:
       - name: Ping Keep-Alive Endpoint
         run: |
-          response=$(curl -s -w "\n%{http_code}" -X GET \
+          # Follow redirects and get the final status code
+          http_code=$(curl -sL -o /tmp/response_body -w "%{http_code}" -X GET \
             -H "Authorization: Bearer ${{ secrets.KEEP_ALIVE_SECRET_TOKEN }}" \
             "${{ secrets.KEEP_ALIVE_ENDPOINT_URL }}")
 
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
+          body=$(cat /tmp/response_body)
 
           if [ "$http_code" -eq 200 ]; then
             echo "✅ Keep-alive ping successful"
