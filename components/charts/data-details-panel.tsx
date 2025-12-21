@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { ClickedData } from "@/components/charts/types";
 import { COLORS, SOURCE_KEYS } from "@/components/charts/constants";
 import { useState } from "react";
+import { useMasking } from "@/contexts/masking-context";
 
 interface AccountBreakdown {
   accountId: string;
@@ -23,6 +24,7 @@ export function DataDetailsPanel({
   onClose,
 }: DataDetailsPanelProps) {
   const { month, data, chartType } = clickedData;
+  const { formatCurrency, isMasked } = useMasking();
   const [breakdownStates, setBreakdownStates] = useState<Map<string, boolean>>(
     new Map()
   );
@@ -56,7 +58,7 @@ export function DataDetailsPanel({
             <span className="font-medium">
               £
               {data.netWorth !== undefined
-                ? data.netWorth.toLocaleString()
+                ? formatCurrency(data.netWorth)
                 : "—"}
             </span>
           </div>
@@ -90,7 +92,7 @@ export function DataDetailsPanel({
                     />
                     <span>{key}</span>
                   </div>
-                  <span className="font-medium">£{value.toLocaleString()}</span>
+                  <span className="font-medium">£{formatCurrency(value)}</span>
                 </div>
               );
             }
@@ -101,16 +103,17 @@ export function DataDetailsPanel({
               <span>Total:</span>
               <span>
                 £
-                {Object.entries(data)
-                  .filter(
-                    ([key, value]) =>
-                      key !== "month" &&
-                      typeof value === "number" &&
-                      value > 0 &&
-                      !["x", "y", "width", "height", "value"].includes(key)
-                  )
-                  .reduce((sum, [, value]) => sum + (value as number), 0)
-                  .toLocaleString()}
+                {formatCurrency(
+                  Object.entries(data)
+                    .filter(
+                      ([key, value]) =>
+                        key !== "month" &&
+                        typeof value === "number" &&
+                        value > 0 &&
+                        !["x", "y", "width", "height", "value"].includes(key)
+                    )
+                    .reduce((sum, [, value]) => sum + (value as number), 0)
+                )}
               </span>
             </div>
           </div>
@@ -158,10 +161,12 @@ export function DataDetailsPanel({
                     >
                       {value !== undefined ? (value >= 0 ? "+" : "-") : "—"}
                       {source === "Savings Rate"
-                        ? `${Math.round(Math.abs(value || 0))}%`
+                        ? isMasked
+                          ? "•••"
+                          : `${Math.round(Math.abs(value || 0))}%`
                         : `£${
                             value !== undefined
-                              ? Math.abs(value).toLocaleString()
+                              ? formatCurrency(Math.abs(value))
                               : "—"
                           }`}
                     </span>
@@ -193,7 +198,7 @@ export function DataDetailsPanel({
                           }
                         >
                           {acc.amount >= 0 ? "+" : "-"}£
-                          {Math.abs(acc.amount).toLocaleString()}
+                          {formatCurrency(Math.abs(acc.amount))}
                         </span>
                       </li>
                     ))}
@@ -223,7 +228,7 @@ export function DataDetailsPanel({
                   <span
                     className={total >= 0 ? "text-green-600" : "text-red-600"}
                   >
-                    {total >= 0 ? "+" : "-"}£{Math.abs(total).toLocaleString()}
+                    {total >= 0 ? "+" : "-"}£{formatCurrency(Math.abs(total))}
                   </span>
                 );
               })()}
@@ -244,7 +249,7 @@ export function DataDetailsPanel({
                 £
                 {(() => {
                   const workIncome = data["Total Income"] || 0;
-                  return workIncome.toLocaleString();
+                  return formatCurrency(workIncome);
                 })()}
               </span>
             </div>
@@ -263,7 +268,7 @@ export function DataDetailsPanel({
                       (sum, acc) => sum + acc.amount,
                       0
                     ) || 0;
-                  return Math.abs(savings).toLocaleString();
+                  return formatCurrency(Math.abs(savings));
                 })()}
               </span>
             </div>
@@ -274,9 +279,11 @@ export function DataDetailsPanel({
                   const workIncome = Number(data["Total Income"]) || 0;
                   const savings = Number(data["Savings from Income"]) || 0;
                   return workIncome > 0
-                    ? `${Number(
-                        ((Math.abs(savings) / workIncome) * 100).toFixed(1)
-                      )}%`
+                    ? isMasked
+                      ? "•••"
+                      : `${Number(
+                          ((Math.abs(savings) / workIncome) * 100).toFixed(1)
+                        )}%`
                     : "0%";
                 })()}
               </span>
@@ -309,7 +316,7 @@ export function DataDetailsPanel({
                         }
                       >
                         {acc.amount >= 0 ? "+" : "-"}£
-                        {Math.abs(acc.amount).toLocaleString()}
+                        {formatCurrency(Math.abs(acc.amount))}
                       </span>
                     </li>
                   )) || []

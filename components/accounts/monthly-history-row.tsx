@@ -1,7 +1,10 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Edit, Save } from "lucide-react";
 import { type MonthlyEntry } from "@/lib/types";
+import { useMasking } from "@/contexts/masking-context";
 
 interface MonthlyHistoryRowProps {
   entry: MonthlyEntry;
@@ -27,6 +30,8 @@ export function MonthlyHistoryRow({
   onEdit,
   isMobile = false,
 }: MonthlyHistoryRowProps) {
+  const { formatCurrency } = useMasking();
+
   if (isMobile) {
     return (
       <div className="bg-muted/30 rounded-lg p-3">
@@ -57,7 +62,7 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{entry.endingBalance.toLocaleString()}
+                £{formatCurrency(entry.endingBalance)}
               </div>
             )}
           </div>
@@ -74,7 +79,7 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{(entry.workIncome || 0).toLocaleString()}
+                £{formatCurrency(entry.workIncome || 0)}
               </div>
             )}
           </div>
@@ -88,7 +93,7 @@ export function MonthlyHistoryRow({
               }
             >
               {entry.accountGrowth >= 0 ? "+" : ""}£
-              {entry.accountGrowth.toLocaleString()}
+              {formatCurrency(entry.accountGrowth)}
             </div>
           </div>
           <div>
@@ -102,7 +107,7 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{entry.cashIn.toLocaleString()}
+                £{formatCurrency(entry.cashIn)}
               </div>
             )}
           </div>
@@ -117,7 +122,7 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{entry.cashOut.toLocaleString()}
+                £{formatCurrency(entry.cashOut)}
               </div>
             )}
           </div>
@@ -138,7 +143,7 @@ export function MonthlyHistoryRow({
             className="w-[120px]"
           />
         ) : (
-          `£${entry.endingBalance.toLocaleString()}`
+          `£${formatCurrency(entry.endingBalance)}`
         )}
       </td>
       <td>
@@ -150,7 +155,7 @@ export function MonthlyHistoryRow({
             className="w-[100px]"
           />
         ) : (
-          `£${(entry.workIncome || 0).toLocaleString()}`
+          `£${formatCurrency(entry.workIncome || 0)}`
         )}
       </td>
       <td>
@@ -162,7 +167,7 @@ export function MonthlyHistoryRow({
             className="w-[100px]"
           />
         ) : (
-          `£${entry.cashIn.toLocaleString()}`
+          `£${formatCurrency(entry.cashIn)}`
         )}
       </td>
       <td>
@@ -174,17 +179,17 @@ export function MonthlyHistoryRow({
             className="w-[100px]"
           />
         ) : (
-          `£${entry.cashOut.toLocaleString()}`
+          `£${formatCurrency(entry.cashOut)}`
         )}
       </td>
       <td className={entry.cashFlow >= 0 ? "text-green-600" : "text-red-600"}>
-        {entry.cashFlow >= 0 ? "+" : ""}£{entry.cashFlow.toLocaleString()}
+        {entry.cashFlow >= 0 ? "+" : ""}£{formatCurrency(entry.cashFlow)}
       </td>
       <td
         className={entry.accountGrowth >= 0 ? "text-green-600" : "text-red-600"}
       >
         {entry.accountGrowth >= 0 ? "+" : ""}£
-        {entry.accountGrowth.toLocaleString()}
+        {formatCurrency(entry.accountGrowth)}
       </td>
       <td>
         {isEditing ? (

@@ -11,6 +11,8 @@ import {
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
+import { MaskToggleButton } from "@/components/mask-toggle-button";
+import { NetWorthDisplay } from "@/components/net-worth-display";
 
 export async function AccountsManager() {
   const [netWorth, accounts, monthlyData] = await Promise.all([
@@ -48,9 +50,7 @@ export async function AccountsManager() {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-4 px-4 max-w-7xl">
         <div className="text-center mb-6 sm:mb-8">
-          <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-600">
-            £{netWorth.toLocaleString()}
-          </div>
+          <NetWorthDisplay netWorth={netWorth} />
         </div>
 
         <div className="space-y-4 sm:space-y-6">
@@ -63,6 +63,7 @@ export async function AccountsManager() {
                   Your Accounts
                 </CardTitle>
                 <div className="flex items-center gap-2">
+                  <MaskToggleButton />
                   <ExportCSVButton />
                   <AddAccountButton />
                 </div>

@@ -1,3 +1,5 @@
+"use client";
+
 import { ChevronDown, ChevronRight, Archive } from "lucide-react";
 import { type Account, type MonthlyEntry } from "@/lib/types";
 import { AccountTypeBadge } from "./account-type-badge";
@@ -12,6 +14,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useMasking } from "@/contexts/masking-context";
 
 interface AccountRowProps {
   account: Account;
@@ -63,6 +66,7 @@ export function AccountRow({
   onDeleteAccount,
 }: AccountRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { formatCurrency } = useMasking();
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -109,7 +113,7 @@ export function AccountRow({
                 <div>
                   <span className="text-muted-foreground">Current Value:</span>
                   <div className="font-medium text-lg">
-                    £{currentValue.toLocaleString()}
+                    £{formatCurrency(currentValue)}
                   </div>
                 </div>
                 <ValueChangeDisplay
@@ -138,7 +142,7 @@ export function AccountRow({
                   <div className="text-muted-foreground">{account.owner}</div>
                   <AccountTypeBadge account={account} />
                   <div className="font-medium">
-                    £{currentValue.toLocaleString()}
+                    £{formatCurrency(currentValue)}
                   </div>
                   <ValueChangeDisplay
                     absoluteChange={valueChange.absoluteChange}

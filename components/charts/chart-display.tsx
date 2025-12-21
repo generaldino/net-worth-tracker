@@ -16,6 +16,7 @@ import {
 import { ChartType, ChartData, ClickedData } from "@/components/charts/types";
 import { DataDetailsPanel } from "@/components/charts/data-details-panel";
 import { COLORS } from "./constants";
+import { useMasking } from "@/contexts/masking-context";
 
 interface ChartDisplayProps {
   chartType: ChartType;
@@ -33,6 +34,7 @@ export function ChartDisplay({
   isLoading,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
+  const { formatCurrency, isMasked } = useMasking();
 
   // Calculate responsive bar size based on data length and screen size
   const getBarSize = (dataLength: number) => {
@@ -122,8 +124,10 @@ export function ChartDisplay({
                 <span className="font-medium">{entry.name}:</span>
                 <span>
                   {entry.name === "Savings Rate"
-                    ? `${Number(entry.value.toFixed(1))}%`
-                    : `£${entry.value.toLocaleString()}`}
+                    ? isMasked
+                      ? "•••"
+                      : `${Number(entry.value.toFixed(1))}%`
+                    : `£${formatCurrency(entry.value)}`}
                 </span>
               </div>
             )
@@ -191,7 +195,9 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) => `£${(value / 1000).toFixed(0)}K`}
+                  tickFormatter={(value) =>
+                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                  }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
@@ -262,7 +268,9 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) => `£${(value / 1000).toFixed(0)}K`}
+                  tickFormatter={(value) =>
+                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                  }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
@@ -333,7 +341,9 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) => `£${(value / 1000).toFixed(0)}K`}
+                  tickFormatter={(value) =>
+                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                  }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
@@ -409,7 +419,9 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) => `£${(value / 1000).toFixed(0)}K`}
+                  tickFormatter={(value) =>
+                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                  }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
@@ -479,7 +491,9 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) => `£${(value / 1000).toFixed(1)}K`}
+                  tickFormatter={(value) =>
+                    isMasked ? "•••" : `£${(value / 1000).toFixed(1)}K`
+                  }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
@@ -539,7 +553,9 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  tickFormatter={(value) =>
+                    isMasked ? "•••" : `${value.toFixed(1)}%`
+                  }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
