@@ -953,3 +953,121 @@ export async function getClosedAccounts() {
     return [];
   }
 }
+
+// Helper function to escape CSV values
+function escapeCSV(
+  value: string | number | boolean | null | undefined
+): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  const stringValue = String(value);
+  // If the value contains comma, quote, or newline, wrap it in quotes and escape quotes
+  if (
+    stringValue.includes(",") ||
+    stringValue.includes('"') ||
+    stringValue.includes("\n")
+  ) {
+    return `"${stringValue.replace(/"/g, '""')}"`;
+  }
+  return stringValue;
+}
+
+export async function exportToCSV(): Promise<string> {
+  try {
+    // Get all accounts including closed ones
+    const allAccounts = await db.select().from(accountsTable);
+
+    // Get all monthly entries ordered by month (asc) and accountId for proper growth calculation
+    const allEntries = await db
+      .select()
+      .from(monthlyEntries)
+      .orderBy(monthlyEntries.month, monthlyEntries.accountId);
+
+    // Create a map of accounts by ID for quick lookup
+    const accountsMap = new Map(
+      allAccounts.map((account) => [account.id, account])
+    );
+
+    // Define CSV headers
+    const headers = [
+      "Account ID",
+      "Account Name",
+      "Account Type",
+      "Category",
+      "Owner",
+      "Is ISA",
+      "Is Closed",
+      "Closed Date",
+      "Month",
+      "Ending Balance",
+      "Cash In",
+      "Cash Out",
+      "Work Income",
+      "Cash Flow",
+      "Account Growth",
+      "Entry Created At",
+      "Entry Updated At",
+    ];
+
+    // Build CSV rows
+    const rows: string[] = [headers.map(escapeCSV).join(",")];
+
+    // Track previous entry for each account to calculate growth efficiently
+    const previousEntryByAccount = new Map<string, (typeof allEntries)[0]>();
+
+    // Process each entry (already sorted by month ASC)
+    allEntries.forEach((entry) => {
+      const account = accountsMap.get(entry.accountId);
+      if (!account) return; // Skip if account not found
+
+      // Calculate cash flow
+      const cashFlow =
+        Number(entry.cashIn) -
+        Number(entry.cashOut) +
+        Number(entry.workIncome || 0);
+
+      // Calculate account growth by comparing with previous month's entry
+      let accountGrowth = 0;
+      const previousEntry = previousEntryByAccount.get(entry.accountId);
+
+      if (previousEntry) {
+        accountGrowth =
+          Number(entry.endingBalance) -
+          Number(previousEntry.endingBalance) -
+          cashFlow;
+      }
+
+      // Update previous entry for this account
+      previousEntryByAccount.set(entry.accountId, entry);
+
+      // Build row
+      const row = [
+        entry.accountId,
+        account.name,
+        account.type,
+        account.category || "",
+        account.owner || "",
+        account.isISA ? "true" : "false",
+        account.isClosed ? "true" : "false",
+        account.closedAt ? new Date(account.closedAt).toISOString() : "",
+        entry.month,
+        Number(entry.endingBalance).toFixed(2),
+        Number(entry.cashIn).toFixed(2),
+        Number(entry.cashOut).toFixed(2),
+        Number(entry.workIncome || 0).toFixed(2),
+        cashFlow.toFixed(2),
+        accountGrowth.toFixed(2),
+        entry.createdAt ? new Date(entry.createdAt).toISOString() : "",
+        entry.updatedAt ? new Date(entry.updatedAt).toISOString() : "",
+      ];
+
+      rows.push(row.map(escapeCSV).join(","));
+    });
+
+    return rows.join("\n");
+  } catch (error) {
+    console.error("Error exporting to CSV:", error);
+    throw new Error("Failed to export data to CSV");
+  }
+}

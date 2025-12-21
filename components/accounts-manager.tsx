@@ -10,6 +10,7 @@ import {
   getAccountHistory,
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
+import { ExportCSVButton } from "@/components/export-csv-button";
 
 export async function AccountsManager() {
   const [netWorth, accounts, monthlyData] = await Promise.all([
@@ -61,7 +62,10 @@ export async function AccountsManager() {
                 <CardTitle className="text-lg sm:text-xl">
                   Your Accounts
                 </CardTitle>
-                <AddAccountButton />
+                <div className="flex items-center gap-2">
+                  <ExportCSVButton />
+                  <AddAccountButton />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
