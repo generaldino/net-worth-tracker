@@ -249,7 +249,9 @@ export function DataDetailsPanel({
                 £
                 {(() => {
                   const workIncome = data["Total Income"] || 0;
-                  return formatCurrency(workIncome);
+                  return formatCurrency(
+                    typeof workIncome === "number" ? workIncome : Number(workIncome) || 0
+                  );
                 })()}
               </span>
             </div>
