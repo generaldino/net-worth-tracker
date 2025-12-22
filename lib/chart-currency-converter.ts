@@ -240,10 +240,12 @@ export function useChartCurrencyConverter() {
           (sum, acc) => sum + acc.amount,
           0
         );
-        converted["Total Income"] = item.breakdown["Savings from Income"].reduce(
-          (sum, acc) => sum + convertValue(acc.amount, acc.currency as Currency, item.monthKey),
-          0
-        );
+        // Convert Total Income (work income) from GBP (base currency) to display currency
+        // The original Total Income is a sum across accounts and is stored in GBP
+        converted["Total Income"] =
+          displayCurrency === "GBP"
+            ? item["Total Income"] || 0
+            : convertValue(item["Total Income"] || 0, "GBP", item.monthKey);
         
         // Recalculate savings rate
         converted["Savings Rate"] =
