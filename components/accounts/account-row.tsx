@@ -71,7 +71,7 @@ export function AccountRow({
   displayCurrency,
 }: AccountRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { formatCurrency } = useMasking();
+  const { formatCurrency, isMasked } = useMasking();
   const accountCurrency = (account.currency || "GBP") as Currency;
 
   const { convertedAmount: convertedCurrentValue } = useCurrencyConversion(
@@ -131,12 +131,16 @@ export function AccountRow({
                 <div>
                   <span className="text-muted-foreground">Current Value:</span>
                   <div className="font-medium text-lg">
-                    {formatCurrencyAmount(
-                      convertedCurrentValue,
-                      displayCurrency
+                    {isMasked ? (
+                      "••••••"
+                    ) : (
+                      formatCurrencyAmount(
+                        convertedCurrentValue,
+                        displayCurrency
+                      )
                     )}
                   </div>
-                  {accountCurrency !== displayCurrency && (
+                  {accountCurrency !== displayCurrency && !isMasked && (
                     <div className="text-xs text-muted-foreground mt-1">
                       ({formatCurrencyAmount(currentValue, accountCurrency)})
                     </div>
@@ -169,15 +173,21 @@ export function AccountRow({
                   <div className="text-muted-foreground">{account.owner}</div>
                   <AccountTypeBadge account={account} />
                   <div className="font-medium">
-                    {formatCurrencyAmount(
-                      convertedCurrentValue,
-                      displayCurrency
-                    )}
-                    {accountCurrency !== displayCurrency && (
-                      <span className="text-xs text-muted-foreground ml-1">
-                        ({getCurrencySymbol(accountCurrency)}
-                        {formatCurrency(currentValue)})
-                      </span>
+                    {isMasked ? (
+                      "••••••"
+                    ) : (
+                      <>
+                        {formatCurrencyAmount(
+                          convertedCurrentValue,
+                          displayCurrency
+                        )}
+                        {accountCurrency !== displayCurrency && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({getCurrencySymbol(accountCurrency)}
+                            {formatCurrencyAmount(currentValue, accountCurrency)})
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                   <ValueChangeDisplay
