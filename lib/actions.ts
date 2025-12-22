@@ -394,6 +394,8 @@ export async function getChartData(
   selectedCategories: string[] = []
 ) {
   try {
+    type Currency = "GBP" | "EUR" | "USD" | "AED";
+
     // Get all monthly entries ordered by month (desc)
     const entries = await db
       .select()
@@ -490,12 +492,13 @@ export async function getChartData(
 
     const filteredMonths = getFilteredMonths(months, timePeriod);
 
-    // Calculate net worth over time
+    // Calculate net worth over time (raw values, no conversion)
     const netWorthData = filteredMonths.map((month) => ({
       month: new Date(month + "-01").toLocaleDateString("en-GB", {
         month: "short",
         year: "numeric",
       }),
+      monthKey: month, // Keep original month key for conversion
       netWorth: monthlyData[month]
         .filter((entry) =>
           filteredAccounts.some((account) => account.id === entry.accountId)
@@ -511,18 +514,36 @@ export async function getChartData(
           // All other accounts are assets - add to net worth
           return sum + entry.endingBalance;
         }, 0),
+      // Store account currencies for client-side conversion
+      accountBalances: monthlyData[month]
+        .filter((entry) =>
+          filteredAccounts.some((account) => account.id === entry.accountId)
+        )
+        .map((entry) => {
+          const account = filteredAccounts.find(
+            (acc) => acc.id === entry.accountId
+          );
+          return {
+            accountId: entry.accountId,
+            balance: entry.endingBalance,
+            currency: (account?.currency || "GBP") as Currency,
+            isLiability: account?.type === "Credit_Card" || account?.type === "Loan",
+          };
+        }),
     }));
 
-    // Calculate net worth by account over time
+    // Calculate net worth by account over time (raw values, no conversion)
     const accountData = filteredMonths.map((month) => {
       const monthData: {
         month: string;
+        monthKey: string;
         [key: string]: number | string;
       } = {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
           month: "short",
           year: "numeric",
         }),
+        monthKey: month,
       };
 
       monthlyData[month].forEach((entry) => {
@@ -538,22 +559,26 @@ export async function getChartData(
           } else {
             monthData[uniqueName] = entry.endingBalance;
           }
+          // Store currency info for client-side conversion
+          monthData[`${uniqueName}_currency`] = (account.currency || "GBP") as string;
         }
       });
 
       return monthData;
     });
 
-    // Calculate net worth by account type over time
+    // Calculate net worth by account type over time (raw values, no conversion)
     const accountTypeData = filteredMonths.map((month) => {
       const monthData: {
         month: string;
+        monthKey: string;
         [key: string]: number | string;
       } = {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
           month: "short",
           year: "numeric",
         }),
+        monthKey: month,
       };
 
       // Group accounts by type
@@ -565,7 +590,7 @@ export async function getChartData(
         return acc;
       }, {} as Record<string, typeof filteredAccounts>);
 
-      // Calculate total for each account type
+      // Calculate total for each account type (raw values)
       Object.entries(accountsByType).forEach(([type, accounts]) => {
         monthData[type] = accounts.reduce((sum, account) => {
           const entry = monthlyData[month].find(
@@ -579,21 +604,30 @@ export async function getChartData(
           // All other accounts are assets - add to totals
           return sum + balance;
         }, 0);
+        // Store currency info for each account type
+        const currencies = accounts.map((acc) => ({
+          currency: (acc.currency || "GBP") as Currency,
+          balance: monthlyData[month].find((e) => e.accountId === acc.id)?.endingBalance || 0,
+          isLiability: acc.type === "Credit_Card" || acc.type === "Loan",
+        }));
+        monthData[`${type}_currencies`] = JSON.stringify(currencies);
       });
 
       return monthData;
     });
 
-    // Calculate net worth by category over time
+    // Calculate net worth by category over time (raw values, no conversion)
     const categoryData = filteredMonths.map((month) => {
       const monthData: {
         month: string;
+        monthKey: string;
         [key: string]: number | string;
       } = {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
           month: "short",
           year: "numeric",
         }),
+        monthKey: month,
       };
 
       // Group accounts by category
@@ -606,7 +640,7 @@ export async function getChartData(
         return acc;
       }, {} as Record<string, typeof filteredAccounts>);
 
-      // Calculate total for each category
+      // Calculate total for each category (raw values)
       Object.entries(accountsByCategory).forEach(([category, accounts]) => {
         monthData[category] = accounts.reduce((sum, account) => {
           const entry = monthlyData[month].find(
@@ -620,24 +654,32 @@ export async function getChartData(
           // All other accounts are assets - add to totals
           return sum + balance;
         }, 0);
+        // Store currency info for each category
+        const currencies = accounts.map((acc) => ({
+          currency: (acc.currency || "GBP") as Currency,
+          balance: monthlyData[month].find((e) => e.accountId === acc.id)?.endingBalance || 0,
+          isLiability: acc.type === "Credit_Card" || acc.type === "Loan",
+        }));
+        monthData[`${category}_currencies`] = JSON.stringify(currencies);
       });
 
       return monthData;
     });
 
-    // Calculate growth by source over time
+    // Calculate growth by source over time (raw values, no conversion)
     const sourceData = filteredMonths.map((month) => {
       let savingsFromIncome = 0;
       let interestEarned = 0;
       let capitalGains = 0;
       let totalWorkIncome = 0;
 
-      // Per-account breakdowns
+      // Per-account breakdowns (with currency info)
       const savingsAccounts: Array<{
         accountId: string;
         name: string;
         type: string;
         amount: number;
+        currency: Currency;
         owner: string;
       }> = [];
       const interestAccounts: Array<{
@@ -645,6 +687,7 @@ export async function getChartData(
         name: string;
         type: string;
         amount: number;
+        currency: Currency;
         owner: string;
       }> = [];
       const capitalGainsAccounts: Array<{
@@ -652,6 +695,7 @@ export async function getChartData(
         name: string;
         type: string;
         amount: number;
+        currency: Currency;
         owner: string;
       }> = [];
 
@@ -659,7 +703,9 @@ export async function getChartData(
         const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (!account) return;
 
-        // Add work income to total
+        const accountCurrency = (account.currency || "GBP") as Currency;
+
+        // Add work income to total (raw)
         totalWorkIncome += Number(entry.workIncome || 0);
 
         // Calculate savings from income (cash flow)
@@ -670,6 +716,7 @@ export async function getChartData(
             name: account.name,
             type: account.type,
             amount: entry.cashFlow,
+            currency: accountCurrency,
             owner: account.owner || "Unknown",
           });
         }
@@ -682,6 +729,7 @@ export async function getChartData(
             name: account.name,
             type: account.type,
             amount: entry.accountGrowth,
+            currency: accountCurrency,
             owner: account.owner || "Unknown",
           });
         }
@@ -698,6 +746,7 @@ export async function getChartData(
             name: account.name,
             type: account.type,
             amount: entry.accountGrowth,
+            currency: accountCurrency,
             owner: account.owner || "Unknown",
           });
         }
@@ -708,6 +757,7 @@ export async function getChartData(
           month: "short",
           year: "numeric",
         }),
+        monthKey: month,
         "Savings from Income": savingsFromIncome,
         "Interest Earned": interestEarned,
         "Capital Gains": capitalGains,

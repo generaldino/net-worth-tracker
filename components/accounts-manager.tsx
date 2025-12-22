@@ -12,7 +12,7 @@ import {
 import { AddAccountButton } from "@/components/add-account-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
-import { NetWorthDisplay } from "@/components/net-worth-display";
+import { DashboardHeader } from "@/components/dashboard-header";
 
 export async function AccountsManager() {
   const [netWorth, accounts, monthlyData] = await Promise.all([
@@ -49,9 +49,7 @@ export async function AccountsManager() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-4 px-4 max-w-7xl">
-        <div className="text-center mb-6 sm:mb-8">
-          <NetWorthDisplay netWorth={netWorth} />
-        </div>
+        <DashboardHeader netWorth={netWorth} />
 
         <div className="space-y-4 sm:space-y-6">
           <ChartSection />

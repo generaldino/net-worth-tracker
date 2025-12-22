@@ -16,9 +16,8 @@ import { Label } from "@/components/ui/label";
 import { AccountSelector } from "@/components/charts/controls/account-selector";
 import { AccountTypeSelector } from "@/components/charts/controls/account-type-selector";
 import { CategorySelector } from "@/components/charts/controls/category-selector";
-import { CurrencySelector, type DisplayCurrency } from "@/components/currency-selector";
-import type { Currency } from "@/lib/fx-rates";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
+import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import {
   Select,
   SelectContent,
@@ -127,7 +126,7 @@ export function AccountsTable({
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(accountCategories);
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
-  const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("GBP");
+  const { displayCurrency } = useDisplayCurrency();
   const { fetchRates } = useExchangeRates();
 
   // Get unique owners from accounts
@@ -279,19 +278,13 @@ export function AccountsTable({
 
         {/* Additional Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <CurrencySelector
-              value={displayCurrency}
-              onValueChange={setDisplayCurrency}
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="show-closed"
+              checked={showClosedAccounts}
+              onCheckedChange={setShowClosedAccounts}
             />
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="show-closed"
-                checked={showClosedAccounts}
-                onCheckedChange={setShowClosedAccounts}
-              />
-              <Label htmlFor="show-closed">Show closed accounts</Label>
-            </div>
+            <Label htmlFor="show-closed">Show closed accounts</Label>
           </div>
 
           {/* Results count */}

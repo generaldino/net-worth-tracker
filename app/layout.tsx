@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 import { MaskingProviderWrapper } from "@/components/masking-provider-wrapper";
 import { ExchangeRatesProvider } from "@/contexts/exchange-rates-context";
+import { DisplayCurrencyProvider } from "@/contexts/display-currency-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,8 +49,10 @@ export default async function RootLayout({
       <body className={inter.className}>
         <MaskingProviderWrapper>
           <ExchangeRatesProvider>
-            <Navbar />
-            {children}
+            <DisplayCurrencyProvider>
+              <Navbar />
+              {children}
+            </DisplayCurrencyProvider>
           </ExchangeRatesProvider>
         </MaskingProviderWrapper>
         <Toaster />

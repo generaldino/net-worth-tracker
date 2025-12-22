@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
 import { getChartData } from "@/lib/actions";
+import { useDisplayCurrency } from "@/contexts/display-currency-context";
+import { useChartCurrencyConverter } from "@/lib/chart-currency-converter";
+import { useExchangeRates } from "@/contexts/exchange-rates-context";
+import type { Currency } from "@/lib/fx-rates";
 import { AccountSelector } from "./controls/account-selector";
 import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ChartFilters } from "./controls/chart-filters";
@@ -21,12 +25,61 @@ interface ChartControlsProps {
 }
 
 export function ChartControls({ initialData, owners }: ChartControlsProps) {
+  const { getChartCurrency } = useDisplayCurrency();
+  const { convertChartData } = useChartCurrencyConverter();
+  const { fetchRates } = useExchangeRates();
   const [chartType, setChartType] = useState<ChartType>("total");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
-  const [chartData, setChartData] = useState<ChartData>(initialData);
+  const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Extract all unique months from chart data for rate fetching
+  // Convert from "YYYY-MM-DD" to "YYYY-MM" format
+  const uniqueMonths = useMemo(() => {
+    const months = new Set<string>();
+    const toMonthFormat = (monthKey: string): string => {
+      if (/^\d{4}-\d{2}$/.test(monthKey)) return monthKey;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(monthKey)) return monthKey.substring(0, 7);
+      return monthKey;
+    };
+    
+    rawChartData.netWorthData.forEach((item) => {
+      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
+    });
+    rawChartData.accountData.forEach((item) => {
+      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
+    });
+    rawChartData.accountTypeData.forEach((item) => {
+      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
+    });
+    rawChartData.categoryData.forEach((item) => {
+      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
+    });
+    rawChartData.sourceData.forEach((item) => {
+      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
+    });
+    return Array.from(months);
+  }, [rawChartData]);
+
+  // Fetch rates when component mounts or currency changes
+  useEffect(() => {
+    const chartCurrency = getChartCurrency();
+    if (chartCurrency !== "BASE" && uniqueMonths.length > 0) {
+      fetchRates(uniqueMonths);
+    }
+  }, [getChartCurrency, uniqueMonths, fetchRates]);
+
+  // Convert chart data client-side using stored rates
+  const chartData = useMemo(() => {
+    const chartCurrency = getChartCurrency();
+    if (chartCurrency === "BASE") {
+      // For base currency, convert to GBP
+      return convertChartData(rawChartData, "GBP");
+    }
+    return convertChartData(rawChartData, chartCurrency as Currency);
+  }, [rawChartData, getChartCurrency, convertChartData]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
     initialData.accounts.map((account) => account.id)
   );
@@ -38,6 +91,7 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     async function loadChartData() {
       setIsLoading(true);
       try {
+        // Fetch raw data (no currency conversion)
         const data = await getChartData(
           timePeriod,
           selectedOwner,
@@ -45,7 +99,7 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
           selectedTypes,
           selectedCategories
         );
-        setChartData(data);
+        setRawChartData(data);
         setClickedData(null);
       } catch (error) {
         console.error("Error loading chart data:", error);
@@ -63,7 +117,7 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     ) {
       loadChartData();
     } else {
-      setChartData(initialData);
+      setRawChartData(initialData);
       setClickedData(null);
     }
   }, [

@@ -4,7 +4,7 @@ import { getAccounts } from "@/lib/actions";
 
 export async function ChartSection() {
   const [initialData, accounts] = await Promise.all([
-    getChartData("all"),
+    getChartData("all"), // No currency conversion - done client-side
     getAccounts(),
   ]);
 

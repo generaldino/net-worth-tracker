@@ -17,6 +17,9 @@ import { ChartType, ChartData, ClickedData } from "@/components/charts/types";
 import { DataDetailsPanel } from "@/components/charts/data-details-panel";
 import { COLORS } from "./constants";
 import { useMasking } from "@/contexts/masking-context";
+import { useDisplayCurrency } from "@/contexts/display-currency-context";
+import { formatCurrencyAmount } from "@/lib/fx-rates";
+import type { Currency } from "@/lib/fx-rates";
 
 interface ChartDisplayProps {
   chartType: ChartType;
@@ -34,7 +37,9 @@ export function ChartDisplay({
   isLoading,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
-  const { formatCurrency, isMasked } = useMasking();
+  const { isMasked } = useMasking();
+  const { getChartCurrency } = useDisplayCurrency();
+  const chartCurrency = getChartCurrency() as Currency;
 
   // Calculate responsive bar size based on data length and screen size
   const getBarSize = (dataLength: number) => {
@@ -127,7 +132,9 @@ export function ChartDisplay({
                     ? isMasked
                       ? "•••"
                       : `${Number(entry.value.toFixed(1))}%`
-                    : `£${formatCurrency(entry.value)}`}
+                    : isMasked
+                    ? "••••••"
+                    : formatCurrencyAmount(entry.value, chartCurrency)}
                 </span>
               </div>
             )
@@ -196,7 +203,12 @@ export function ChartDisplay({
                 />
                 <YAxis
                   tickFormatter={(value) =>
-                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }) + "K"
                   }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
@@ -269,7 +281,12 @@ export function ChartDisplay({
                 />
                 <YAxis
                   tickFormatter={(value) =>
-                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }) + "K"
                   }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
@@ -342,7 +359,12 @@ export function ChartDisplay({
                 />
                 <YAxis
                   tickFormatter={(value) =>
-                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }) + "K"
                   }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
@@ -420,7 +442,12 @@ export function ChartDisplay({
                 />
                 <YAxis
                   tickFormatter={(value) =>
-                    isMasked ? "•••" : `£${(value / 1000).toFixed(0)}K`
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }) + "K"
                   }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
@@ -492,7 +519,12 @@ export function ChartDisplay({
                 />
                 <YAxis
                   tickFormatter={(value) =>
-                    isMasked ? "•••" : `£${(value / 1000).toFixed(1)}K`
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        }) + "K"
                   }
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}

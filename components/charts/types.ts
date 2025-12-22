@@ -29,11 +29,21 @@ export interface AccountData {
 }
 
 export interface ChartData {
-  netWorthData: Array<{ month: string; netWorth: number }>;
-  accountData: Array<AccountData>;
-  accountTypeData: Array<AccountData>;
-  categoryData: Array<AccountData>;
-  sourceData: Array<SourceData>;
+  netWorthData: Array<{
+    month: string;
+    monthKey: string;
+    netWorth: number;
+    accountBalances?: Array<{
+      accountId: string;
+      balance: number;
+      currency: string;
+      isLiability: boolean;
+    }>;
+  }>;
+  accountData: Array<AccountData & { monthKey: string }>;
+  accountTypeData: Array<AccountData & { monthKey: string }>;
+  categoryData: Array<AccountData & { monthKey: string }>;
+  sourceData: Array<SourceData & { monthKey: string }>;
   accounts: Array<Account>;
 }
 

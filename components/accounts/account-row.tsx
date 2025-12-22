@@ -16,7 +16,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useMasking } from "@/contexts/masking-context";
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion";
-import { formatCurrencyAmount, getCurrencySymbol } from "@/lib/fx-rates";
+import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 
 interface AccountRowProps {
@@ -71,7 +71,7 @@ export function AccountRow({
   displayCurrency,
 }: AccountRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { formatCurrency, isMasked } = useMasking();
+  const { isMasked } = useMasking();
   const accountCurrency = (account.currency || "GBP") as Currency;
   
   // If displayCurrency matches accountCurrency, no conversion needed

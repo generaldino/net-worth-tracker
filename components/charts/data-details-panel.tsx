@@ -5,6 +5,9 @@ import type { ClickedData } from "@/components/charts/types";
 import { COLORS, SOURCE_KEYS } from "@/components/charts/constants";
 import { useState } from "react";
 import { useMasking } from "@/contexts/masking-context";
+import { useDisplayCurrency } from "@/contexts/display-currency-context";
+import { formatCurrencyAmount } from "@/lib/fx-rates";
+import type { Currency } from "@/lib/fx-rates";
 
 interface AccountBreakdown {
   accountId: string;
@@ -23,6 +26,8 @@ export function DataDetailsPanel({
   clickedData,
   onClose,
 }: DataDetailsPanelProps) {
+  const { getChartCurrency } = useDisplayCurrency();
+  const chartCurrency = getChartCurrency() as Currency;
   const { month, data, chartType } = clickedData;
   const { formatCurrency, isMasked } = useMasking();
   const [breakdownStates, setBreakdownStates] = useState<Map<string, boolean>>(
@@ -164,11 +169,11 @@ export function DataDetailsPanel({
                         ? isMasked
                           ? "•••"
                           : `${Math.round(Math.abs(value || 0))}%`
-                        : `£${
-                            value !== undefined
-                              ? formatCurrency(Math.abs(value))
-                              : "—"
-                          }`}
+                        : isMasked
+                        ? "••••••"
+                        : value !== undefined
+                        ? formatCurrencyAmount(Math.abs(value), chartCurrency)
+                        : "—"}
                     </span>
                     {accounts.length > 0 && (
                       <button
