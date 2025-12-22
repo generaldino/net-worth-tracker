@@ -70,6 +70,118 @@ export function DataDetailsPanel({
         </div>
       )}
 
+      {chartType === "assets-vs-liabilities" && (
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Assets:</span>
+            <span className="font-medium text-green-600">
+              {typeof data.Assets === "number"
+                ? formatCurrencyAmount(data.Assets, chartCurrency)
+                : "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Liabilities:</span>
+            <span className="font-medium text-red-600">
+              {typeof data.Liabilities === "number"
+                ? formatCurrencyAmount(data.Liabilities, chartCurrency)
+                : "—"}
+            </span>
+          </div>
+          <div className="border-t pt-2 mt-2">
+            <div className="flex justify-between font-medium">
+              <span>Net Worth:</span>
+              <span
+                className={
+                  typeof data["Net Worth"] === "number" &&
+                  data["Net Worth"] >= 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                }
+              >
+                {typeof data["Net Worth"] === "number"
+                  ? formatCurrencyAmount(data["Net Worth"], chartCurrency)
+                  : "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {chartType === "monthly-growth-rate" && (
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Growth Rate:</span>
+            <span
+              className={`font-medium ${
+                typeof data["Growth Rate"] === "number" &&
+                data["Growth Rate"] >= 0
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              {typeof data["Growth Rate"] === "number"
+                ? `${data["Growth Rate"] >= 0 ? "+" : ""}${data["Growth Rate"].toFixed(2)}%`
+                : "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Net Worth:</span>
+            <span className="font-medium">
+              {typeof data.netWorth === "number"
+                ? formatCurrencyAmount(data.netWorth, chartCurrency)
+                : "—"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {chartType === "allocation" && (
+        <div className="space-y-2">
+          <div className="text-sm text-muted-foreground mb-2">
+            Account Type Breakdown:
+          </div>
+          {Object.entries(data)
+            .filter(
+              ([key, value]) =>
+                key !== "month" &&
+                typeof value === "number" &&
+                value > 0
+            )
+            .sort(([, a], [, b]) => (b as number) - (a as number))
+            .map(([key, value], index) => {
+              const total = Object.entries(data)
+                .filter(
+                  ([k, v]) =>
+                    k !== "month" && typeof v === "number" && v > 0
+                )
+                .reduce((sum, [, v]) => sum + (v as number), 0);
+              const percentage = total > 0 ? ((value as number) / total) * 100 : 0;
+              return (
+                <div key={key} className="flex justify-between items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className="w-3 h-3 rounded-sm shrink-0"
+                      style={{
+                        backgroundColor: COLORS[index % COLORS.length],
+                      }}
+                    />
+                    <span className="truncate text-sm sm:text-base">{key}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="font-medium text-sm sm:text-base">
+                      {formatCurrencyAmount(value as number, chartCurrency)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({percentage.toFixed(1)}%)
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      )}
+
       {(chartType === "by-account" ||
         chartType === "by-account-type" ||
         chartType === "by-category") && (

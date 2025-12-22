@@ -1,10 +1,13 @@
 export type ChartType =
   | "total"
+  | "assets-vs-liabilities"
   | "by-account"
   | "by-account-type"
   | "by-category"
   | "by-wealth-source"
-  | "savings-rate";
+  | "savings-rate"
+  | "monthly-growth-rate"
+  | "allocation";
 
 export interface Account {
   id: string;

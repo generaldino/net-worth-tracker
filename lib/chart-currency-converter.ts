@@ -77,15 +77,26 @@ export function useChartCurrencyConverter() {
         };
       }
 
-      const convertedNetWorth = item.accountBalances.reduce((sum, acc) => {
+      // Convert each account balance and preserve the isLiability flag
+      const convertedAccountBalances = item.accountBalances.map((acc) => {
         const converted = convertValue(acc.balance, acc.currency as Currency, item.monthKey);
-        return sum + (acc.isLiability ? -converted : converted);
+        return {
+          accountId: acc.accountId,
+          balance: converted,
+          currency: displayCurrency,
+          isLiability: acc.isLiability,
+        };
+      });
+
+      const convertedNetWorth = convertedAccountBalances.reduce((sum, acc) => {
+        return sum + (acc.isLiability ? -acc.balance : acc.balance);
       }, 0);
 
       return {
         month: item.month,
         monthKey: item.monthKey,
         netWorth: convertedNetWorth,
+        accountBalances: convertedAccountBalances,
       };
     });
 
