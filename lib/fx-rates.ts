@@ -137,6 +137,7 @@ export function getCurrencySymbol(currency: Currency): string {
 
 /**
  * Formats a number as currency
+ * Note: This function does NOT handle masking - use the masking context's formatCurrency for masked values
  */
 export function formatCurrencyAmount(
   amount: number,

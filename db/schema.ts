@@ -76,6 +76,18 @@ export const monthlyEntries = pgTable("monthly_entries", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const exchangeRates = pgTable("exchange_rates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  date: text("date").notNull().unique(), // Format: "YYYY-MM-DD" (last day of month)
+  baseCurrency: currencyEnum("base_currency").notNull().default("GBP"),
+  gbpRate: numeric("gbp_rate").notNull().default("1"),
+  eurRate: numeric("eur_rate").notNull(),
+  usdRate: numeric("usd_rate").notNull(),
+  aedRate: numeric("aed_rate").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -83,6 +95,8 @@ export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
 export type MonthlyEntry = typeof monthlyEntries.$inferSelect;
 export type NewMonthlyEntry = typeof monthlyEntries.$inferInsert;
+export type ExchangeRate = typeof exchangeRates.$inferSelect;
+export type NewExchangeRate = typeof exchangeRates.$inferInsert;
 
 // Indexes
 export const monthlyEntriesMonthIdx = monthlyEntries.month;

@@ -5,10 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Edit, Save } from "lucide-react";
 import { type MonthlyEntry } from "@/lib/types";
 import { useMasking } from "@/contexts/masking-context";
+import { useCurrencyConversion } from "@/hooks/use-currency-conversion";
+import { formatCurrencyAmount } from "@/lib/fx-rates";
+import type { Currency } from "@/lib/fx-rates";
 
 interface MonthlyHistoryRowProps {
   entry: MonthlyEntry;
   isEditing: boolean;
+  accountCurrency: Currency;
+  displayCurrency: Currency;
   editingValues: {
     endingBalance: string;
     cashIn: string;
@@ -24,13 +29,53 @@ interface MonthlyHistoryRowProps {
 export function MonthlyHistoryRow({
   entry,
   isEditing,
+  accountCurrency,
+  displayCurrency,
   editingValues,
   onValueChange,
   onSave,
   onEdit,
   isMobile = false,
 }: MonthlyHistoryRowProps) {
-  const { formatCurrency } = useMasking();
+  const { formatCurrency, isMasked } = useMasking();
+  
+  // Convert values using historical rates for the entry's month
+  const { convertedAmount: convertedBalance } = useCurrencyConversion(
+    entry.endingBalance,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedWorkIncome } = useCurrencyConversion(
+    entry.workIncome || 0,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedCashIn } = useCurrencyConversion(
+    entry.cashIn,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedCashOut } = useCurrencyConversion(
+    entry.cashOut,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedCashFlow } = useCurrencyConversion(
+    entry.cashFlow,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedGrowth } = useCurrencyConversion(
+    entry.accountGrowth,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
 
   if (isMobile) {
     return (
@@ -62,7 +107,11 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{formatCurrency(entry.endingBalance)}
+                {isMasked ? (
+                  "••••••"
+                ) : (
+                  formatCurrencyAmount(convertedBalance, displayCurrency)
+                )}
               </div>
             )}
           </div>
@@ -79,7 +128,11 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{formatCurrency(entry.workIncome || 0)}
+                {isMasked ? (
+                  "••••••"
+                ) : (
+                  formatCurrencyAmount(convertedWorkIncome, displayCurrency)
+                )}
               </div>
             )}
           </div>
@@ -92,8 +145,14 @@ export function MonthlyHistoryRow({
                   : "text-red-600 font-medium"
               }
             >
-              {entry.accountGrowth >= 0 ? "+" : ""}£
-              {formatCurrency(entry.accountGrowth)}
+              {isMasked ? (
+                "••••••"
+              ) : (
+                <>
+                  {convertedGrowth >= 0 ? "+" : ""}
+                  {formatCurrencyAmount(convertedGrowth, displayCurrency)}
+                </>
+              )}
             </div>
           </div>
           <div>
@@ -107,7 +166,11 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{formatCurrency(entry.cashIn)}
+                {isMasked ? (
+                  "••••••"
+                ) : (
+                  formatCurrencyAmount(convertedCashIn, displayCurrency)
+                )}
               </div>
             )}
           </div>
@@ -122,7 +185,11 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                £{formatCurrency(entry.cashOut)}
+                {isMasked ? (
+                  "••••••"
+                ) : (
+                  formatCurrencyAmount(convertedCashOut, displayCurrency)
+                )}
               </div>
             )}
           </div>
@@ -143,7 +210,9 @@ export function MonthlyHistoryRow({
             className="w-[120px]"
           />
         ) : (
-          `£${formatCurrency(entry.endingBalance)}`
+          isMasked
+            ? "••••••"
+            : formatCurrencyAmount(convertedBalance, displayCurrency)
         )}
       </td>
       <td>
@@ -155,7 +224,9 @@ export function MonthlyHistoryRow({
             className="w-[100px]"
           />
         ) : (
-          `£${formatCurrency(entry.workIncome || 0)}`
+          isMasked
+            ? "••••••"
+            : formatCurrencyAmount(convertedWorkIncome, displayCurrency)
         )}
       </td>
       <td>
@@ -167,7 +238,9 @@ export function MonthlyHistoryRow({
             className="w-[100px]"
           />
         ) : (
-          `£${formatCurrency(entry.cashIn)}`
+          isMasked
+            ? "••••••"
+            : formatCurrencyAmount(convertedCashIn, displayCurrency)
         )}
       </td>
       <td>
@@ -179,17 +252,32 @@ export function MonthlyHistoryRow({
             className="w-[100px]"
           />
         ) : (
-          `£${formatCurrency(entry.cashOut)}`
+          isMasked
+            ? "••••••"
+            : formatCurrencyAmount(convertedCashOut, displayCurrency)
         )}
       </td>
       <td className={entry.cashFlow >= 0 ? "text-green-600" : "text-red-600"}>
-        {entry.cashFlow >= 0 ? "+" : ""}£{formatCurrency(entry.cashFlow)}
+        {isMasked ? (
+          "••••••"
+        ) : (
+          <>
+            {convertedCashFlow >= 0 ? "+" : ""}
+            {formatCurrencyAmount(convertedCashFlow, displayCurrency)}
+          </>
+        )}
       </td>
       <td
         className={entry.accountGrowth >= 0 ? "text-green-600" : "text-red-600"}
       >
-        {entry.accountGrowth >= 0 ? "+" : ""}£
-        {formatCurrency(entry.accountGrowth)}
+        {isMasked ? (
+          "••••••"
+        ) : (
+          <>
+            {convertedGrowth >= 0 ? "+" : ""}
+            {formatCurrencyAmount(convertedGrowth, displayCurrency)}
+          </>
+        )}
       </td>
       <td>
         {isEditing ? (

@@ -6,6 +6,7 @@ import { desc, eq, and } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth-helpers";
+import type { Currency } from "@/lib/fx-rates";
 
 export async function calculateNetWorth() {
   try {
@@ -1064,5 +1065,40 @@ export async function exportToCSV(): Promise<string> {
   } catch (error) {
     console.error("Error exporting to CSV:", error);
     throw new Error("Failed to export data to CSV");
+  }
+}
+
+/**
+ * Server action to convert currency
+ * This is needed because the HexaRate API doesn't allow direct browser requests (CORS)
+ * @param forMonth - Optional month in "YYYY-MM" format to use historical rates
+ */
+export async function convertCurrency(
+  amount: number,
+  fromCurrency: Currency,
+  toCurrency: Currency,
+  forMonth?: string
+): Promise<number> {
+  "use server";
+
+  if (fromCurrency === toCurrency) {
+    return amount;
+  }
+
+  try {
+    // Import the server-side conversion function
+    const { convertCurrency: convertCurrencyInternal } = await import(
+      "@/lib/fx-rates-server"
+    );
+    return await convertCurrencyInternal(
+      amount,
+      fromCurrency,
+      toCurrency,
+      forMonth
+    );
+  } catch (error) {
+    console.error("Error converting currency:", error);
+    // Fallback to original amount if conversion fails
+    return amount;
   }
 }

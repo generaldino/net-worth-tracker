@@ -9,6 +9,7 @@ import { MonthlyHistoryRow } from "./monthly-history-row";
 import { type MonthlyEntry } from "@/lib/types";
 import { updateMonthlyEntry } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
+import type { Currency } from "@/lib/fx-rates";
 
 interface MonthlyHistoryTableProps {
   history: MonthlyEntry[];
@@ -25,6 +26,8 @@ interface MonthlyHistoryTableProps {
     >
   >;
   accountId: string;
+  accountCurrency: Currency;
+  displayCurrency: Currency;
   onValueChange: (
     accountId: string,
     month: string,
@@ -39,6 +42,8 @@ export function MonthlyHistoryTable({
   history,
   editingValues,
   accountId,
+  accountCurrency,
+  displayCurrency,
   onValueChange,
   onSave,
   onEdit,
@@ -101,6 +106,8 @@ export function MonthlyHistoryTable({
               key={entry.month}
               entry={entry}
               isEditing={isEditing}
+              accountCurrency={accountCurrency}
+              displayCurrency={displayCurrency}
               editingValues={
                 isEditing
                   ? editingValues[accountId][entry.month]
@@ -147,6 +154,8 @@ export function MonthlyHistoryTable({
                   key={entry.month}
                   entry={entry}
                   isEditing={isEditing}
+                  accountCurrency={accountCurrency}
+                  displayCurrency={displayCurrency}
                   editingValues={
                     isEditing
                       ? editingValues[accountId][entry.month]

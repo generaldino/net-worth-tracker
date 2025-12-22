@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import type { Currency } from "@/lib/fx-rates";
-import { convertCurrency } from "@/lib/fx-rates";
+import { convertCurrency } from "@/lib/actions";
 
 export function useCurrencyConversion(
   amount: number,
   fromCurrency: Currency,
-  toCurrency: Currency
+  toCurrency: Currency,
+  forMonth?: string // Format: "YYYY-MM" for historical conversion
 ) {
   const [convertedAmount, setConvertedAmount] = useState<number>(amount);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,7 +21,7 @@ export function useCurrencyConversion(
     }
 
     setIsLoading(true);
-    convertCurrency(amount, fromCurrency, toCurrency)
+    convertCurrency(amount, fromCurrency, toCurrency, forMonth)
       .then((converted) => {
         setConvertedAmount(converted);
         setIsLoading(false);
@@ -31,7 +32,7 @@ export function useCurrencyConversion(
         setConvertedAmount(amount);
         setIsLoading(false);
       });
-  }, [amount, fromCurrency, toCurrency]);
+  }, [amount, fromCurrency, toCurrency, forMonth]);
 
   return { convertedAmount, isLoading };
 }
