@@ -36,9 +36,7 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   const [isLoading, setIsLoading] = useState(false);
   
   // By Account chart options
-  const [sortByValue, setSortByValue] = useState(true);
   const [topN, setTopN] = useState<number | undefined>(undefined);
-  const [stackBars, setStackBars] = useState(false);
   
   // Allocation chart options
   const [allocationViewType, setAllocationViewType] = useState<"account-type" | "category">("account-type");
@@ -183,39 +181,19 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
         {(chartType === "by-account" || chartType === "allocation") && (
           <div className="mb-4 p-3 bg-muted/30 rounded-lg border flex flex-wrap gap-4 items-center text-sm">
             {chartType === "by-account" && (
-              <>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={sortByValue}
-                    onChange={(e) => setSortByValue(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span>Sort by value</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <span>Top</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max={chartData.accounts.length}
-                    value={topN || ""}
-                    onChange={(e) => setTopN(e.target.value ? parseInt(e.target.value) : undefined)}
-                    className="w-16 px-2 py-1 rounded border bg-background"
-                    placeholder="All"
-                  />
-                  <span>accounts</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={stackBars}
-                    onChange={(e) => setStackBars(e.target.checked)}
-                    className="rounded"
-                  />
-                  <span>Stack bars</span>
-                </label>
-              </>
+              <label className="flex items-center gap-2">
+                <span>Show top</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={chartData.accounts.length}
+                  value={topN || ""}
+                  onChange={(e) => setTopN(e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="w-16 px-2 py-1 rounded border bg-background"
+                  placeholder="All"
+                />
+                <span>accounts</span>
+              </label>
             )}
             {chartType === "allocation" && (
               <>
@@ -257,7 +235,7 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
           isLoading={isLoading}
           byAccountOptions={
             chartType === "by-account"
-              ? { sortByValue, topN, stackBars }
+              ? { topN }
               : undefined
           }
           allocationOptions={

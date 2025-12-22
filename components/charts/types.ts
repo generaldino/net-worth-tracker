@@ -2,8 +2,6 @@ export type ChartType =
   | "total"
   | "assets-vs-liabilities"
   | "by-account"
-  | "by-account-type"
-  | "by-category"
   | "by-wealth-source"
   | "savings-rate"
   | "monthly-growth-rate"

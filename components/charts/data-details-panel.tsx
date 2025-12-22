@@ -182,14 +182,10 @@ export function DataDetailsPanel({
         </div>
       )}
 
-      {(chartType === "by-account" ||
-        chartType === "by-account-type" ||
-        chartType === "by-category") && (
+      {chartType === "by-account" && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground mb-2">
-            {chartType === "by-account" && "Account Breakdown:"}
-            {chartType === "by-account-type" && "Account Type Breakdown:"}
-            {chartType === "by-category" && "Category Breakdown:"}
+            Account Breakdown:
           </div>
           {Object.entries(data).map(([key, value], index) => {
             if (
