@@ -115,6 +115,33 @@ export function ChartDisplay({
       if (monthData) {
         setClickedData({ month, data: monthData, chartType });
       }
+    } else if (chartType === "waterfall") {
+      // For waterfall, find the processed data
+      const reversedSourceData = [...chartData.sourceData].reverse();
+      const reversedNetWorthData = [...chartData.netWorthData].reverse();
+      const waterfallData = reversedSourceData.map((item, index) => {
+        const previousNetWorth =
+          index > 0 ? reversedNetWorthData[index - 1].netWorth : reversedNetWorthData[0].netWorth;
+        const currentNetWorth = reversedNetWorthData[index]?.netWorth || previousNetWorth;
+        return {
+          month: item.month,
+          monthKey: item.monthKey,
+          "Starting Balance": previousNetWorth,
+          "Savings from Income": item["Savings from Income"] || 0,
+          "Interest Earned": item["Interest Earned"] || 0,
+          "Capital Gains": item["Capital Gains"] || 0,
+          "Ending Balance": currentNetWorth,
+          breakdown: item.breakdown,
+        };
+      });
+      const monthData = waterfallData.find((d) => d.month === month);
+      if (monthData) {
+        setClickedData({ 
+          month, 
+          data: monthData, 
+          chartType 
+        });
+      }
     } else if (chartType === "assets-vs-liabilities") {
       // For assets vs liabilities, find the processed data
       const assetsVsLiabilitiesData = chartData.netWorthData.map((item) => {
@@ -1345,6 +1372,224 @@ export function ChartDisplay({
                 : formatCurrencyAmount(totalAllocation, chartCurrency)}
             </div>
           </div>
+        );
+
+      case "waterfall":
+        // Process data for waterfall chart showing month-to-month net worth changes
+        // For each month, show: Starting Balance (from previous month) -> +Savings -> +Interest -> +Capital Gains
+        // Reverse the arrays to work with chronological order (oldest first)
+        const reversedSourceData = [...chartData.sourceData].reverse();
+        const reversedNetWorthData = [...chartData.netWorthData].reverse();
+
+        const waterfallData = reversedSourceData.map((item, index) => {
+          // Get previous month's net worth (starting balance)
+          const previousNetWorth =
+            index > 0 ? reversedNetWorthData[index - 1].netWorth : reversedNetWorthData[0].netWorth;
+          
+          // Get current month's net worth (ending balance)
+          const currentNetWorth = reversedNetWorthData[index]?.netWorth || previousNetWorth;
+
+          const savingsFromIncome = item["Savings from Income"] || 0;
+          const interestEarned = item["Interest Earned"] || 0;
+          const capitalGains = item["Capital Gains"] || 0;
+
+          return {
+            month: item.month,
+            monthKey: item.monthKey,
+            "Starting Balance": previousNetWorth,
+            "Savings from Income": savingsFromIncome,
+            "Interest Earned": interestEarned,
+            "Capital Gains": capitalGains,
+            "Ending Balance": currentNetWorth,
+            // Store breakdown for details panel
+            breakdown: item.breakdown,
+          };
+        });
+
+        return (
+          <ChartContainer
+            config={{
+              "Starting Balance": {
+                label: "Starting Balance",
+                color: "hsl(var(--chart-4))",
+              },
+              "Savings from Income": {
+                label: "Savings from Income",
+                color: COLORS[0],
+              },
+              "Interest Earned": {
+                label: "Interest Earned",
+                color: COLORS[1],
+              },
+              "Capital Gains": {
+                label: "Capital Gains",
+                color: COLORS[2],
+              },
+              "Ending Balance": {
+                label: "Ending Balance",
+                color: "hsl(var(--chart-1))",
+              },
+            }}
+            className="h-[300px] sm:h-[400px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={waterfallData} margin={margins}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  fontSize={fontSize}
+                  angle={-45}
+                  textAnchor="end"
+                  height={margins.bottom + 10}
+                  interval={0}
+                  tick={{ fontSize }}
+                />
+                <YAxis
+                  tickFormatter={(value) =>
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }) + "K"
+                  }
+                  fontSize={fontSize}
+                  width={width && width < 640 ? 50 : 60}
+                  tick={{ fontSize }}
+                  domain={["auto", "auto"]}
+                  allowDataOverflow={true}
+                />
+                <ReferenceLine y={0} stroke="#666" />
+                <ChartTooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
+                          <p className="font-medium mb-2">{label}</p>
+                          {payload
+                            .filter((entry) => {
+                              const key = entry.dataKey as string;
+                              return (
+                                key === "Starting Balance" ||
+                                key === "Savings from Income" ||
+                                key === "Interest Earned" ||
+                                key === "Capital Gains" ||
+                                key === "Ending Balance"
+                              );
+                            })
+                            .map((entry, idx) => {
+                              const value = entry.value as number;
+                              const name = entry.name as string;
+                              const color = entry.color as string;
+                              const key = entry.dataKey as string;
+
+                              // Only show non-zero values (except starting and ending)
+                              if (
+                                (key === "Savings from Income" ||
+                                  key === "Interest Earned" ||
+                                  key === "Capital Gains") &&
+                                value === 0
+                              ) {
+                                return null;
+                              }
+
+                              return (
+                                <div key={idx} className="flex items-center gap-2 text-sm mb-1">
+                                  <div
+                                    className="w-3 h-3 rounded-sm"
+                                    style={{ backgroundColor: color }}
+                                  />
+                                  <span className="font-medium">{name}:</span>
+                                  <span
+                                    className={
+                                      key === "Capital Gains" && value < 0
+                                        ? "text-red-600"
+                                        : key === "Starting Balance" || key === "Ending Balance"
+                                        ? ""
+                                        : "text-green-600"
+                                    }
+                                  >
+                                    {isMasked
+                                      ? "••••••"
+                                      : key === "Starting Balance" || key === "Ending Balance"
+                                      ? formatCurrencyAmount(value, chartCurrency)
+                                      : `${value >= 0 ? "+" : ""}${formatCurrencyAmount(value, chartCurrency)}`}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Click to pin details
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                {/* Starting Balance - transparent bar for positioning */}
+                <Bar
+                  dataKey="Starting Balance"
+                  fill="transparent"
+                  stackId="waterfall"
+                />
+                {/* Savings from Income */}
+                <Bar
+                  dataKey="Savings from Income"
+                  fill={COLORS[0]}
+                  stackId="waterfall"
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        [key: string]: string | number | undefined;
+                      };
+                      if (payload.month) {
+                        handleBarClick(payload, payload.month);
+                      }
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+                {/* Interest Earned */}
+                <Bar
+                  dataKey="Interest Earned"
+                  fill={COLORS[1]}
+                  stackId="waterfall"
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        [key: string]: string | number | undefined;
+                      };
+                      if (payload.month) {
+                        handleBarClick(payload, payload.month);
+                      }
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+                {/* Capital Gains - can be negative */}
+                <Bar
+                  dataKey="Capital Gains"
+                  fill={COLORS[2]}
+                  stackId="waterfall"
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        [key: string]: string | number | undefined;
+                      };
+                      if (payload.month) {
+                        handleBarClick(payload, payload.month);
+                      }
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         );
     }
   };

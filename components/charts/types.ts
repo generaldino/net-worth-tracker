@@ -7,7 +7,8 @@ export type ChartType =
   | "by-wealth-source"
   | "savings-rate"
   | "monthly-growth-rate"
-  | "allocation";
+  | "allocation"
+  | "waterfall";
 
 export interface Account {
   id: string;
@@ -82,7 +83,8 @@ export interface ClickedData {
   data: {
     month: string;
     netWorth?: number;
-    [key: string]: number | string | undefined;
+    breakdown?: unknown;
+    [key: string]: number | string | unknown | undefined;
   };
   chartType: ChartType;
 }

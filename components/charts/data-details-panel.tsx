@@ -354,6 +354,132 @@ export function DataDetailsPanel({
         </div>
       )}
 
+      {chartType === "waterfall" && (
+        <div className="space-y-2">
+          <div className="text-sm text-muted-foreground mb-2">
+            Net Worth Change Breakdown:
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Starting Balance:</span>
+            <span className="font-medium">
+              {typeof data["Starting Balance"] === "number"
+                ? formatCurrencyAmount(data["Starting Balance"], chartCurrency)
+                : "—"}
+            </span>
+          </div>
+          {typeof data["Savings from Income"] === "number" &&
+            data["Savings from Income"] !== 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Savings from Income:</span>
+                <span className="font-medium text-green-600">
+                  +{formatCurrencyAmount(data["Savings from Income"], chartCurrency)}
+                </span>
+              </div>
+            )}
+          {typeof data["Interest Earned"] === "number" &&
+            data["Interest Earned"] !== 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Interest Earned:</span>
+                <span className="font-medium text-green-600">
+                  +{formatCurrencyAmount(data["Interest Earned"], chartCurrency)}
+                </span>
+              </div>
+            )}
+          {typeof data["Capital Gains"] === "number" &&
+            data["Capital Gains"] !== 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Capital Gains:</span>
+                <span
+                  className={`font-medium ${
+                    (data["Capital Gains"] as number) >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {(data["Capital Gains"] as number) >= 0 ? "+" : ""}
+                  {formatCurrencyAmount(data["Capital Gains"] as number, chartCurrency)}
+                </span>
+              </div>
+            )}
+          <div className="border-t pt-2 mt-2">
+            <div className="flex justify-between font-medium">
+              <span>Ending Balance:</span>
+              <span
+                className={
+                  typeof data["Ending Balance"] === "number" &&
+                  data["Ending Balance"] >= 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                }
+              >
+                {typeof data["Ending Balance"] === "number"
+                  ? formatCurrencyAmount(data["Ending Balance"], chartCurrency)
+                  : "—"}
+              </span>
+            </div>
+          </div>
+          {(() => {
+            const breakdown = (data.breakdown as unknown as Record<
+              string,
+              Array<{
+                accountId: string;
+                name: string;
+                type: string;
+                amount: number;
+                currency: string;
+                owner: string;
+              }>
+            >) || {};
+            const hasBreakdown = Object.values(breakdown).some((arr) => arr.length > 0);
+            if (hasBreakdown) {
+              return (
+                <div className="border-t pt-2 mt-2">
+                  <div className="text-sm text-muted-foreground mb-2">
+                    Account Breakdown:
+                  </div>
+                  {breakdown["Savings from Income"]?.map((acc, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {acc.name} ({acc.owner})
+                      </span>
+                      <span className="text-green-600">
+                        +{formatCurrencyAmount(acc.amount, chartCurrency)}
+                      </span>
+                    </div>
+                  ))}
+                  {breakdown["Interest Earned"]?.map((acc, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {acc.name} ({acc.owner})
+                      </span>
+                      <span className="text-green-600">
+                        +{formatCurrencyAmount(acc.amount, chartCurrency)}
+                      </span>
+                    </div>
+                  ))}
+                  {breakdown["Capital Gains"]?.map((acc, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {acc.name} ({acc.owner})
+                      </span>
+                      <span
+                        className={
+                          acc.amount >= 0 ? "text-green-600" : "text-red-600"
+                        }
+                      >
+                        {acc.amount >= 0 ? "+" : ""}
+                        {formatCurrencyAmount(acc.amount, chartCurrency)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          })()}
+        </div>
+      )}
+
       {chartType === "savings-rate" && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground mb-2">
