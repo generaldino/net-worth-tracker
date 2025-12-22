@@ -73,6 +73,9 @@ export function AccountRow({
   const [isExpanded, setIsExpanded] = useState(false);
   const { formatCurrency, isMasked } = useMasking();
   const accountCurrency = (account.currency || "GBP") as Currency;
+  
+  // If displayCurrency matches accountCurrency, no conversion needed
+  const needsConversion = displayCurrency !== accountCurrency;
 
   const { convertedAmount: convertedCurrentValue } = useCurrencyConversion(
     currentValue,
@@ -140,9 +143,9 @@ export function AccountRow({
                       )
                     )}
                   </div>
-                  {accountCurrency !== displayCurrency && !isMasked && (
+                  {needsConversion && !isMasked && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      ({formatCurrencyAmount(currentValue, accountCurrency)})
+                      {formatCurrencyAmount(currentValue, accountCurrency)}
                     </div>
                   )}
                 </div>
@@ -176,18 +179,19 @@ export function AccountRow({
                     {isMasked ? (
                       "••••••"
                     ) : (
-                      <>
-                        {formatCurrencyAmount(
-                          convertedCurrentValue,
-                          displayCurrency
+                      <div className="flex flex-col">
+                        <div>
+                          {formatCurrencyAmount(
+                            convertedCurrentValue,
+                            displayCurrency
+                          )}
+                        </div>
+                        {needsConversion && (
+                          <div className="text-xs text-muted-foreground">
+                            {formatCurrencyAmount(currentValue, accountCurrency)}
+                          </div>
                         )}
-                        {accountCurrency !== displayCurrency && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            ({getCurrencySymbol(accountCurrency)}
-                            {formatCurrencyAmount(currentValue, accountCurrency)})
-                          </span>
-                        )}
-                      </>
+                      </div>
                     )}
                   </div>
                   <ValueChangeDisplay

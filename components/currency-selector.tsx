@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label";
 import { supportedCurrencies, currencyLabels } from "@/lib/types";
 import type { Currency } from "@/lib/fx-rates";
 
+export type DisplayCurrency = Currency | "BASE";
+
 interface CurrencySelectorProps {
-  value: Currency;
-  onValueChange: (currency: Currency) => void;
+  value: DisplayCurrency;
+  onValueChange: (currency: DisplayCurrency) => void;
   label?: string;
 }
 
@@ -32,6 +34,7 @@ export function CurrencySelector({
           <SelectValue placeholder="Select currency" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="BASE">Base Currency</SelectItem>
           {supportedCurrencies.map((currency) => (
             <SelectItem key={currency} value={currency}>
               {currencyLabels[currency]}

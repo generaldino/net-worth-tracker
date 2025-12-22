@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { AccountSelector } from "@/components/charts/controls/account-selector";
 import { AccountTypeSelector } from "@/components/charts/controls/account-type-selector";
 import { CategorySelector } from "@/components/charts/controls/category-selector";
-import { CurrencySelector } from "@/components/currency-selector";
+import { CurrencySelector, type DisplayCurrency } from "@/components/currency-selector";
 import type { Currency } from "@/lib/fx-rates";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import {
@@ -127,7 +127,7 @@ export function AccountsTable({
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(accountCategories);
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
-  const [displayCurrency, setDisplayCurrency] = useState<Currency>("GBP");
+  const [displayCurrency, setDisplayCurrency] = useState<DisplayCurrency>("GBP");
   const { fetchRates } = useExchangeRates();
 
   // Get unique owners from accounts
@@ -146,9 +146,11 @@ export function AccountsTable({
   }, [accounts, accountHistories]);
 
   // Fetch all needed exchange rates when currency changes or component mounts
-  // The fetchRates function will automatically include the latest rate
+  // Only fetch if not in BASE mode (BASE mode doesn't need conversions)
   useEffect(() => {
-    fetchRates(uniqueMonths);
+    if (displayCurrency !== "BASE") {
+      fetchRates(uniqueMonths);
+    }
   }, [displayCurrency, uniqueMonths, fetchRates]);
 
   // Calculate value changes based on selected time period (derived state)
@@ -315,7 +317,11 @@ export function AccountsTable({
             editingValues={editingValues}
             monthlyData={monthlyData}
             selectedTimePeriod={selectedTimePeriod}
-            displayCurrency={displayCurrency}
+            displayCurrency={
+              displayCurrency === "BASE"
+                ? (account.currency || "GBP")
+                : displayCurrency
+            }
             onValueChange={handleValueChange}
             onSave={handleSaveValue}
             onEdit={(accountId, month, entry) => {
