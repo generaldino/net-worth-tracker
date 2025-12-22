@@ -20,11 +20,13 @@ interface NetWorthBreakdown {
 interface NetWorthDisplayProps {
   netWorth: number;
   netWorthBreakdown: NetWorthBreakdown;
+  percentageIncrease: number | null;
 }
 
 export function NetWorthDisplay({
   netWorth,
   netWorthBreakdown,
+  percentageIncrease,
 }: NetWorthDisplayProps) {
   const { displayCurrency } = useDisplayCurrency();
   const { getRate, fetchRates } = useExchangeRates();
@@ -104,9 +106,27 @@ export function NetWorthDisplay({
     ? "••••••"
     : formatCurrencyAmount(convertedNetWorth, currency);
 
+  // Format percentage increase
+  const formattedPercentage = percentageIncrease !== null && !isMasked
+    ? `${percentageIncrease >= 0 ? "+" : ""}${percentageIncrease.toFixed(1)}%`
+    : percentageIncrease !== null && isMasked
+    ? "•••%"
+    : null;
+
   return (
-    <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-600">
-      {formattedAmount}
+    <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3">
+      <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-600">
+        {formattedAmount}
+      </div>
+      {formattedPercentage && (
+        <div
+          className={`text-lg sm:text-xl lg:text-2xl font-semibold ${
+            percentageIncrease >= 0 ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {formattedPercentage}
+        </div>
+      )}
     </div>
   );
 }

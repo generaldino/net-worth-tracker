@@ -86,6 +86,59 @@ export async function getNetWorthBreakdown() {
   }
 }
 
+export async function getFirstEntryNetWorth() {
+  try {
+    // Get all accounts
+    const allAccounts = await db.select().from(accountsTable);
+
+    // Get all monthly entries ordered by month
+    const allEntries = await db
+      .select()
+      .from(monthlyEntries)
+      .orderBy(asc(monthlyEntries.month));
+
+    if (allEntries.length === 0) {
+      return null;
+    }
+
+    // Get the earliest month
+    const earliestMonth = allEntries[0].month;
+
+    // Get all entries for the earliest month
+    const firstMonthEntries = allEntries.filter(
+      (entry) => entry.month === earliestMonth
+    );
+
+    // Calculate net worth for the first entry month
+    const firstNetWorth = allAccounts.reduce(
+      (total: number, account: Account) => {
+        // Find the entry for this account in the earliest month
+        const entryForAccount = firstMonthEntries.find(
+          (entry: MonthlyEntry) => entry.accountId === account.id
+        );
+        const balance = Number(entryForAccount?.endingBalance || 0);
+
+        // Credit cards and loans are liabilities - subtract from net worth
+        if (account.type === "Credit_Card" || account.type === "Loan") {
+          return total - balance;
+        }
+
+        // All other accounts are assets - add to net worth
+        return total + balance;
+      },
+      0
+    );
+
+    return {
+      netWorth: firstNetWorth,
+      month: earliestMonth,
+    };
+  } catch (error) {
+    console.error("Error getting first entry net worth:", error);
+    return null;
+  }
+}
+
 export async function getAccounts(includeClosed: boolean = false) {
   try {
     const userId = await getUserId();

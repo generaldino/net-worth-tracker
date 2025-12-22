@@ -9,6 +9,7 @@ import {
   getCurrentValue,
   getAccountHistory,
   getNetWorthBreakdown,
+  getFirstEntryNetWorth,
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
@@ -16,12 +17,22 @@ import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { DashboardHeader } from "@/components/dashboard-header";
 
 export async function AccountsManager() {
-  const [netWorth, netWorthBreakdown, accounts, monthlyData] = await Promise.all([
-    calculateNetWorth(),
-    getNetWorthBreakdown(),
-    getAccounts(true), // Always fetch all accounts, including closed ones
-    getMonthlyData(),
-  ]);
+  const [netWorth, netWorthBreakdown, accounts, monthlyData, firstEntryData] =
+    await Promise.all([
+      calculateNetWorth(),
+      getNetWorthBreakdown(),
+      getAccounts(true), // Always fetch all accounts, including closed ones
+      getMonthlyData(),
+      getFirstEntryNetWorth(),
+    ]);
+
+  // Calculate percentage increase from first entry
+  const percentageIncrease =
+    firstEntryData && firstEntryData.netWorth !== 0
+      ? ((netWorth - firstEntryData.netWorth) /
+          Math.abs(firstEntryData.netWorth)) *
+        100
+      : null;
 
   // Fetch all account data in parallel
   const accountData = await Promise.all(
@@ -51,7 +62,11 @@ export async function AccountsManager() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <div className="container mx-auto py-4 px-4 sm:px-6 max-w-7xl">
-        <DashboardHeader netWorth={netWorth} netWorthBreakdown={netWorthBreakdown} />
+        <DashboardHeader
+          netWorth={netWorth}
+          netWorthBreakdown={netWorthBreakdown}
+          percentageIncrease={percentageIncrease}
+        />
 
         <div className="space-y-4 sm:space-y-6">
           <ChartSection />

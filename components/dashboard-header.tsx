@@ -18,9 +18,11 @@ interface NetWorthBreakdown {
 export function DashboardHeader({
   netWorth,
   netWorthBreakdown,
+  percentageIncrease,
 }: {
   netWorth: number;
   netWorthBreakdown: NetWorthBreakdown;
+  percentageIncrease: number | null;
 }) {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
 
@@ -31,6 +33,7 @@ export function DashboardHeader({
           <NetWorthDisplay
             netWorth={netWorth}
             netWorthBreakdown={netWorthBreakdown}
+            percentageIncrease={percentageIncrease}
           />
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center sm:justify-end gap-2 w-full sm:w-auto">
