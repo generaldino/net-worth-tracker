@@ -49,6 +49,15 @@ interface ChartDisplayProps {
   clickedData: ClickedData | null;
   setClickedData: (data: ClickedData | null) => void;
   isLoading: boolean;
+  byAccountOptions?: {
+    sortByValue?: boolean;
+    topN?: number;
+    stackBars?: boolean;
+  };
+  allocationOptions?: {
+    viewType?: "account-type" | "category";
+    selectedMonth?: string;
+  };
 }
 
 export function ChartDisplay({
@@ -57,6 +66,8 @@ export function ChartDisplay({
   clickedData,
   setClickedData,
   isLoading,
+  byAccountOptions = { sortByValue: true, topN: undefined, stackBars: false },
+  allocationOptions = { viewType: "account-type", selectedMonth: undefined },
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
@@ -752,10 +763,38 @@ export function ChartDisplay({
         );
 
       case "by-account":
+        // Get latest month's data for sorting
+        const latestAccountData = chartData.accountData[chartData.accountData.length - 1] || chartData.accountData[0];
+        
+        // Calculate current values for each account and sort if needed
+        let accountsToDisplay = [...chartData.accounts];
+        
+        if (byAccountOptions.sortByValue) {
+          accountsToDisplay = accountsToDisplay
+            .map((account) => {
+              const uniqueName = `${account.name} (${account.type}${
+                account.isISA ? " ISA" : ""
+              })`;
+              const currentValue = latestAccountData
+                ? (latestAccountData[uniqueName] as number | undefined) || 0
+                : 0;
+              return { account, currentValue: Math.abs(currentValue) };
+            })
+            .sort((a, b) => b.currentValue - a.currentValue)
+            .map((item) => item.account);
+        }
+        
+        // Apply top N filter if specified
+        if (byAccountOptions.topN && byAccountOptions.topN > 0) {
+          accountsToDisplay = accountsToDisplay.slice(0, byAccountOptions.topN);
+        }
+        
         const accountBarSize = getBarSize(chartData.accountData.length);
+        const stackId = byAccountOptions.stackBars ? "by-account-stack" : undefined;
+        
         return (
           <ChartContainer
-            config={chartData.accounts.reduce(
+            config={accountsToDisplay.reduce(
               (config, account, index) => ({
                 ...config,
                 [`${account.name} (${account.type}${
@@ -775,7 +814,7 @@ export function ChartDisplay({
               <BarChart
                 data={chartData.accountData}
                 margin={margins}
-                barCategoryGap="15%"
+                barCategoryGap={byAccountOptions.stackBars ? "20%" : "15%"}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
@@ -802,7 +841,7 @@ export function ChartDisplay({
                 />
                 <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip content={<CustomTooltip />} />
-                {chartData.accounts.map((account, index) => {
+                {accountsToDisplay.map((account, index) => {
                   const uniqueName = `${account.name} (${account.type}${
                     account.isISA ? " ISA" : ""
                   })`;
@@ -817,6 +856,7 @@ export function ChartDisplay({
                         dataKey={uniqueName}
                         fill={COLORS[index % COLORS.length]}
                         maxBarSize={accountBarSize}
+                        stackId={stackId}
                         onClick={(data) => handleBarClick(data, data.month)}
                         style={{ cursor: "pointer" }}
                         isAnimationActive={true}
@@ -1202,13 +1242,17 @@ export function ChartDisplay({
         );
 
       case "allocation":
-        // Get the most recent month's data (first item since data is sorted desc)
-        const latestMonthData =
-          chartData.accountTypeData.length > 0
-            ? chartData.accountTypeData[0]
-            : null;
+        // Determine which data source to use based on view type
+        const sourceDataArray = allocationOptions.viewType === "category" 
+          ? chartData.categoryData 
+          : chartData.accountTypeData;
+        
+        // Get selected month's data or most recent (first item since data is sorted desc)
+        const selectedMonthData = allocationOptions.selectedMonth
+          ? sourceDataArray.find((item) => item.month === allocationOptions.selectedMonth || item.monthKey === allocationOptions.selectedMonth)
+          : (sourceDataArray.length > 0 ? sourceDataArray[0] : null);
 
-        if (!latestMonthData) {
+        if (!selectedMonthData) {
           return (
             <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
               <div className="text-muted-foreground">No data available</div>
@@ -1216,14 +1260,14 @@ export function ChartDisplay({
           );
         }
 
-        // Extract account types and their values (exclude month and monthKey)
-        const allocationData = Object.entries(latestMonthData)
+        // Extract values (exclude month and monthKey)
+        const allocationData = Object.entries(selectedMonthData)
           .filter(
             ([key]) =>
               key !== "month" &&
               key !== "monthKey" &&
-              typeof latestMonthData[key] === "number" &&
-              latestMonthData[key] > 0
+              typeof selectedMonthData[key] === "number" &&
+              Math.abs(selectedMonthData[key] as number) > 0
           )
           .map(([name, value], index) => ({
             name,
@@ -1309,7 +1353,7 @@ export function ChartDisplay({
         return (
           <div className="space-y-4">
             <div className="text-center text-sm text-muted-foreground">
-              Allocation as of {latestMonthData.month}
+              {allocationOptions.viewType === "category" ? "Category" : "Account Type"} Allocation as of {selectedMonthData.month}
             </div>
             <ChartContainer
               config={allocationData.reduce(
@@ -1339,10 +1383,10 @@ export function ChartDisplay({
                     onClick={(data) => {
                       handleBarClick(
                         {
-                          month: latestMonthData.month,
+                          month: selectedMonthData.month,
                           [data.name]: data.value,
                         },
-                        latestMonthData.month
+                        selectedMonthData.month
                       );
                     }}
                   >

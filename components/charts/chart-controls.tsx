@@ -34,6 +34,15 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // By Account chart options
+  const [sortByValue, setSortByValue] = useState(true);
+  const [topN, setTopN] = useState<number | undefined>(undefined);
+  const [stackBars, setStackBars] = useState(false);
+  
+  // Allocation chart options
+  const [allocationViewType, setAllocationViewType] = useState<"account-type" | "category">("account-type");
+  const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<string | undefined>(undefined);
 
   // Extract all unique months from chart data for rate fetching
   // Convert from "YYYY-MM-DD" to "YYYY-MM" format
@@ -170,12 +179,92 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
         </div>
       </CardHeader>
       <CardContent className="pt-0">
+        {/* Chart-specific options */}
+        {(chartType === "by-account" || chartType === "allocation") && (
+          <div className="mb-4 p-3 bg-muted/30 rounded-lg border flex flex-wrap gap-4 items-center text-sm">
+            {chartType === "by-account" && (
+              <>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sortByValue}
+                    onChange={(e) => setSortByValue(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span>Sort by value</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <span>Top</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max={chartData.accounts.length}
+                    value={topN || ""}
+                    onChange={(e) => setTopN(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="w-16 px-2 py-1 rounded border bg-background"
+                    placeholder="All"
+                  />
+                  <span>accounts</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={stackBars}
+                    onChange={(e) => setStackBars(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span>Stack bars</span>
+                </label>
+              </>
+            )}
+            {chartType === "allocation" && (
+              <>
+                <label className="flex items-center gap-2">
+                  <span>View by:</span>
+                  <select
+                    value={allocationViewType}
+                    onChange={(e) => setAllocationViewType(e.target.value as "account-type" | "category")}
+                    className="px-2 py-1 rounded border bg-background"
+                  >
+                    <option value="account-type">Account Type</option>
+                    <option value="category">Category</option>
+                  </select>
+                </label>
+                <label className="flex items-center gap-2">
+                  <span>Month:</span>
+                  <select
+                    value={allocationSelectedMonth || ""}
+                    onChange={(e) => setAllocationSelectedMonth(e.target.value || undefined)}
+                    className="px-2 py-1 rounded border bg-background min-w-[120px]"
+                  >
+                    <option value="">Latest</option>
+                    {(allocationViewType === "category" ? chartData.categoryData : chartData.accountTypeData).map((item) => (
+                      <option key={item.monthKey} value={item.month}>
+                        {item.month}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+          </div>
+        )}
         <ChartDisplay
           chartType={chartType}
           chartData={chartData}
           clickedData={clickedData}
           setClickedData={setClickedData}
           isLoading={isLoading}
+          byAccountOptions={
+            chartType === "by-account"
+              ? { sortByValue, topN, stackBars }
+              : undefined
+          }
+          allocationOptions={
+            chartType === "allocation"
+              ? { viewType: allocationViewType, selectedMonth: allocationSelectedMonth }
+              : undefined
+          }
         />
       </CardContent>
     </Card>

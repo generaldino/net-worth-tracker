@@ -139,7 +139,7 @@ export function DataDetailsPanel({
       {chartType === "allocation" && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground mb-2">
-            Account Type Breakdown:
+            Allocation Breakdown:
           </div>
           {Object.entries(data)
             .filter(
