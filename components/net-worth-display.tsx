@@ -106,11 +106,9 @@ export function NetWorthDisplay({
     ? "••••••"
     : formatCurrencyAmount(convertedNetWorth, currency);
 
-  // Format percentage increase
-  const formattedPercentage = percentageIncrease !== null && !isMasked
+  // Format percentage increase (always visible, not masked)
+  const formattedPercentage = percentageIncrease !== null
     ? `${percentageIncrease >= 0 ? "+" : ""}${percentageIncrease.toFixed(1)}%`
-    : percentageIncrease !== null && isMasked
-    ? "•••%"
     : null;
 
   return (

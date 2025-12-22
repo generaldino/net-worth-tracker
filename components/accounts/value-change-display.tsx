@@ -43,14 +43,8 @@ export function ValueChangeDisplay({
           percentageChange >= 0 ? "text-green-600" : "text-red-600"
         }`}
       >
-        {isMasked ? (
-          "•••"
-        ) : (
-          <>
-            ({percentageChange >= 0 ? "+" : ""}
-            {percentageChange.toFixed(1)}%)
-          </>
-        )}
+        ({percentageChange >= 0 ? "+" : ""}
+        {percentageChange.toFixed(1)}%)
       </div>
     </div>
   );

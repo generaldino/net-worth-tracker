@@ -681,9 +681,7 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) =>
-                    isMasked ? "•••" : `${value.toFixed(1)}%`
-                  }
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
@@ -1027,9 +1025,7 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
-                  tickFormatter={(value) =>
-                    isMasked ? "•••" : `${value.toFixed(1)}%`
-                  }
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
