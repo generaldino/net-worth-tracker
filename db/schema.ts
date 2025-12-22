@@ -27,6 +27,13 @@ export const accountCategoryEnum = pgEnum("account_category", [
   "Investments",
 ]);
 
+export const currencyEnum = pgEnum("currency", [
+  "GBP",
+  "EUR",
+  "USD",
+  "AED",
+]);
+
 // Tables
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -46,6 +53,7 @@ export const accounts = pgTable("accounts", {
   name: text("name").notNull(),
   type: accountTypeEnum("type").notNull(),
   category: accountCategoryEnum("category").notNull().default("Investments"),
+  currency: currencyEnum("currency").notNull().default("GBP"),
   isISA: boolean("is_isa").notNull().default(false),
   owner: text("owner").notNull().default("all"),
   isClosed: boolean("is_closed").notNull().default(false),

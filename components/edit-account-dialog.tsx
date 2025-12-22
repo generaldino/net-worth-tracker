@@ -29,7 +29,10 @@ import {
   accountTypes,
   AccountCategory,
   accountCategories,
+  supportedCurrencies,
+  currencyLabels,
 } from "@/lib/types";
+import type { Currency } from "@/lib/fx-rates";
 
 interface EditAccountDialogProps {
   account: Account | null;
@@ -46,6 +49,7 @@ export function EditAccountDialog({
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("Current");
   const [category, setCategory] = useState<AccountCategory>("Investments");
+  const [currency, setCurrency] = useState<Currency>("GBP");
   const [isISA, setIsISA] = useState(false);
   const [owner, setOwner] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +59,7 @@ export function EditAccountDialog({
       setName(account.name);
       setType(account.type);
       setCategory(account.category || "Investments");
+      setCurrency(account.currency || "GBP");
       setIsISA(account.isISA);
       setOwner(account.owner);
     }
@@ -77,6 +82,7 @@ export function EditAccountDialog({
         name,
         type,
         category,
+        currency,
         isISA,
         owner,
       });
@@ -165,6 +171,24 @@ export function EditAccountDialog({
                 {accountCategories.map((accountCategory) => (
                   <SelectItem key={accountCategory} value={accountCategory}>
                     {accountCategory}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-currency">Currency</Label>
+            <Select
+              value={currency}
+              onValueChange={(value: Currency) => setCurrency(value)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {supportedCurrencies.map((curr) => (
+                  <SelectItem key={curr} value={curr}>
+                    {currencyLabels[curr]}
                   </SelectItem>
                 ))}
               </SelectContent>

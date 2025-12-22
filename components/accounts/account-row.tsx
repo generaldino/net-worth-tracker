@@ -15,6 +15,9 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useMasking } from "@/contexts/masking-context";
+import { useCurrencyConversion } from "@/hooks/use-currency-conversion";
+import { formatCurrencyAmount, getCurrencySymbol } from "@/lib/fx-rates";
+import type { Currency } from "@/lib/fx-rates";
 
 interface AccountRowProps {
   account: Account;
@@ -38,6 +41,7 @@ interface AccountRowProps {
   >;
   monthlyData: Record<string, MonthlyEntry[]>;
   selectedTimePeriod: string;
+  displayCurrency: Currency;
   onValueChange: (
     accountId: string,
     month: string,
@@ -64,9 +68,23 @@ export function AccountRow({
   onAddMonth,
   onEditAccount,
   onDeleteAccount,
+  displayCurrency,
 }: AccountRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { formatCurrency } = useMasking();
+  const accountCurrency = (account.currency || "GBP") as Currency;
+
+  const { convertedAmount: convertedCurrentValue } = useCurrencyConversion(
+    currentValue,
+    accountCurrency,
+    displayCurrency
+  );
+
+  const { convertedAmount: convertedAbsoluteChange } = useCurrencyConversion(
+    valueChange.absoluteChange,
+    accountCurrency,
+    displayCurrency
+  );
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -113,13 +131,22 @@ export function AccountRow({
                 <div>
                   <span className="text-muted-foreground">Current Value:</span>
                   <div className="font-medium text-lg">
-                    £{formatCurrency(currentValue)}
+                    {formatCurrencyAmount(
+                      convertedCurrentValue,
+                      displayCurrency
+                    )}
                   </div>
+                  {accountCurrency !== displayCurrency && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      ({formatCurrencyAmount(currentValue, accountCurrency)})
+                    </div>
+                  )}
                 </div>
                 <ValueChangeDisplay
-                  absoluteChange={valueChange.absoluteChange}
+                  absoluteChange={convertedAbsoluteChange}
                   percentageChange={valueChange.percentageChange}
                   label={`${selectedTimePeriod} Change:`}
+                  currency={displayCurrency}
                 />
               </div>
             </div>
@@ -142,11 +169,21 @@ export function AccountRow({
                   <div className="text-muted-foreground">{account.owner}</div>
                   <AccountTypeBadge account={account} />
                   <div className="font-medium">
-                    £{formatCurrency(currentValue)}
+                    {formatCurrencyAmount(
+                      convertedCurrentValue,
+                      displayCurrency
+                    )}
+                    {accountCurrency !== displayCurrency && (
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({getCurrencySymbol(accountCurrency)}
+                        {formatCurrency(currentValue)})
+                      </span>
+                    )}
                   </div>
                   <ValueChangeDisplay
-                    absoluteChange={valueChange.absoluteChange}
+                    absoluteChange={convertedAbsoluteChange}
                     percentageChange={valueChange.percentageChange}
+                    currency={displayCurrency}
                   />
                 </div>
               </div>

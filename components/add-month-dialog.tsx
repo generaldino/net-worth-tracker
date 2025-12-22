@@ -17,6 +17,7 @@ import { type Account, type MonthlyEntry } from "@/lib/types";
 import { Plus } from "lucide-react";
 import { addMonthlyEntry, getCurrentValue } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
+import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
 
 interface AddMonthDialogProps {
   account: Account;
@@ -129,7 +130,11 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
             Enter the month-end balance and cash flows for this account.
             <br />
             <span className="text-sm text-muted-foreground">
-              Current balance: £{currentValue.toLocaleString()}
+              Current balance: {formatCurrencyAmount(currentValue, account.currency || "GBP")}
+            </span>
+            <br />
+            <span className="text-xs text-muted-foreground font-medium">
+              All values should be in {account.currency || "GBP"} {getCurrencySymbol(account.currency || "GBP")}
             </span>
           </DialogDescription>
         </DialogHeader>

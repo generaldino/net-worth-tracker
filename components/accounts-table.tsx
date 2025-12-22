@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { AccountSelector } from "@/components/charts/controls/account-selector";
 import { AccountTypeSelector } from "@/components/charts/controls/account-type-selector";
 import { CategorySelector } from "@/components/charts/controls/category-selector";
+import { CurrencySelector } from "@/components/currency-selector";
+import type { Currency } from "@/lib/fx-rates";
 import {
   Select,
   SelectContent,
@@ -124,6 +126,7 @@ export function AccountsTable({
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(accountCategories);
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
+  const [displayCurrency, setDisplayCurrency] = useState<Currency>("GBP");
 
   // Get unique owners from accounts
   const owners = Array.from(new Set(accounts.map((account) => account.owner)));
@@ -254,13 +257,19 @@ export function AccountsTable({
 
         {/* Additional Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-closed"
-              checked={showClosedAccounts}
-              onCheckedChange={setShowClosedAccounts}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <CurrencySelector
+              value={displayCurrency}
+              onValueChange={setDisplayCurrency}
             />
-            <Label htmlFor="show-closed">Show closed accounts</Label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-closed"
+                checked={showClosedAccounts}
+                onCheckedChange={setShowClosedAccounts}
+              />
+              <Label htmlFor="show-closed">Show closed accounts</Label>
+            </div>
           </div>
 
           {/* Results count */}
@@ -286,6 +295,7 @@ export function AccountsTable({
             editingValues={editingValues}
             monthlyData={monthlyData}
             selectedTimePeriod={selectedTimePeriod}
+            displayCurrency={displayCurrency}
             onValueChange={handleValueChange}
             onSave={handleSaveValue}
             onEdit={(accountId, month, entry) => {

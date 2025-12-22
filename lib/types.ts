@@ -1,4 +1,5 @@
 import type { Account as DbAccount } from "@/db/schema";
+import type { Currency } from "@/lib/fx-rates";
 
 export type Account = Pick<
   DbAccount,
@@ -10,6 +11,7 @@ export type Account = Pick<
   | "category"
   | "isClosed"
   | "closedAt"
+  | "currency"
 >;
 
 export type AccountType =
@@ -67,3 +69,12 @@ export const valueTimePeriods = [
   { value: "YTD", label: "Year to Date" },
   { value: "ALL", label: "All Time" },
 ] as const;
+
+export const supportedCurrencies: Currency[] = ["GBP", "EUR", "USD", "AED"];
+
+export const currencyLabels: Record<Currency, string> = {
+  GBP: "British Pound (GBP)",
+  EUR: "Euro (EUR)",
+  USD: "US Dollar (USD)",
+  AED: "UAE Dirham (AED)",
+};

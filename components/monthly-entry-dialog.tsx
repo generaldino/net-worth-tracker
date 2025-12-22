@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { type Account, type MonthlyEntry } from "@/lib/types";
 import { CalendarIcon } from "lucide-react";
 import { getCurrentValue } from "@/lib/actions";
+import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
 
 interface MonthlyEntryDialogProps {
   accounts: Account[];
@@ -33,10 +34,24 @@ export function MonthlyEntryDialog({
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<MonthlyEntry[]>([]);
   const [month, setMonth] = useState(selectedMonth);
+  const [currentValues, setCurrentValues] = useState<Record<string, number>>({});
 
   useEffect(() => {
     // Initialize entries with existing data or default values
     const initializeEntries = async () => {
+      // Fetch current values for all accounts first
+      const values = await Promise.all(
+        accounts.map(async (account) => {
+          const value = await getCurrentValue(account.id);
+          return { accountId: account.id, value };
+        })
+      );
+      const valuesMap = Object.fromEntries(
+        values.map(({ accountId, value }) => [accountId, value])
+      );
+      setCurrentValues(valuesMap);
+      
+      // Then initialize entries with the fetched values
       const initialEntries = await Promise.all(
         accounts.map(async (account) => {
           const existingEntry = existingEntries.find(
@@ -44,7 +59,7 @@ export function MonthlyEntryDialog({
           );
           const endingBalance = existingEntry
             ? existingEntry.endingBalance
-            : await getCurrentValue(account.id);
+            : valuesMap[account.id] || 0;
           const cashIn = existingEntry ? existingEntry.cashIn : 0;
           const cashOut = existingEntry ? existingEntry.cashOut : 0;
           const workIncome = existingEntry ? existingEntry.workIncome : 0;
@@ -63,7 +78,10 @@ export function MonthlyEntryDialog({
       );
       setEntries(initialEntries);
     };
-    initializeEntries();
+    
+    if (open) {
+      initializeEntries();
+    }
     setMonth(selectedMonth);
   }, [accounts, existingEntries, selectedMonth, open, month]);
 
@@ -134,7 +152,7 @@ export function MonthlyEntryDialog({
           <div className="space-y-4">
             {accounts.map((account) => {
               const entry = entries.find((e) => e.accountId === account.id);
-              const currentValue = getCurrentValue(account.id);
+              const currentValue = currentValues[account.id] || 0;
 
               return (
                 <div
@@ -142,9 +160,14 @@ export function MonthlyEntryDialog({
                   className="border rounded-lg p-4 space-y-3"
                 >
                   <div className="flex justify-between items-center">
-                    <h4 className="font-medium">{account.name}</h4>
+                    <div>
+                      <h4 className="font-medium">{account.name}</h4>
+                      <span className="text-xs text-muted-foreground">
+                        Currency: {account.currency || "GBP"} {getCurrencySymbol(account.currency || "GBP")}
+                      </span>
+                    </div>
                     <span className="text-sm text-muted-foreground">
-                      Current: £{currentValue.toLocaleString()}
+                      Current: {formatCurrencyAmount(currentValue, account.currency || "GBP")}
                     </span>
                   </div>
 

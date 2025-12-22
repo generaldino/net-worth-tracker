@@ -64,6 +64,7 @@ export async function getAccounts(includeClosed: boolean = false) {
       isISA: account.isISA,
       owner: account.owner,
       category: account.category,
+      currency: account.currency,
       isClosed: account.isClosed,
       closedAt: account.closedAt,
     }));
@@ -160,8 +161,10 @@ export async function createAccount(data: {
     | "Stock_options"
     | "Credit_Card"
     | "Loan";
+  category: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
+  currency: "GBP" | "EUR" | "USD" | "AED";
 }) {
   try {
     const supabase = await createClient();
@@ -178,8 +181,10 @@ export async function createAccount(data: {
       .values({
         name: data.name,
         type: data.type,
+        category: data.category,
         isISA: data.isISA,
         owner: data.owner,
+        currency: data.currency,
         userId: session.user.id,
       })
       .returning();
@@ -209,6 +214,7 @@ export async function updateAccount(data: {
   category: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
+  currency: "GBP" | "EUR" | "USD" | "AED";
 }) {
   try {
     const supabase = await createClient();
@@ -228,6 +234,7 @@ export async function updateAccount(data: {
         category: data.category,
         isISA: data.isISA,
         owner: data.owner,
+        currency: data.currency,
         updatedAt: new Date(),
       })
       .where(eq(accountsTable.id, data.id))

@@ -17,7 +17,10 @@ import {
   accountTypes,
   AccountCategory,
   accountCategories,
+  supportedCurrencies,
+  currencyLabels,
 } from "@/lib/types";
+import type { Currency } from "@/lib/fx-rates";
 import { createAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
@@ -29,6 +32,7 @@ type FormData = {
   category: AccountCategory;
   isISA: boolean;
   owner: string;
+  currency: Currency;
 };
 
 export function AddAccountFormFields() {
@@ -46,6 +50,7 @@ export function AddAccountFormFields() {
       category: "Investments",
       isISA: false,
       owner: "",
+      currency: "GBP",
     },
   });
 
@@ -131,6 +136,27 @@ export function AddAccountFormFields() {
                 {accountCategories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="currency">Currency</Label>
+        <Controller
+          name="currency"
+          control={control}
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {supportedCurrencies.map((currency) => (
+                  <SelectItem key={currency} value={currency}>
+                    {currencyLabels[currency]}
                   </SelectItem>
                 ))}
               </SelectContent>
