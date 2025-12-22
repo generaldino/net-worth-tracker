@@ -6,6 +6,7 @@ import { GoogleSignInButton } from "@/components/auth/google-signin-button";
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 import { MaskingProviderWrapper } from "@/components/masking-provider-wrapper";
+import { ExchangeRatesProvider } from "@/contexts/exchange-rates-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -46,8 +47,10 @@ export default async function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <MaskingProviderWrapper>
-          <Navbar />
-          {children}
+          <ExchangeRatesProvider>
+            <Navbar />
+            {children}
+          </ExchangeRatesProvider>
         </MaskingProviderWrapper>
         <Toaster />
       </body>

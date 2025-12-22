@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   type Account,
   type MonthlyEntry,
@@ -18,6 +18,7 @@ import { AccountTypeSelector } from "@/components/charts/controls/account-type-s
 import { CategorySelector } from "@/components/charts/controls/category-selector";
 import { CurrencySelector } from "@/components/currency-selector";
 import type { Currency } from "@/lib/fx-rates";
+import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import {
   Select,
   SelectContent,
@@ -127,9 +128,28 @@ export function AccountsTable({
     useState<string[]>(accountCategories);
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const [displayCurrency, setDisplayCurrency] = useState<Currency>("GBP");
+  const { fetchRates } = useExchangeRates();
 
   // Get unique owners from accounts
   const owners = Array.from(new Set(accounts.map((account) => account.owner)));
+
+  // Collect all unique months from all account histories
+  const uniqueMonths = useMemo(() => {
+    const months = new Set<string>();
+    accounts.forEach((account) => {
+      const history = accountHistories[account.id] || [];
+      history.forEach((entry) => {
+        months.add(entry.month); // entry.month is already in "YYYY-MM" format
+      });
+    });
+    return Array.from(months);
+  }, [accounts, accountHistories]);
+
+  // Fetch all needed exchange rates when currency changes or component mounts
+  // The fetchRates function will automatically include the latest rate
+  useEffect(() => {
+    fetchRates(uniqueMonths);
+  }, [displayCurrency, uniqueMonths, fetchRates]);
 
   // Calculate value changes based on selected time period (derived state)
   const calculatedValueChanges = Object.fromEntries(

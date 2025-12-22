@@ -1069,6 +1069,90 @@ export async function exportToCSV(): Promise<string> {
 }
 
 /**
+ * Server action to fetch exchange rates for multiple months at once
+ * Also includes the latest rate if requested
+ * @param months - Array of months in "YYYY-MM" format
+ * @returns Array of exchange rates for the last day of each month, plus latest if needed
+ */
+export async function fetchExchangeRatesForMonths(
+  months: string[]
+): Promise<
+  Array<{
+    date: string;
+    gbpRate: string;
+    eurRate: string;
+    usdRate: string;
+    aedRate: string;
+  }>
+> {
+  "use server";
+
+  try {
+    const { exchangeRates } = await import("@/db/schema");
+    const { inArray, desc } = await import("drizzle-orm");
+
+    const results: Array<{
+      date: string;
+      gbpRate: string;
+      eurRate: string;
+      usdRate: string;
+      aedRate: string;
+    }> = [];
+
+    if (months.length > 0) {
+      // Convert months to last day of month dates
+      const dates = months.map((month) => {
+        const [year, monthNum] = month.split("-").map(Number);
+        const lastDay = new Date(year, monthNum, 0);
+        return lastDay.toISOString().split("T")[0];
+      });
+
+      // Fetch all rates from database
+      const rates = await db
+        .select()
+        .from(exchangeRates)
+        .where(inArray(exchangeRates.date, dates));
+
+      results.push(
+        ...rates.map((rate) => ({
+          date: rate.date,
+          gbpRate: rate.gbpRate,
+          eurRate: rate.eurRate,
+          usdRate: rate.usdRate,
+          aedRate: rate.aedRate,
+        }))
+      );
+    }
+
+    // Always include the latest rate for current value conversions
+    const latestRate = await db
+      .select()
+      .from(exchangeRates)
+      .orderBy(desc(exchangeRates.date))
+      .limit(1);
+
+    if (latestRate.length > 0) {
+      const latest = latestRate[0];
+      // Only add if not already in results
+      if (!results.find((r) => r.date === latest.date)) {
+        results.push({
+          date: latest.date,
+          gbpRate: latest.gbpRate,
+          eurRate: latest.eurRate,
+          usdRate: latest.usdRate,
+          aedRate: latest.aedRate,
+        });
+      }
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Error fetching exchange rates:", error);
+    return [];
+  }
+}
+
+/**
  * Server action to convert currency
  * This is needed because the HexaRate API doesn't allow direct browser requests (CORS)
  * @param forMonth - Optional month in "YYYY-MM" format to use historical rates

@@ -37,7 +37,7 @@ export function MonthlyHistoryRow({
   onEdit,
   isMobile = false,
 }: MonthlyHistoryRowProps) {
-  const { formatCurrency, isMasked } = useMasking();
+  const { isMasked } = useMasking();
   
   // Convert values using historical rates for the entry's month
   const { convertedAmount: convertedBalance } = useCurrencyConversion(

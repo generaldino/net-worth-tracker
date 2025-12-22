@@ -28,7 +28,6 @@ function getLastDayOfMonth(month: string): string {
  * Falls back to latest rates if date not found, then to API if needed
  */
 export async function getExchangeRates(
-  baseCurrency: Currency = "GBP",
   forDate?: string // Format: "YYYY-MM" for monthly entries
 ): Promise<ExchangeRates> {
   try {
@@ -137,7 +136,7 @@ export async function convertCurrency(
     return amount;
   }
 
-  const rates = await getExchangeRates("GBP", forMonth);
+  const rates = await getExchangeRates(forMonth);
   
   // Rates are stored as: 1 GBP = X EUR, 1 GBP = Y USD, etc.
   // To convert from EUR to GBP: divide by rates.rates.EUR
