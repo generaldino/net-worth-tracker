@@ -6,6 +6,7 @@ import {
   numeric,
   boolean,
   pgEnum,
+  integer,
 } from "drizzle-orm/pg-core";
 
 // Enums
@@ -58,6 +59,7 @@ export const accounts = pgTable("accounts", {
   owner: text("owner").notNull().default("all"),
   isClosed: boolean("is_closed").notNull().default(false),
   closedAt: timestamp("closed_at"),
+  displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

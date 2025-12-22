@@ -50,6 +50,13 @@
       "when": 1765720403630,
       "tag": "0006_new_owl",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1766411515008,
+      "tag": "0007_even_skullbuster",
+      "breakpoints": true
     }
   ]
 }

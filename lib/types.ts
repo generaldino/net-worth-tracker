@@ -12,6 +12,7 @@ export type Account = Pick<
   | "isClosed"
   | "closedAt"
   | "currency"
+  | "displayOrder"
 >;
 
 export type AccountType =

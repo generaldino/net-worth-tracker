@@ -25,6 +25,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { updateAccountDisplayOrder } from "@/lib/actions";
+import { toast } from "@/components/ui/use-toast";
 
 interface AccountsTableProps {
   accounts: Account[];
@@ -132,6 +149,32 @@ export function AccountsTable({
   // Get unique owners from accounts
   const owners = Array.from(new Set(accounts.map((account) => account.owner)));
 
+  // State for sorted accounts (for drag and drop)
+  const [sortedAccounts, setSortedAccounts] = useState<Account[]>(accounts);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Update sorted accounts when accounts prop changes
+  useEffect(() => {
+    setSortedAccounts(accounts);
+  }, [accounts]);
+
+  // Only enable drag and drop after mount to avoid hydration issues
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   // Collect all unique months from all account histories
   const uniqueMonths = useMemo(() => {
     const months = new Set<string>();
@@ -163,8 +206,51 @@ export function AccountsTable({
     ])
   );
 
+  // Handle drag end
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = sortedAccounts.findIndex((account) => account.id === active.id);
+    const newIndex = sortedAccounts.findIndex((account) => account.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // Update local state optimistically
+    const newSortedAccounts = arrayMove(sortedAccounts, oldIndex, newIndex);
+    setSortedAccounts(newSortedAccounts);
+
+    // Update display order in database
+    const accountOrders = newSortedAccounts.map((account, index) => ({
+      id: account.id,
+      displayOrder: index,
+    }));
+
+    const result = await updateAccountDisplayOrder(accountOrders);
+
+    if (!result.success) {
+      // Revert on error
+      setSortedAccounts(sortedAccounts);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: result.error || "Failed to update account order",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Account order updated",
+      });
+    }
+  };
+
   // Filter accounts based on selected filters
-  const filteredAccounts = accounts.filter((account) => {
+  const filteredAccounts = sortedAccounts.filter((account) => {
     // Filter by closed status
     if (!showClosedAccounts && account.isClosed) {
       return false;
@@ -298,49 +384,106 @@ export function AccountsTable({
         </div>
       </div>
 
-      <div className="space-y-3">
-        {filteredAccounts.map((account) => (
-          <AccountRow
-            key={account.id}
-            account={account}
-            currentValue={currentValues[account.id] || 0}
-            valueChange={
-              calculatedValueChanges[account.id] || {
-                absoluteChange: 0,
-                percentageChange: 0,
+      {isMounted ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={filteredAccounts.map((account) => account.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {filteredAccounts.map((account) => (
+                <AccountRow
+                  key={account.id}
+                  account={account}
+                  currentValue={currentValues[account.id] || 0}
+                  valueChange={
+                    calculatedValueChanges[account.id] || {
+                      absoluteChange: 0,
+                      percentageChange: 0,
+                    }
+                  }
+                  history={accountHistories[account.id] || []}
+                  editingValues={editingValues}
+                  monthlyData={monthlyData}
+                  selectedTimePeriod={selectedTimePeriod}
+                  displayCurrency={
+                    displayCurrency === "BASE"
+                      ? (account.currency || "GBP")
+                      : displayCurrency
+                  }
+                  onValueChange={handleValueChange}
+                  onSave={handleSaveValue}
+                  onEdit={(accountId, month, entry) => {
+                    setEditingValues((prev) => ({
+                      ...prev,
+                      [accountId]: {
+                        ...(prev[accountId] || {}),
+                        [month]: {
+                          endingBalance: entry.endingBalance.toString(),
+                          cashIn: entry.cashIn.toString(),
+                          cashOut: entry.cashOut.toString(),
+                          workIncome: (entry.workIncome || 0).toString(),
+                        },
+                      },
+                    }));
+                  }}
+                  onAddMonth={onAddNewMonth}
+                  onEditAccount={setEditingAccount}
+                  onDeleteAccount={onDeleteAccount}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="space-y-3">
+          {filteredAccounts.map((account) => (
+            <AccountRow
+              key={account.id}
+              account={account}
+              currentValue={currentValues[account.id] || 0}
+              valueChange={
+                calculatedValueChanges[account.id] || {
+                  absoluteChange: 0,
+                  percentageChange: 0,
+                }
               }
-            }
-            history={accountHistories[account.id] || []}
-            editingValues={editingValues}
-            monthlyData={monthlyData}
-            selectedTimePeriod={selectedTimePeriod}
-            displayCurrency={
-              displayCurrency === "BASE"
-                ? (account.currency || "GBP")
-                : displayCurrency
-            }
-            onValueChange={handleValueChange}
-            onSave={handleSaveValue}
-            onEdit={(accountId, month, entry) => {
-              setEditingValues((prev) => ({
-                ...prev,
-                [accountId]: {
-                  ...(prev[accountId] || {}),
-                  [month]: {
-                    endingBalance: entry.endingBalance.toString(),
-                    cashIn: entry.cashIn.toString(),
-                    cashOut: entry.cashOut.toString(),
-                    workIncome: (entry.workIncome || 0).toString(),
+              history={accountHistories[account.id] || []}
+              editingValues={editingValues}
+              monthlyData={monthlyData}
+              selectedTimePeriod={selectedTimePeriod}
+              displayCurrency={
+                displayCurrency === "BASE"
+                  ? (account.currency || "GBP")
+                  : displayCurrency
+              }
+              onValueChange={handleValueChange}
+              onSave={handleSaveValue}
+              onEdit={(accountId, month, entry) => {
+                setEditingValues((prev) => ({
+                  ...prev,
+                  [accountId]: {
+                    ...(prev[accountId] || {}),
+                    [month]: {
+                      endingBalance: entry.endingBalance.toString(),
+                      cashIn: entry.cashIn.toString(),
+                      cashOut: entry.cashOut.toString(),
+                      workIncome: (entry.workIncome || 0).toString(),
+                    },
                   },
-                },
-              }));
-            }}
-            onAddMonth={onAddNewMonth}
-            onEditAccount={setEditingAccount}
-            onDeleteAccount={onDeleteAccount}
-          />
-        ))}
-      </div>
+                }));
+              }}
+              onAddMonth={onAddNewMonth}
+              onEditAccount={setEditingAccount}
+              onDeleteAccount={onDeleteAccount}
+            />
+          ))}
+        </div>
+      )}
 
       {/* No results message */}
       {filteredAccounts.length === 0 && (

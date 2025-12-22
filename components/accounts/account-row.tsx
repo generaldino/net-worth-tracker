@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Archive } from "lucide-react";
+import { ChevronDown, ChevronRight, Archive, GripVertical } from "lucide-react";
 import { type Account, type MonthlyEntry } from "@/lib/types";
 import { AccountTypeBadge } from "./account-type-badge";
 import { AccountActions } from "./account-actions";
@@ -12,12 +12,14 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useMasking } from "@/contexts/masking-context";
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface AccountRowProps {
   account: Account;
@@ -89,9 +91,33 @@ export function AccountRow({
     displayCurrency
   );
 
+  // Drag and drop - only enable on client to avoid hydration issues
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: account.id, disabled: !isClient });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
       <div
+        ref={setNodeRef}
+        style={style}
         className={cn(
           "border rounded-lg bg-card",
           account.isClosed && "opacity-60"
@@ -103,6 +129,15 @@ export function AccountRow({
             <div className="block sm:hidden">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
+                  {isClient && (
+                    <div
+                      {...attributes}
+                      {...listeners}
+                      className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 text-muted-foreground hover:text-foreground"
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </div>
+                  )}
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4 mt-1" />
                   ) : (
@@ -161,6 +196,15 @@ export function AccountRow({
             {/* Desktop Layout */}
             <div className="hidden sm:flex items-center justify-between gap-2">
               <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+                {isClient && (
+                  <div
+                    {...attributes}
+                    {...listeners}
+                    className="cursor-grab active:cursor-grabbing touch-none p-1 -ml-1 text-muted-foreground hover:text-foreground shrink-0"
+                  >
+                    <GripVertical className="h-4 w-4" />
+                  </div>
+                )}
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4 shrink-0" />
                 ) : (

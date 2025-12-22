@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { accounts as accountsTable, monthlyEntries } from "@/db/schema";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, asc, eq, and } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth-helpers";
@@ -88,17 +88,24 @@ export async function getNetWorthBreakdown() {
 
 export async function getAccounts(includeClosed: boolean = false) {
   try {
-    const query = db
-      .select()
-      .from(accountsTable)
-      .orderBy(accountsTable.createdAt);
-
-    // If not including closed accounts, filter them out
-    if (!includeClosed) {
-      query.where(eq(accountsTable.isClosed, false));
+    const userId = await getUserId();
+    if (!userId) {
+      return [];
     }
 
-    const dbAccounts = await query;
+    // Build where condition
+    const whereCondition = includeClosed
+      ? eq(accountsTable.userId, userId)
+      : and(
+          eq(accountsTable.userId, userId),
+          eq(accountsTable.isClosed, false)
+        );
+
+    const dbAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(whereCondition)
+      .orderBy(asc(accountsTable.displayOrder), asc(accountsTable.createdAt));
 
     // Transform the data to match the client-side Account type
     return dbAccounts.map((account) => ({
@@ -111,6 +118,7 @@ export async function getAccounts(includeClosed: boolean = false) {
       currency: account.currency,
       isClosed: account.isClosed,
       closedAt: account.closedAt,
+      displayOrder: account.displayOrder ?? 0,
     }));
   } catch (error) {
     console.error("Error fetching accounts:", error);
@@ -217,6 +225,17 @@ export async function createAccount(data: {
       return { success: false, error: "Not authenticated" };
     }
 
+    // Get the maximum display_order for this user's accounts
+    const existingAccounts = await db
+      .select({ displayOrder: accountsTable.displayOrder })
+      .from(accountsTable)
+      .where(eq(accountsTable.userId, userId))
+      .orderBy(desc(accountsTable.displayOrder))
+      .limit(1);
+
+    const maxDisplayOrder = existingAccounts[0]?.displayOrder ?? -1;
+    const newDisplayOrder = maxDisplayOrder + 1;
+
     const [account] = await db
       .insert(accountsTable)
       .values({
@@ -227,6 +246,7 @@ export async function createAccount(data: {
         owner: data.owner,
         currency: data.currency,
         userId: userId,
+        displayOrder: newDisplayOrder,
       })
       .returning();
 
@@ -1027,11 +1047,18 @@ export async function toggleAccountClosed(
 
 export async function getClosedAccounts() {
   try {
+    const userId = await getUserId();
+    if (!userId) {
+      return [];
+    }
+
     const dbAccounts = await db
       .select()
       .from(accountsTable)
-      .where(eq(accountsTable.isClosed, true))
-      .orderBy(accountsTable.closedAt);
+      .where(
+        and(eq(accountsTable.userId, userId), eq(accountsTable.isClosed, true))
+      )
+      .orderBy(asc(accountsTable.displayOrder), desc(accountsTable.closedAt));
 
     return dbAccounts.map((account) => ({
       id: account.id,
@@ -1042,10 +1069,43 @@ export async function getClosedAccounts() {
       category: account.category,
       isClosed: account.isClosed,
       closedAt: account.closedAt,
+      displayOrder: account.displayOrder ?? 0,
     }));
   } catch (error) {
     console.error("Error fetching closed accounts:", error);
     return [];
+  }
+}
+
+export async function updateAccountDisplayOrder(
+  accountOrders: Array<{ id: string; displayOrder: number }>
+) {
+  try {
+    const userId = await getUserId();
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Update each account's display order in a transaction
+    await db.transaction(async (tx) => {
+      for (const { id, displayOrder } of accountOrders) {
+        await tx
+          .update(accountsTable)
+          .set({
+            displayOrder,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(eq(accountsTable.id, id), eq(accountsTable.userId, userId))
+          );
+      }
+    });
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating account display order:", error);
+    return { success: false, error: "Failed to update account order" };
   }
 }
 
