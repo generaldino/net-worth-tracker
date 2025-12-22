@@ -43,14 +43,14 @@ export function DataDetailsPanel({
   };
 
   return (
-    <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
-      <div className="flex justify-between items-start mb-3">
-        <h4 className="font-medium text-lg">{month} Details</h4>
+    <div className="mt-4 p-3 sm:p-4 bg-muted/30 rounded-lg border">
+      <div className="flex justify-between items-start mb-3 gap-2">
+        <h4 className="font-medium text-base sm:text-lg truncate">{month} Details</h4>
         <Button
           variant="ghost"
           size="sm"
           onClick={onClose}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground shrink-0"
         >
           ✕
         </Button>
@@ -87,17 +87,17 @@ export function DataDetailsPanel({
               !["x", "y", "width", "height", "value"].includes(key)
             ) {
               return (
-                <div key={key} className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                <div key={key} className="flex justify-between items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <div
-                      className="w-3 h-3 rounded-sm"
+                      className="w-3 h-3 rounded-sm shrink-0"
                       style={{
                         backgroundColor: COLORS[index % COLORS.length],
                       }}
                     />
-                    <span>{key}</span>
+                    <span className="truncate text-sm sm:text-base">{key}</span>
                   </div>
-                  <span className="font-medium">£{formatCurrency(value)}</span>
+                  <span className="font-medium text-sm sm:text-base shrink-0">£{formatCurrency(value)}</span>
                 </div>
               );
             }
@@ -146,19 +146,19 @@ export function DataDetailsPanel({
             const showBreakdown = breakdownStates.get(source) || false;
             return (
               <div key={source} className="mb-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                <div className="flex justify-between items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <div
-                      className="w-3 h-3 rounded-sm"
+                      className="w-3 h-3 rounded-sm shrink-0"
                       style={{
                         backgroundColor: COLORS[index % COLORS.length],
                       }}
                     />
-                    <span>{source}</span>
+                    <span className="truncate text-sm sm:text-base">{source}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <span
-                      className={`font-medium ${
+                      className={`font-medium text-sm sm:text-base ${
                         value !== undefined && value >= 0
                           ? "text-green-600"
                           : "text-red-600"
@@ -177,7 +177,7 @@ export function DataDetailsPanel({
                     </span>
                     {accounts.length > 0 && (
                       <button
-                        className="text-xs text-primary underline hover:text-primary-focus focus:outline-none"
+                        className="text-xs text-primary underline hover:text-primary-focus focus:outline-none shrink-0"
                         onClick={() => toggleBreakdown(source)}
                         type="button"
                       >

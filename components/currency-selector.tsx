@@ -25,12 +25,12 @@ export function CurrencySelector({
   label = "Display Currency",
 }: CurrencySelectorProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
       <Label htmlFor="currency-select" className="text-sm">
         {label}:
       </Label>
       <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger id="currency-select" className="w-[180px]">
+        <SelectTrigger id="currency-select" className="w-full sm:w-[180px]">
           <SelectValue placeholder="Select currency" />
         </SelectTrigger>
         <SelectContent>

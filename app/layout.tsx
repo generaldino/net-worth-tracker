@@ -14,6 +14,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Wealth Tracker",
   description: "Track your wealth across multiple accounts",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
 };
 
 export default async function RootLayout({
@@ -45,8 +46,8 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="overflow-x-hidden">
+      <body className={`${inter.className} overflow-x-hidden`}>
         <MaskingProviderWrapper>
           <ExchangeRatesProvider>
             <DisplayCurrencyProvider>

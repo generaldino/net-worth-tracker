@@ -159,46 +159,50 @@ export function AccountRow({
             </div>
 
             {/* Desktop Layout */}
-            <div className="hidden sm:flex items-center justify-between">
-              <div className="flex items-center space-x-4 flex-1">
+            <div className="hidden sm:flex items-center justify-between gap-2">
+              <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
                 {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 shrink-0" />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 shrink-0" />
                 )}
-                <div className="grid grid-cols-6 gap-4 flex-1 items-center">
-                  <div className="font-medium flex items-center gap-2">
-                    {account.name}
+                <div className="grid grid-cols-6 gap-2 sm:gap-4 flex-1 items-center min-w-0">
+                  <div className="font-medium flex items-center gap-2 min-w-0">
+                    <span className="truncate">{account.name}</span>
                     {account.isClosed && (
-                      <Archive className="h-4 w-4 text-muted-foreground" />
+                      <Archive className="h-4 w-4 text-muted-foreground shrink-0" />
                     )}
                   </div>
-                  <div className="text-muted-foreground">{account.owner}</div>
-                  <AccountTypeBadge account={account} />
-                  <div className="font-medium">
+                  <div className="text-muted-foreground text-sm truncate">{account.owner}</div>
+                  <div className="min-w-0">
+                    <AccountTypeBadge account={account} />
+                  </div>
+                  <div className="font-medium min-w-0">
                     {isMasked ? (
                       "••••••"
                     ) : (
                       <div className="flex flex-col">
-                        <div>
+                        <div className="truncate">
                           {formatCurrencyAmount(
                             convertedCurrentValue,
                             displayCurrency
                           )}
                         </div>
                         {needsConversion && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-muted-foreground truncate">
                             {formatCurrencyAmount(currentValue, accountCurrency)}
                           </div>
                         )}
                       </div>
                     )}
                   </div>
-                  <ValueChangeDisplay
-                    absoluteChange={convertedAbsoluteChange}
-                    percentageChange={valueChange.percentageChange}
-                    currency={displayCurrency}
-                  />
+                  <div className="min-w-0">
+                    <ValueChangeDisplay
+                      absoluteChange={convertedAbsoluteChange}
+                      percentageChange={valueChange.percentageChange}
+                      currency={displayCurrency}
+                    />
+                  </div>
                 </div>
               </div>
               <AccountActions

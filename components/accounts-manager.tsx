@@ -49,8 +49,8 @@ export async function AccountsManager() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-4 px-4 max-w-7xl">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="container mx-auto py-4 px-4 sm:px-6 max-w-7xl">
         <DashboardHeader netWorth={netWorth} netWorthBreakdown={netWorthBreakdown} />
 
         <div className="space-y-4 sm:space-y-6">
@@ -62,7 +62,7 @@ export async function AccountsManager() {
                 <CardTitle className="text-lg sm:text-xl">
                   Your Accounts
                 </CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <MaskToggleButton />
                   <ExportCSVButton />
                   <AddAccountButton />

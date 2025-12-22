@@ -241,55 +241,59 @@ export function AccountsTable({
     <div className="space-y-4 px-2 sm:px-4">
       <div className="flex flex-col gap-4">
         {/* Filters Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <AccountSelector
-              accounts={accounts}
-              selectedAccounts={selectedAccounts}
-              onAccountsChange={setSelectedAccounts}
-            />
-            <AccountTypeSelector
-              selectedTypes={selectedTypes}
-              onTypesChange={setSelectedTypes}
-            />
-            <CategorySelector
-              selectedCategories={selectedCategories}
-              onCategoriesChange={setSelectedCategories}
-            />
-            <Select value={selectedOwner} onValueChange={setSelectedOwner}>
-              <SelectTrigger className="w-full sm:w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                {owners.map((owner) => (
-                  <SelectItem key={owner} value={owner}>
-                    {owner}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <TimePeriodSelector
-              selectedTimePeriod={selectedTimePeriod}
-              onTimePeriodChange={setSelectedTimePeriod}
-            />
-          </div>
-        </div>
-
-        {/* Additional Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-closed"
-              checked={showClosedAccounts}
-              onCheckedChange={setShowClosedAccounts}
-            />
-            <Label htmlFor="show-closed">Show closed accounts</Label>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 w-full">
+              <AccountSelector
+                accounts={accounts}
+                selectedAccounts={selectedAccounts}
+                onAccountsChange={setSelectedAccounts}
+              />
+              <AccountTypeSelector
+                selectedTypes={selectedTypes}
+                onTypesChange={setSelectedTypes}
+              />
+              <CategorySelector
+                selectedCategories={selectedCategories}
+                onCategoriesChange={setSelectedCategories}
+              />
+              <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Owners</SelectItem>
+                  {owners.map((owner) => (
+                    <SelectItem key={owner} value={owner}>
+                      {owner}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <TimePeriodSelector
+                selectedTimePeriod={selectedTimePeriod}
+                onTimePeriodChange={setSelectedTimePeriod}
+              />
+            </div>
           </div>
 
-          {/* Results count */}
-          <div className="text-sm text-muted-foreground">
-            Showing {filteredAccounts.length} of {accounts.length} accounts
+          {/* Additional Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-closed"
+                checked={showClosedAccounts}
+                onCheckedChange={setShowClosedAccounts}
+              />
+              <Label htmlFor="show-closed" className="text-sm sm:text-base">
+                Show closed accounts
+              </Label>
+            </div>
+
+            {/* Results count */}
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Showing {filteredAccounts.length} of {accounts.length} accounts
+            </div>
           </div>
         </div>
       </div>

@@ -623,7 +623,7 @@ export function ChartDisplay({
 
       {/* Show instruction text */}
       {!clickedData && !isLoading && (
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+        <div className="mt-4 text-center text-xs sm:text-sm text-muted-foreground px-2">
           Hover over bars to see values, click to pin details
         </div>
       )}

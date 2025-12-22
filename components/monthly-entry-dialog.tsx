@@ -136,8 +136,8 @@ export function MonthlyEntryDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="month" className="text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+            <Label htmlFor="month" className="sm:text-right">
               Month
             </Label>
             <Input
@@ -145,7 +145,7 @@ export function MonthlyEntryDialog({
               type="month"
               value={month}
               onChange={(e) => handleMonthChange(e.target.value)}
-              className="col-span-3"
+              className="sm:col-span-3"
             />
           </div>
 

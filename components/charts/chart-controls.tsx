@@ -132,8 +132,8 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   return (
     <Card>
       <CardHeader className="pb-3 sm:pb-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-          <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
             <AccountSelector
               accounts={initialData.accounts}
               selectedAccounts={selectedAccounts}
