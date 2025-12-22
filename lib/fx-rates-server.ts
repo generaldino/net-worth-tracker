@@ -13,6 +13,7 @@ export interface ExchangeRates {
 }
 
 const HEXARATE_API_URL = "https://api.hexarate.paikama.co/latest";
+const HEXARATE_BASE_URL = "https://hexarate.paikama.co";
 
 /**
  * Get the last day of a month from a YYYY-MM date string
@@ -161,5 +162,105 @@ export async function convertCurrency(
   }
 
   return amountInTarget;
+}
+
+/**
+ * Fetches a single currency pair rate for a specific date from HexaRate API
+ * @param base - Base currency (e.g., "GBP")
+ * @param target - Target currency (e.g., "EUR")
+ * @param date - Date in "YYYY-MM-DD" format
+ * @returns The exchange rate or null if failed
+ */
+async function fetchCurrencyPairRate(
+  base: string,
+  target: string,
+  date: string
+): Promise<number | null> {
+  try {
+    const url = `${HEXARATE_BASE_URL}/api/rates/${base}/${target}/${date}`;
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+      },
+      next: { revalidate: 86400 }, // Cache for 24 hours
+    });
+
+    if (!response.ok) {
+      console.warn(
+        `Failed to fetch ${base}/${target} for ${date}: ${response.statusText}`
+      );
+      return null;
+    }
+
+    const data = await response.json();
+    // HexaRate returns: { status_code: 200, data: { base: "GBP", target: "EUR", mid: 1.15, ... } }
+    const rate = data.data?.mid || data.mid || data.rate || null;
+    return rate ? Number(rate) : null;
+  } catch (error) {
+    console.error(`Error fetching ${base}/${target} for ${date}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Fetches and saves exchange rates for a specific month
+ * @param month - Month in "YYYY-MM" format
+ * @returns true if rates were successfully fetched and saved, false otherwise
+ */
+export async function fetchAndSaveExchangeRatesForMonth(
+  month: string
+): Promise<boolean> {
+  try {
+    // Get the last day of the month
+    const dateStr = getLastDayOfMonth(month);
+
+    // Check if rate already exists
+    const existing = await db
+      .select()
+      .from(exchangeRates)
+      .where(eq(exchangeRates.date, dateStr))
+      .limit(1);
+
+    if (existing.length > 0) {
+      // Rate already exists, no need to fetch
+      return true;
+    }
+
+    // Fetch rates for each currency pair
+    const eurRate = await fetchCurrencyPairRate("GBP", "EUR", dateStr);
+    // Small delay to avoid rate limiting
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const usdRate = await fetchCurrencyPairRate("GBP", "USD", dateStr);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const aedRate = await fetchCurrencyPairRate("GBP", "AED", dateStr);
+
+    // Check if we got all required rates
+    if (!eurRate || !usdRate || !aedRate) {
+      console.warn(
+        `Failed to fetch all rates for ${month}. EUR: ${eurRate}, USD: ${usdRate}, AED: ${aedRate}`
+      );
+      return false;
+    }
+
+    // Insert the rates into the database
+    await db.insert(exchangeRates).values({
+      date: dateStr,
+      baseCurrency: "GBP",
+      gbpRate: "1",
+      eurRate: eurRate.toString(),
+      usdRate: usdRate.toString(),
+      aedRate: aedRate.toString(),
+    });
+
+    console.log(
+      `✓ Successfully fetched and saved FX rates for ${month} (${dateStr})`
+    );
+    return true;
+  } catch (error) {
+    console.error(`Error fetching and saving FX rates for ${month}:`, error);
+    return false;
+  }
 }
 
