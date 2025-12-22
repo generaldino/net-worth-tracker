@@ -116,7 +116,7 @@ export function NetWorthDisplay({
       <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-600">
         {formattedAmount}
       </div>
-      {formattedPercentage && (
+      {formattedPercentage && percentageIncrease !== null && (
         <div
           className={`text-lg sm:text-xl lg:text-2xl font-semibold ${
             percentageIncrease >= 0 ? "text-green-600" : "text-red-600"
