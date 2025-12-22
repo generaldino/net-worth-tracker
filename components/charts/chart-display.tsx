@@ -1080,10 +1080,10 @@ export function ChartDisplay({
           ? chartData.categoryData 
           : chartData.accountTypeData;
         
-        // Get selected month's data or most recent (first item since data is sorted desc)
+        // Get selected month's data or most recent (last item since data is sorted asc)
         const selectedMonthData = allocationOptions.selectedMonth
           ? sourceDataArray.find((item) => item.month === allocationOptions.selectedMonth || item.monthKey === allocationOptions.selectedMonth)
-          : (sourceDataArray.length > 0 ? sourceDataArray[0] : null);
+          : (sourceDataArray.length > 0 ? sourceDataArray[sourceDataArray.length - 1] : null);
 
         if (!selectedMonthData) {
           return (

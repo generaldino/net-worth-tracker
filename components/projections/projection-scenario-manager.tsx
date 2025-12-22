@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Save, Plus } from "lucide-react";
+import { Trash2, Save } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,7 +163,7 @@ export function ProjectionScenarioManager({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the scenario "{selectedScenarioData?.name}". This action cannot be undone.
+                    This will permanently delete the scenario &quot;{selectedScenarioData?.name}&quot;. This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

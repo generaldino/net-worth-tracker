@@ -5,14 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "@/components/ui/use-toast";
 import {
   calculateProjection,
@@ -23,6 +16,7 @@ import {
 import { ProjectionChart } from "./projection-chart";
 import { ProjectionScenarioManager } from "./projection-scenario-manager";
 import type { AccountType } from "@/lib/types";
+import type { Currency } from "@/lib/fx-rates";
 import { useRouter } from "next/navigation";
 
 interface ProjectionScenario {
@@ -54,7 +48,24 @@ export function ProjectionCalculator({
 }: ProjectionCalculatorProps) {
   const router = useRouter();
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
-  const [projectionData, setProjectionData] = useState<any>(null);
+  const [projectionData, setProjectionData] = useState<{
+    currentNetWorth: number;
+    finalNetWorth: number;
+    totalGrowth: number;
+    growthPercentage: number;
+    projectionData: Array<{
+      month: string;
+      monthIndex: number;
+      netWorth: number;
+      accountBalances: Array<{
+        accountId: string;
+        accountName: string;
+        accountType: AccountType;
+        balance: number;
+        currency: Currency;
+      }>;
+    }>;
+  } | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [scenarios, setScenarios] = useState<ProjectionScenario[]>(initialScenarios);
 
@@ -70,10 +81,8 @@ export function ProjectionCalculator({
   const {
     register,
     handleSubmit,
-    control,
     reset,
     watch,
-    setValue,
     formState: { isSubmitting },
   } = useForm<FormData>({
     defaultValues: {
@@ -110,7 +119,7 @@ export function ProjectionCalculator({
       });
 
       setProjectionData(result);
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -167,7 +176,7 @@ export function ProjectionCalculator({
           router.refresh();
         }
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -196,7 +205,7 @@ export function ProjectionCalculator({
         });
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",

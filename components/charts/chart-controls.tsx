@@ -87,6 +87,20 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     }
     return convertChartData(rawChartData, chartCurrency as Currency);
   }, [rawChartData, getChartCurrency, convertChartData]);
+
+  // Update selected month to latest when view type changes or data updates
+  useEffect(() => {
+    const sourceData = allocationViewType === "category" 
+      ? chartData.categoryData 
+      : chartData.accountTypeData;
+    const latestMonth = sourceData.length > 0 ? sourceData[sourceData.length - 1]?.month : undefined;
+    
+    // Only update if current selection is invalid or not set
+    if (!allocationSelectedMonth || !sourceData.find(item => item.month === allocationSelectedMonth)) {
+      setAllocationSelectedMonth(latestMonth);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allocationViewType, chartData.categoryData, chartData.accountTypeData]);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
     initialData.accounts.map((account) => account.id)
   );

@@ -7,7 +7,7 @@ import {
   projectionScenarios,
 } from "@/db/schema";
 import { desc, asc, eq, and } from "drizzle-orm";
-import type { Account, MonthlyEntry, ProjectionScenario } from "@/db/schema";
+import type { Account, MonthlyEntry } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth-helpers";
 import type { Currency } from "@/lib/fx-rates";
