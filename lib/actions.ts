@@ -4,8 +4,8 @@ import { db } from "@/db";
 import { accounts as accountsTable, monthlyEntries } from "@/db/schema";
 import { desc, eq, and } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
-import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { getUserId } from "@/lib/auth-helpers";
 
 export async function calculateNetWorth() {
   try {
@@ -167,12 +167,9 @@ export async function createAccount(data: {
   currency: "GBP" | "EUR" | "USD" | "AED";
 }) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const userId = await getUserId();
 
-    if (!session?.user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
@@ -185,7 +182,7 @@ export async function createAccount(data: {
         isISA: data.isISA,
         owner: data.owner,
         currency: data.currency,
-        userId: session.user.id,
+        userId: userId,
       })
       .returning();
 
@@ -217,12 +214,9 @@ export async function updateAccount(data: {
   currency: "GBP" | "EUR" | "USD" | "AED";
 }) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const userId = await getUserId();
 
-    if (!session?.user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
@@ -250,12 +244,9 @@ export async function updateAccount(data: {
 
 export async function deleteAccount(accountId: string) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const userId = await getUserId();
 
-    if (!session?.user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
@@ -910,12 +901,9 @@ export async function toggleAccountClosed(
   isClosed: boolean
 ) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const userId = await getUserId();
 
-    if (!session?.user) {
+    if (!userId) {
       return { success: false, error: "Not authenticated" };
     }
 
