@@ -7,6 +7,7 @@ import {
   boolean,
   pgEnum,
   integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 // Enums
@@ -90,6 +91,20 @@ export const exchangeRates = pgTable("exchange_rates", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const projectionScenarios = pgTable("projection_scenarios", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  monthlyIncome: numeric("monthly_income").notNull(),
+  savingsRate: numeric("savings_rate").notNull(), // Percentage (0-100)
+  timePeriodMonths: integer("time_period_months").notNull(),
+  growthRates: jsonb("growth_rates").notNull(), // JSON object: { "Current": 0, "Savings": 2.5, ... }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -99,6 +114,8 @@ export type MonthlyEntry = typeof monthlyEntries.$inferSelect;
 export type NewMonthlyEntry = typeof monthlyEntries.$inferInsert;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type NewExchangeRate = typeof exchangeRates.$inferInsert;
+export type ProjectionScenario = typeof projectionScenarios.$inferSelect;
+export type NewProjectionScenario = typeof projectionScenarios.$inferInsert;
 
 // Indexes
 export const monthlyEntriesMonthIdx = monthlyEntries.month;

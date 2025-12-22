@@ -1,12 +1,17 @@
 "use server";
 
 import { db } from "@/db";
-import { accounts as accountsTable, monthlyEntries } from "@/db/schema";
+import {
+  accounts as accountsTable,
+  monthlyEntries,
+  projectionScenarios,
+} from "@/db/schema";
 import { desc, asc, eq, and } from "drizzle-orm";
-import type { Account, MonthlyEntry } from "@/db/schema";
+import type { Account, MonthlyEntry, ProjectionScenario } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth-helpers";
 import type { Currency } from "@/lib/fx-rates";
+import type { AccountType } from "@/lib/types";
 
 export async function calculateNetWorth() {
   try {
@@ -1394,5 +1399,317 @@ export async function convertCurrency(
     console.error("Error converting currency:", error);
     // Fallback to original amount if conversion fails
     return amount;
+  }
+}
+
+// Projection Scenario CRUD Operations
+
+export async function createProjectionScenario(data: {
+  name: string;
+  monthlyIncome: number;
+  savingsRate: number;
+  timePeriodMonths: number;
+  growthRates: Record<AccountType, number>;
+}) {
+  try {
+    const userId = await getUserId();
+
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const [scenario] = await db
+      .insert(projectionScenarios)
+      .values({
+        userId,
+        name: data.name,
+        monthlyIncome: data.monthlyIncome.toString(),
+        savingsRate: data.savingsRate.toString(),
+        timePeriodMonths: data.timePeriodMonths,
+        growthRates: data.growthRates,
+      })
+      .returning();
+
+    revalidatePath("/");
+    return { success: true, scenario };
+  } catch (error) {
+    console.error("Error creating projection scenario:", error);
+    return { success: false, error: "Failed to create projection scenario" };
+  }
+}
+
+export async function getProjectionScenarios() {
+  try {
+    const userId = await getUserId();
+    if (!userId) {
+      return [];
+    }
+
+    const scenarios = await db
+      .select()
+      .from(projectionScenarios)
+      .where(eq(projectionScenarios.userId, userId))
+      .orderBy(desc(projectionScenarios.createdAt));
+
+    return scenarios.map((scenario) => ({
+      id: scenario.id,
+      name: scenario.name,
+      monthlyIncome: Number(scenario.monthlyIncome),
+      savingsRate: Number(scenario.savingsRate),
+      timePeriodMonths: scenario.timePeriodMonths,
+      growthRates: scenario.growthRates as Record<AccountType, number>,
+      createdAt: scenario.createdAt,
+      updatedAt: scenario.updatedAt,
+    }));
+  } catch (error) {
+    console.error("Error fetching projection scenarios:", error);
+    return [];
+  }
+}
+
+export async function updateProjectionScenario(
+  id: string,
+  data: {
+    name: string;
+    monthlyIncome: number;
+    savingsRate: number;
+    timePeriodMonths: number;
+    growthRates: Record<AccountType, number>;
+  }
+) {
+  try {
+    const userId = await getUserId();
+
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    const [scenario] = await db
+      .update(projectionScenarios)
+      .set({
+        name: data.name,
+        monthlyIncome: data.monthlyIncome.toString(),
+        savingsRate: data.savingsRate.toString(),
+        timePeriodMonths: data.timePeriodMonths,
+        growthRates: data.growthRates,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(projectionScenarios.id, id),
+          eq(projectionScenarios.userId, userId)
+        )
+      )
+      .returning();
+
+    revalidatePath("/");
+    return { success: true, scenario };
+  } catch (error) {
+    console.error("Error updating projection scenario:", error);
+    return { success: false, error: "Failed to update projection scenario" };
+  }
+}
+
+export async function deleteProjectionScenario(id: string) {
+  try {
+    const userId = await getUserId();
+
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    await db
+      .delete(projectionScenarios)
+      .where(
+        and(
+          eq(projectionScenarios.id, id),
+          eq(projectionScenarios.userId, userId)
+        )
+      );
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting projection scenario:", error);
+    return { success: false, error: "Failed to delete projection scenario" };
+  }
+}
+
+// Projection Calculation
+
+export async function calculateProjection(data: {
+  monthlyIncome: number;
+  savingsRate: number;
+  timePeriodMonths: number;
+  growthRates: Record<AccountType, number>;
+}) {
+  try {
+    // Get all accounts (excluding closed and liabilities)
+    const allAccounts = await db.select().from(accountsTable);
+    const activeAccounts = allAccounts.filter(
+      (account) =>
+        !account.isClosed &&
+        account.type !== "Credit_Card" &&
+        account.type !== "Loan"
+    );
+
+    // Get the latest monthly entries for each account
+    const latestEntries = await db
+      .select()
+      .from(monthlyEntries)
+      .orderBy(desc(monthlyEntries.month));
+
+    // Get current balances for each account
+    const currentBalances = new Map<string, number>();
+    activeAccounts.forEach((account) => {
+      const latestEntry = latestEntries.find(
+        (entry) => entry.accountId === account.id
+      );
+      const balance = Number(latestEntry?.endingBalance || 0);
+      currentBalances.set(account.id, balance);
+    });
+
+    // Calculate total current net worth
+    let currentNetWorth = 0;
+    activeAccounts.forEach((account) => {
+      currentNetWorth += currentBalances.get(account.id) || 0;
+    });
+
+    // Calculate monthly savings amount
+    const monthlySavings = (data.monthlyIncome * data.savingsRate) / 100;
+
+    // Calculate how to distribute savings across accounts
+    // For now, distribute proportionally based on current balances
+    const totalBalance = Array.from(currentBalances.values()).reduce(
+      (sum, balance) => sum + balance,
+      0
+    );
+
+    const savingsDistribution = new Map<string, number>();
+    if (activeAccounts.length === 0) {
+      // No active accounts, return empty projection
+      return {
+        currentNetWorth: 0,
+        finalNetWorth: 0,
+        totalGrowth: 0,
+        growthPercentage: 0,
+        projectionData: [],
+      };
+    }
+
+    if (totalBalance > 0) {
+      activeAccounts.forEach((account) => {
+        const balance = currentBalances.get(account.id) || 0;
+        const proportion = balance / totalBalance;
+        savingsDistribution.set(account.id, monthlySavings * proportion);
+      });
+    } else {
+      // If no balances, distribute evenly
+      const perAccount =
+        activeAccounts.length > 0 ? monthlySavings / activeAccounts.length : 0;
+      activeAccounts.forEach((account) => {
+        savingsDistribution.set(account.id, perAccount);
+      });
+    }
+
+    // Generate projection data month by month
+    const projectionData: Array<{
+      month: string;
+      monthIndex: number;
+      netWorth: number;
+      accountBalances: Array<{
+        accountId: string;
+        accountName: string;
+        accountType: AccountType;
+        balance: number;
+        currency: Currency;
+      }>;
+    }> = [];
+
+    // Start with current balances
+    const accountBalances = new Map<string, number>(currentBalances);
+    const startDate = new Date();
+    startDate.setDate(1); // Start of current month
+
+    for (
+      let monthIndex = 0;
+      monthIndex <= data.timePeriodMonths;
+      monthIndex++
+    ) {
+      const currentDate = new Date(startDate);
+      currentDate.setMonth(startDate.getMonth() + monthIndex);
+      const monthKey = `${currentDate.getFullYear()}-${String(
+        currentDate.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      // Calculate net worth for this month
+      let monthNetWorth = 0;
+      const monthAccountBalances: Array<{
+        accountId: string;
+        accountName: string;
+        accountType: AccountType;
+        balance: number;
+        currency: Currency;
+      }> = [];
+
+      activeAccounts.forEach((account) => {
+        let balance = accountBalances.get(account.id) || 0;
+
+        // Apply growth rate (monthly compounding: annual rate / 12)
+        const growthRate = data.growthRates[account.type] || 0;
+        const monthlyGrowthRate = growthRate / 100 / 12;
+        balance = balance * (1 + monthlyGrowthRate);
+
+        // Add savings contribution (only for future months, not month 0)
+        if (monthIndex > 0) {
+          const savings = savingsDistribution.get(account.id) || 0;
+          balance += savings;
+        }
+
+        // Update balance
+        accountBalances.set(account.id, balance);
+        monthNetWorth += balance;
+
+        monthAccountBalances.push({
+          accountId: account.id,
+          accountName: account.name,
+          accountType: account.type,
+          balance,
+          currency: (account.currency || "GBP") as Currency,
+        });
+      });
+
+      projectionData.push({
+        month: monthKey,
+        monthIndex,
+        netWorth: monthNetWorth,
+        accountBalances: monthAccountBalances,
+      });
+    }
+
+    return {
+      currentNetWorth,
+      finalNetWorth: projectionData[projectionData.length - 1]?.netWorth || 0,
+      totalGrowth:
+        (projectionData[projectionData.length - 1]?.netWorth || 0) -
+        currentNetWorth,
+      growthPercentage:
+        currentNetWorth > 0
+          ? (((projectionData[projectionData.length - 1]?.netWorth || 0) -
+              currentNetWorth) /
+              currentNetWorth) *
+            100
+          : 0,
+      projectionData,
+    };
+  } catch (error) {
+    console.error("Error calculating projection:", error);
+    return {
+      currentNetWorth: 0,
+      finalNetWorth: 0,
+      totalGrowth: 0,
+      growthPercentage: 0,
+      projectionData: [],
+    };
   }
 }

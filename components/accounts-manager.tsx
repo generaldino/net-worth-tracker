@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/charts/chart-section";
+import { ProjectionSection } from "@/components/projections/projection-section";
 import {
   calculateNetWorth,
   getAccounts,
@@ -70,6 +71,7 @@ export async function AccountsManager() {
 
         <div className="space-y-4 sm:space-y-6">
           <ChartSection />
+          <ProjectionSection />
 
           <Card>
             <CardHeader className="pb-3 sm:pb-6">
