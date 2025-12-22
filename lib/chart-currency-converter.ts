@@ -68,9 +68,13 @@ export function useChartCurrencyConverter() {
 
     // Convert net worth data
     const convertedNetWorthData = data.netWorthData.map((item) => {
-      if (!item.accountBalances) {
-        // Fallback if structure is different
-        return item;
+      if (!item.accountBalances || !item.monthKey) {
+        // Fallback if structure is different - return as is but ensure monthKey exists
+        return {
+          month: item.month,
+          monthKey: item.monthKey || item.month.substring(0, 7), // Extract YYYY-MM from month if needed
+          netWorth: item.netWorth,
+        };
       }
 
       const convertedNetWorth = item.accountBalances.reduce((sum, acc) => {
@@ -80,6 +84,7 @@ export function useChartCurrencyConverter() {
 
       return {
         month: item.month,
+        monthKey: item.monthKey,
         netWorth: convertedNetWorth,
       };
     });
@@ -199,15 +204,15 @@ export function useChartCurrencyConverter() {
         const convertedBreakdown: typeof item.breakdown = {
           "Savings from Income": item.breakdown["Savings from Income"].map((acc) => ({
             ...acc,
-            amount: convertValue(acc.amount, acc.currency, item.monthKey),
+            amount: convertValue(acc.amount, acc.currency as Currency, item.monthKey),
           })),
           "Interest Earned": item.breakdown["Interest Earned"].map((acc) => ({
             ...acc,
-            amount: convertValue(acc.amount, acc.currency, item.monthKey),
+            amount: convertValue(acc.amount, acc.currency as Currency, item.monthKey),
           })),
           "Capital Gains": item.breakdown["Capital Gains"].map((acc) => ({
             ...acc,
-            amount: convertValue(acc.amount, acc.currency, item.monthKey),
+            amount: convertValue(acc.amount, acc.currency as Currency, item.monthKey),
           })),
         };
 
@@ -225,7 +230,7 @@ export function useChartCurrencyConverter() {
           0
         );
         converted["Total Income"] = item.breakdown["Savings from Income"].reduce(
-          (sum, acc) => sum + convertValue(acc.amount, acc.currency, item.monthKey),
+          (sum, acc) => sum + convertValue(acc.amount, acc.currency as Currency, item.monthKey),
           0
         );
         

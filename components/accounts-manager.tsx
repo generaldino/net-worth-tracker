@@ -8,6 +8,7 @@ import {
   getMonthlyData,
   getCurrentValue,
   getAccountHistory,
+  getNetWorthBreakdown,
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
@@ -15,8 +16,9 @@ import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { DashboardHeader } from "@/components/dashboard-header";
 
 export async function AccountsManager() {
-  const [netWorth, accounts, monthlyData] = await Promise.all([
+  const [netWorth, netWorthBreakdown, accounts, monthlyData] = await Promise.all([
     calculateNetWorth(),
+    getNetWorthBreakdown(),
     getAccounts(true), // Always fetch all accounts, including closed ones
     getMonthlyData(),
   ]);
@@ -49,7 +51,7 @@ export async function AccountsManager() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-4 px-4 max-w-7xl">
-        <DashboardHeader netWorth={netWorth} />
+        <DashboardHeader netWorth={netWorth} netWorthBreakdown={netWorthBreakdown} />
 
         <div className="space-y-4 sm:space-y-6">
           <ChartSection />

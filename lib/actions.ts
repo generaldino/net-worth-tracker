@@ -43,6 +43,49 @@ export async function calculateNetWorth() {
   }
 }
 
+export async function getNetWorthBreakdown() {
+  try {
+    // Get all accounts
+    const allAccounts = await db.select().from(accountsTable);
+
+    // Get the latest monthly entries for each account
+    const latestEntries = await db
+      .select()
+      .from(monthlyEntries)
+      .orderBy(desc(monthlyEntries.month));
+
+    // Get the latest month for rate conversion
+    const latestMonth =
+      latestEntries.length > 0 ? latestEntries[0].month : null;
+
+    // Calculate net worth breakdown with currency info
+    const accountBalances = allAccounts.map((account: Account) => {
+      const latestEntry = latestEntries.find(
+        (entry: MonthlyEntry) => entry.accountId === account.id
+      );
+      const balance = Number(latestEntry?.endingBalance || 0);
+
+      return {
+        accountId: account.id,
+        balance,
+        currency: (account.currency || "GBP") as Currency,
+        isLiability: account.type === "Credit_Card" || account.type === "Loan",
+      };
+    });
+
+    return {
+      accountBalances,
+      monthKey: latestMonth || new Date().toISOString().substring(0, 7), // YYYY-MM format
+    };
+  } catch (error) {
+    console.error("Error getting net worth breakdown:", error);
+    return {
+      accountBalances: [],
+      monthKey: new Date().toISOString().substring(0, 7),
+    };
+  }
+}
+
 export async function getAccounts(includeClosed: boolean = false) {
   try {
     const query = db
@@ -527,7 +570,8 @@ export async function getChartData(
             accountId: entry.accountId,
             balance: entry.endingBalance,
             currency: (account?.currency || "GBP") as Currency,
-            isLiability: account?.type === "Credit_Card" || account?.type === "Loan",
+            isLiability:
+              account?.type === "Credit_Card" || account?.type === "Loan",
           };
         }),
     }));
@@ -560,7 +604,8 @@ export async function getChartData(
             monthData[uniqueName] = entry.endingBalance;
           }
           // Store currency info for client-side conversion
-          monthData[`${uniqueName}_currency`] = (account.currency || "GBP") as string;
+          monthData[`${uniqueName}_currency`] = (account.currency ||
+            "GBP") as string;
         }
       });
 
@@ -607,7 +652,9 @@ export async function getChartData(
         // Store currency info for each account type
         const currencies = accounts.map((acc) => ({
           currency: (acc.currency || "GBP") as Currency,
-          balance: monthlyData[month].find((e) => e.accountId === acc.id)?.endingBalance || 0,
+          balance:
+            monthlyData[month].find((e) => e.accountId === acc.id)
+              ?.endingBalance || 0,
           isLiability: acc.type === "Credit_Card" || acc.type === "Loan",
         }));
         monthData[`${type}_currencies`] = JSON.stringify(currencies);
@@ -657,7 +704,9 @@ export async function getChartData(
         // Store currency info for each category
         const currencies = accounts.map((acc) => ({
           currency: (acc.currency || "GBP") as Currency,
-          balance: monthlyData[month].find((e) => e.accountId === acc.id)?.endingBalance || 0,
+          balance:
+            monthlyData[month].find((e) => e.accountId === acc.id)
+              ?.endingBalance || 0,
           isLiability: acc.type === "Credit_Card" || acc.type === "Loan",
         }));
         monthData[`${category}_currencies`] = JSON.stringify(currencies);
@@ -1124,9 +1173,7 @@ export async function exportToCSV(): Promise<string> {
  * @param months - Array of months in "YYYY-MM" format
  * @returns Array of exchange rates for the last day of each month, plus latest if needed
  */
-export async function fetchExchangeRatesForMonths(
-  months: string[]
-): Promise<
+export async function fetchExchangeRatesForMonths(months: string[]): Promise<
   Array<{
     date: string;
     gbpRate: string;

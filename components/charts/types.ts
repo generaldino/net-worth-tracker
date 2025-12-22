@@ -20,7 +20,34 @@ export interface SourceData {
   "Savings from Income": number;
   "Interest Earned": number;
   "Capital Gains": number;
+  "Total Income"?: number;
   "Savings Rate": number;
+  breakdown?: {
+    "Savings from Income": Array<{
+      accountId: string;
+      name: string;
+      type: string;
+      amount: number;
+      currency: string;
+      owner: string;
+    }>;
+    "Interest Earned": Array<{
+      accountId: string;
+      name: string;
+      type: string;
+      amount: number;
+      currency: string;
+      owner: string;
+    }>;
+    "Capital Gains": Array<{
+      accountId: string;
+      name: string;
+      type: string;
+      amount: number;
+      currency: string;
+      owner: string;
+    }>;
+  };
 }
 
 export interface AccountData {
