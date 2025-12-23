@@ -64,9 +64,6 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
     initialData.accounts.map((account) => account.id)
   );
   
-  // By Account chart options
-  const [topN, setTopN] = useState<number | undefined>(undefined);
-  
   // Allocation chart options
   const [allocationViewType, setAllocationViewType] = useState<"account-type" | "category">("account-type");
   const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<string | undefined>(undefined);
@@ -283,7 +280,7 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
       </div>
       <div className="pt-0">
         {/* Chart-specific options */}
-        {(chartType === "total" || chartType === "by-account" || chartType === "allocation" || chartType === "projection") && (
+        {(chartType === "total" || chartType === "allocation" || chartType === "projection") && (
           <div className="mb-4 p-2 sm:p-3 bg-muted/30 rounded-lg border flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-start sm:items-center text-xs sm:text-sm">
             {chartType === "total" && (
               <label className="flex items-center gap-2 w-full sm:w-auto">
@@ -392,21 +389,6 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                 </button>
               </>
             )}
-            {chartType === "by-account" && (
-              <label className="flex items-center gap-2 w-full sm:w-auto">
-                <span className="whitespace-nowrap">Show top</span>
-                <input
-                  type="number"
-                  min="1"
-                  max={chartData.accounts.length}
-                  value={topN || ""}
-                  onChange={(e) => setTopN(e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="w-16 px-2 py-1 rounded border bg-background"
-                  placeholder="All"
-                />
-                <span className="whitespace-nowrap">accounts</span>
-              </label>
-            )}
             {chartType === "allocation" && (
               <>
                 <label className="flex items-center gap-2 w-full sm:w-auto">
@@ -447,11 +429,6 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
           isLoading={isLoading}
           timePeriod={timePeriod}
           onTimePeriodChange={setTimePeriod}
-          byAccountOptions={
-            chartType === "by-account"
-              ? { topN }
-              : undefined
-          }
           allocationOptions={
             chartType === "allocation"
               ? { viewType: allocationViewType, selectedMonth: allocationSelectedMonth }
