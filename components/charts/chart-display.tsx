@@ -370,10 +370,10 @@ export function ChartDisplay({
                         style={{ color: entry.color }}
                       >
                         {formatAccountTypeName(entry.name)}:{" "}
-                        {isMasked
+                        {totalOptions?.viewType === "percentage"
+                          ? `${value.toFixed(1)}%` // Never mask percentages
+                          : isMasked
                           ? "•••"
-                          : totalOptions?.viewType === "percentage"
-                          ? `${value.toFixed(1)}%`
                           : formatCurrencyAmount(value, chartCurrency)}
                         {totalOptions?.viewType === "absolute" && (
                           <span className="text-muted-foreground ml-1">
@@ -463,10 +463,10 @@ export function ChartDisplay({
                 />
                 <YAxis
                   tickFormatter={(value) =>
-                    isMasked
+                    isTotalPercentage
+                      ? `${value.toFixed(0)}%` // Never mask percentages
+                      : isMasked
                       ? "•••"
-                      : isTotalPercentage
-                      ? `${value.toFixed(0)}%`
                       : formatCurrencyAmount(value / 1000, chartCurrency, {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
@@ -1702,10 +1702,10 @@ export function ChartDisplay({
                         style={{ color: entry.color }}
                       >
                         {formatAccountTypeName(entry.name)}:{" "}
-                        {isMasked
+                        {projectionOptions?.viewType === "percentage"
+                          ? `${value.toFixed(1)}%` // Never mask percentages
+                          : isMasked
                           ? "•••"
-                          : projectionOptions?.viewType === "percentage"
-                          ? `${value.toFixed(1)}%`
                           : formatCurrencyAmount(value, chartCurrency)}
                         {projectionOptions?.viewType === "absolute" && (
                           <span className="text-muted-foreground ml-1">
@@ -1795,10 +1795,10 @@ export function ChartDisplay({
                 />
                 <YAxis
                   tickFormatter={(value) =>
-                    isMasked
+                    isPercentage
+                      ? `${value.toFixed(0)}%` // Never mask percentages
+                      : isMasked
                       ? "•••"
-                      : isPercentage
-                      ? `${value.toFixed(0)}%`
                       : formatCurrencyAmount(value / 1000, chartCurrency, {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
