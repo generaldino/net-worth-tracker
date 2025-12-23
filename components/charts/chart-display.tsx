@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import {
@@ -73,6 +73,7 @@ interface ChartDisplayProps {
     viewType?: "absolute" | "percentage";
     selectedScenario?: string | null;
   };
+  headerControls?: React.ReactNode;
 }
 
 export function ChartDisplay({
@@ -87,6 +88,7 @@ export function ChartDisplay({
   allocationOptions = { viewType: "account-type", selectedMonth: undefined },
   totalOptions = { viewType: "absolute" },
   projectionOptions = { viewType: "absolute", selectedScenario: null },
+  headerControls,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
@@ -1641,12 +1643,6 @@ export function ChartDisplay({
 
         return (
           <div className="space-y-4">
-            <div className="text-center text-sm text-muted-foreground">
-              {allocationOptions.viewType === "category"
-                ? "Category"
-                : "Account Type"}{" "}
-              Allocation as of {selectedMonthData.month}
-            </div>
             <ChartContainer
               config={allocationData.reduce(
                 (config, item) => ({
@@ -1704,12 +1700,6 @@ export function ChartDisplay({
                 </PieChart>
               </ResponsiveContainer>
             </ChartContainer>
-            <div className="text-center text-xs text-muted-foreground">
-              Total:{" "}
-              {isMasked
-                ? "••••••"
-                : formatCurrencyAmount(totalAllocation, chartCurrency)}
-            </div>
           </div>
         );
 
@@ -2124,6 +2114,7 @@ export function ChartDisplay({
         chartCurrency={chartCurrency}
         totalOptions={totalOptions}
         projectionOptions={projectionOptions}
+        headerControls={headerControls}
       />
 
       {/* Chart Container with touch support */}

@@ -279,25 +279,45 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
         </div>
       </div>
       <div className="pt-0">
-        {/* Chart-specific options */}
-        {(chartType === "total" || chartType === "allocation" || chartType === "projection") && (
-          <div className="mb-4 p-2 sm:p-3 bg-muted/30 rounded-lg border flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-start sm:items-center text-xs sm:text-sm">
-            {chartType === "total" && (
-              <label className="flex items-center gap-2 w-full sm:w-auto">
+        <ChartDisplay
+          chartType={chartType}
+          chartData={chartData}
+          clickedData={clickedData}
+          setClickedData={setClickedData}
+          isLoading={isLoading}
+          timePeriod={timePeriod}
+          onTimePeriodChange={setTimePeriod}
+          allocationOptions={
+            chartType === "allocation"
+              ? { viewType: allocationViewType, selectedMonth: allocationSelectedMonth }
+              : undefined
+          }
+          totalOptions={
+            chartType === "total"
+              ? { viewType: totalViewType }
+              : undefined
+          }
+          projectionOptions={
+            chartType === "projection"
+              ? { viewType: projectionViewType, selectedScenario: selectedProjectionScenario }
+              : undefined
+          }
+          headerControls={
+            chartType === "total" ? (
+              <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                 <span className="whitespace-nowrap">View:</span>
                 <select
                   value={totalViewType}
                   onChange={(e) => setTotalViewType(e.target.value as "absolute" | "percentage")}
-                  className="px-2 py-1 rounded border bg-background flex-1 sm:flex-initial"
+                  className="px-2 py-1 rounded border bg-background min-w-[150px]"
                 >
                   <option value="absolute">Absolute Values</option>
                   <option value="percentage">Percentage Composition</option>
                 </select>
               </label>
-            )}
-            {chartType === "projection" && (
+            ) : chartType === "projection" ? (
               <>
-                <label className="flex items-center gap-2 w-full sm:w-auto">
+                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">Scenario:</span>
                   <select
                     value={selectedProjectionScenario || ""}
@@ -306,12 +326,10 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                       setSelectedProjectionScenario(scenarioId);
                       
                       if (scenarioId) {
-                        // Find the scenario and trigger calculation
                         const scenario = scenarios.find((s) => s.id === scenarioId);
                         if (scenario) {
                           setIsLoading(true);
                           try {
-                            // Get default savings allocation if not present
                             const assetAccountTypes: AccountType[] = [
                               "Current",
                               "Savings",
@@ -359,7 +377,7 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                         setSelectedScenarioId(null);
                       }
                     }}
-                    className="px-2 py-1 rounded border bg-background min-w-[200px] flex-1 sm:flex-initial"
+                    className="px-2 py-1 rounded border bg-background min-w-[180px]"
                   >
                     <option value="">Select a scenario...</option>
                     {scenarios.map((scenario) => (
@@ -369,12 +387,12 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                     ))}
                   </select>
                 </label>
-                <label className="flex items-center gap-2 w-full sm:w-auto">
+                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">View:</span>
                   <select
                     value={projectionViewType}
                     onChange={(e) => setProjectionViewType(e.target.value as "absolute" | "percentage")}
-                    className="px-2 py-1 rounded border bg-background flex-1 sm:flex-initial"
+                    className="px-2 py-1 rounded border bg-background min-w-[150px]"
                   >
                     <option value="absolute">Absolute Values</option>
                     <option value="percentage">Percentage Composition</option>
@@ -383,31 +401,30 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                 <button
                   type="button"
                   onClick={() => setShowProjectionForm(!showProjectionForm)}
-                  className="px-3 py-1 rounded border bg-background hover:bg-muted text-xs sm:text-sm w-full sm:w-auto"
+                  className="flex-shrink-0 px-3 py-1 rounded border bg-background hover:bg-muted text-xs sm:text-sm whitespace-nowrap"
                 >
                   {showProjectionForm ? "Hide" : "Show"} Setup Form
                 </button>
               </>
-            )}
-            {chartType === "allocation" && (
+            ) : chartType === "allocation" ? (
               <>
-                <label className="flex items-center gap-2 w-full sm:w-auto">
+                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">View by:</span>
                   <select
                     value={allocationViewType}
                     onChange={(e) => setAllocationViewType(e.target.value as "account-type" | "category")}
-                    className="px-2 py-1 rounded border bg-background flex-1 sm:flex-initial"
+                    className="px-2 py-1 rounded border bg-background min-w-[140px]"
                   >
                     <option value="account-type">Account Type</option>
                     <option value="category">Category</option>
                   </select>
                 </label>
-                <label className="flex items-center gap-2 w-full sm:w-auto">
+                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">Month:</span>
                   <select
                     value={allocationSelectedMonth || ""}
                     onChange={(e) => setAllocationSelectedMonth(e.target.value || undefined)}
-                    className="px-2 py-1 rounded border bg-background min-w-[120px] flex-1 sm:flex-initial"
+                    className="px-2 py-1 rounded border bg-background min-w-[120px]"
                   >
                     <option value="">Latest</option>
                     {(allocationViewType === "category" ? chartData.categoryData : chartData.accountTypeData).map((item) => (
@@ -418,31 +435,7 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                   </select>
                 </label>
               </>
-            )}
-          </div>
-        )}
-        <ChartDisplay
-          chartType={chartType}
-          chartData={chartData}
-          clickedData={clickedData}
-          setClickedData={setClickedData}
-          isLoading={isLoading}
-          timePeriod={timePeriod}
-          onTimePeriodChange={setTimePeriod}
-          allocationOptions={
-            chartType === "allocation"
-              ? { viewType: allocationViewType, selectedMonth: allocationSelectedMonth }
-              : undefined
-          }
-          totalOptions={
-            chartType === "total"
-              ? { viewType: totalViewType }
-              : undefined
-          }
-          projectionOptions={
-            chartType === "projection"
-              ? { viewType: projectionViewType, selectedScenario: selectedProjectionScenario }
-              : undefined
+            ) : null
           }
         />
         

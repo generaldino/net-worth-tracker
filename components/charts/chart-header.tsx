@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { ChartType } from "@/components/charts/types";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
@@ -23,6 +24,7 @@ interface ChartHeaderProps {
     viewType?: "absolute" | "percentage";
     selectedScenario?: string | null;
   };
+  headerControls?: React.ReactNode;
 }
 
 export interface HoveredData {
@@ -39,6 +41,7 @@ export function ChartHeader({
   chartCurrency,
   totalOptions,
   projectionOptions,
+  headerControls,
 }: ChartHeaderProps) {
   const { isMasked } = useMasking();
   const displayData = hoveredData || latestData;
@@ -511,6 +514,18 @@ export function ChartHeader({
     <div className="mb-4 w-full">
       {/* Primary metrics */}
       <div className="w-full">{renderMetrics()}</div>
+      
+      {/* Header Controls - inline and scrollable */}
+      {headerControls && (
+        <div 
+          className="w-full mt-3 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
+            {headerControls}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
