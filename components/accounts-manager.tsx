@@ -82,7 +82,7 @@ export async function AccountsManager() {
         netWorthBreakdown={netWorthBreakdown}
         percentageIncrease={percentageIncrease}
       />
-      <div className="min-h-screen bg-background overflow-x-hidden">
+      <div className="min-h-screen bg-background overflow-x-hidden pt-16">
         <div className="container mx-auto py-4 px-4 sm:px-6 max-w-7xl">
           <div className="space-y-4 sm:space-y-6">
           <ChartSection />

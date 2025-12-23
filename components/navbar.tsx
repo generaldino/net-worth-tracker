@@ -12,7 +12,7 @@ export function Navbar() {
   const { netWorth, netWorthBreakdown, percentageIncrease } = useNetWorth();
 
   return (
-    <nav className="border-b bg-background sticky top-0 z-50">
+    <nav className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between gap-4 py-3 min-h-[56px]">
           <div className="flex items-center gap-4 flex-1 min-w-0">
