@@ -18,7 +18,11 @@ import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ChartFilters } from "./controls/chart-filters";
 import { AccountTypeSelector } from "./controls/account-type-selector";
 import { CategorySelector } from "./controls/category-selector";
-import { accountTypes } from "@/lib/types";
+import { ProjectionCalculator } from "@/components/projections/projection-calculator";
+import {
+  Collapsible,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
 
 const accountCategories = ["Cash", "Investments"];
 
@@ -38,9 +42,10 @@ interface ChartControlsProps {
   initialData: ChartData;
   owners: string[];
   scenarios: ProjectionScenario[];
+  accountTypes: string[];
 }
 
-export function ChartControls({ initialData, owners, scenarios }: ChartControlsProps) {
+export function ChartControls({ initialData, owners, scenarios, accountTypes }: ChartControlsProps) {
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
   const { fetchRates } = useExchangeRates();
@@ -69,6 +74,7 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
   // Projection chart options
   const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<string | null>(null);
   const [projectionViewType, setProjectionViewType] = useState<"absolute" | "percentage">("absolute");
+  const [showProjectionForm, setShowProjectionForm] = useState(false); // Default to hidden
 
   // Extract all unique months from chart data for rate fetching
   // Convert from "YYYY-MM-DD" to "YYYY-MM" format
@@ -148,7 +154,7 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
   );
   const accountTypesString = useMemo(
     () => [...accountTypes].sort().join(","),
-    []
+    [accountTypes]
   );
   const selectedTypesString = useMemo(
     () => [...selectedTypes].sort().join(","),
@@ -337,11 +343,6 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
                     ))}
                   </select>
                 </label>
-                {scenarios.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No saved scenarios. Create one in the Wealth Projection Setup section below.
-                  </p>
-                )}
                 <label className="flex items-center gap-2">
                   <span>View:</span>
                   <select
@@ -353,6 +354,13 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
                     <option value="percentage">Percentage Composition</option>
                   </select>
                 </label>
+                <button
+                  type="button"
+                  onClick={() => setShowProjectionForm(!showProjectionForm)}
+                  className="px-3 py-1 rounded border bg-background hover:bg-muted text-sm"
+                >
+                  {showProjectionForm ? "Hide" : "Show"} Setup Form
+                </button>
               </>
             )}
             {chartType === "by-account" && (
@@ -424,6 +432,20 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
               : undefined
           }
         />
+        
+        {/* Projection Setup Form - only show when projection chart type is selected */}
+        {chartType === "projection" && (
+          <Collapsible open={showProjectionForm} onOpenChange={setShowProjectionForm}>
+            <CollapsibleContent className="mt-4">
+              <div className="border-t pt-4">
+                <ProjectionCalculator
+                  initialScenarios={scenarios}
+                  accountTypes={accountTypes}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        )}
       </CardContent>
     </Card>
   );

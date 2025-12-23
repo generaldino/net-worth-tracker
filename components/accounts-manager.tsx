@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/charts/chart-section";
-import { ProjectionSection } from "@/components/projections/projection-section";
 import {
   calculateNetWorth,
   getAccounts,
@@ -11,7 +10,6 @@ import {
   getAccountHistory,
   getNetWorthBreakdown,
   getFirstEntryNetWorth,
-  getProjectionScenarios,
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
@@ -60,20 +58,7 @@ export async function AccountsManager() {
     accountData.map(({ accountId, history }) => [accountId, history])
   );
 
-  // Fetch projection scenarios and prepare account types
-  const scenarios = await getProjectionScenarios();
-  const accountTypes = Array.from(
-    new Set(
-      accounts
-        .filter(
-          (account) =>
-            !account.isClosed &&
-            account.type !== "Credit_Card" &&
-            account.type !== "Loan"
-        )
-        .map((account) => account.type)
-    )
-  );
+  // Note: Projection scenarios and account types are now handled in ChartSection
 
   return (
     <>
@@ -85,13 +70,9 @@ export async function AccountsManager() {
       <div className="min-h-screen bg-background overflow-x-hidden pt-16">
         <div className="container mx-auto py-4 px-4 sm:px-6 max-w-7xl">
           <div className="space-y-4 sm:space-y-6">
-          <ChartSection />
-          <ProjectionSection
-            initialScenarios={scenarios}
-            accountTypes={accountTypes}
-          />
+            <ChartSection />
 
-          <Card>
+            <Card>
             <CardHeader className="pb-3 sm:pb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <CardTitle className="text-lg sm:text-xl">
