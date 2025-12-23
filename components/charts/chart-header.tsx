@@ -6,6 +6,11 @@ import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 import { useMemo } from "react";
 
+// Helper to format account type names (matches chart-display.tsx)
+function formatAccountTypeName(type: string): string {
+  return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+}
+
 interface ChartHeaderProps {
   chartType: ChartType;
   hoveredData: HoveredData | null;
@@ -13,6 +18,10 @@ interface ChartHeaderProps {
   chartCurrency: Currency;
   totalOptions?: {
     viewType?: "absolute" | "percentage";
+  };
+  projectionOptions?: {
+    viewType?: "absolute" | "percentage";
+    selectedScenario?: string | null;
   };
 }
 
@@ -29,6 +38,7 @@ export function ChartHeader({
   latestData,
   chartCurrency,
   totalOptions,
+  projectionOptions,
 }: ChartHeaderProps) {
   const { isMasked } = useMasking();
   const displayData = hoveredData || latestData;
@@ -58,23 +68,93 @@ export function ChartHeader({
     return null;
   }, [latestData]);
 
+  // Extract account types for total and projection charts
+  const accountTypesForTotal = useMemo(() => {
+    if (chartType !== "total" || !displayData.metrics) return [];
+    
+    return Object.entries(displayData.metrics)
+      .filter(([key]) => key !== "Net Worth")
+      .map(([key, value]) => ({
+        name: key,
+        value: value as number,
+        absValue: Math.abs(value as number),
+      }))
+      .filter((item) => item.absValue > 0) // Only show non-zero values
+      .sort((a, b) => b.absValue - a.absValue) // Sort by absolute value descending
+      .slice(0, 8); // Show top 8 account types
+  }, [chartType, displayData.metrics]);
+
+  const accountTypesForProjection = useMemo(() => {
+    if (chartType !== "projection" || !displayData.metrics) return [];
+    
+    return Object.entries(displayData.metrics)
+      .filter(([key]) => key !== "Net Worth")
+      .map(([key, value]) => ({
+        name: key,
+        value: value as number,
+        absValue: Math.abs(value as number),
+      }))
+      .filter((item) => item.absValue > 0) // Only show non-zero values
+      .sort((a, b) => b.absValue - a.absValue) // Sort by absolute value descending
+      .slice(0, 8); // Show top 8 account types
+  }, [chartType, displayData.metrics]);
+
   const renderMetrics = () => {
     if (!displayData.metrics) return null;
 
     switch (chartType) {
       case "total": {
         const netWorth = displayData.primaryValue || (displayData.metrics["Net Worth"] as number);
+        const isPercentage = totalOptions?.viewType === "percentage";
+
         return (
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+          <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">NET WORTH</div>
               <div className="text-2xl sm:text-3xl font-bold">{formatValue(netWorth)}</div>
             </div>
-            {/* Total Return and Rate of Return would need to be calculated from first entry */}
-            {/* For now, we'll show account type breakdown summary if available */}
-            {totalOptions?.viewType === "percentage" && (
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                Showing percentage composition
+            
+            {/* Account Type Breakdown - Horizontal Scrollable */}
+            {accountTypesForTotal.length > 0 && (
+              <div className="w-full">
+                <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
+                <div 
+                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  <div className="flex gap-3 pb-1" style={{ width: 'max-content' }}>
+                    {accountTypesForTotal.map((item, index) => {
+                      // When in percentage view, item.value is already a percentage (0-100)
+                      // When in absolute view, calculate percentage from absolute value
+                      const percentage = isPercentage
+                        ? item.absValue.toFixed(1)
+                        : netWorth !== 0 
+                          ? ((item.value / Math.abs(netWorth)) * 100).toFixed(1)
+                          : "0.0";
+                      
+                      return (
+                        <div
+                          key={item.name}
+                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] touch-none"
+                        >
+                          <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                            {formatAccountTypeName(item.name)}
+                          </div>
+                          <div className="text-sm sm:text-base font-semibold">
+                            {isPercentage
+                              ? `${percentage}%`
+                              : formatValue(item.value)}
+                          </div>
+                          {!isPercentage && (
+                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                              {percentage}%
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -247,10 +327,58 @@ export function ChartHeader({
 
       case "projection": {
         const netWorth = displayData.primaryValue || (displayData.metrics["Net Worth"] as number);
+        const isPercentage = projectionOptions?.viewType === "percentage";
+
         return (
-          <div>
-            <div className="text-xs sm:text-sm text-muted-foreground">PROJECTED NET WORTH</div>
-            <div className="text-2xl sm:text-3xl font-bold">{formatValue(netWorth)}</div>
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">PROJECTED NET WORTH</div>
+              <div className="text-2xl sm:text-3xl font-bold">{formatValue(netWorth)}</div>
+            </div>
+            
+            {/* Account Type Breakdown - Horizontal Scrollable */}
+            {accountTypesForProjection.length > 0 && (
+              <div className="w-full">
+                <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
+                <div 
+                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  <div className="flex gap-3 pb-1" style={{ width: 'max-content' }}>
+                    {accountTypesForProjection.map((item, index) => {
+                      // When in percentage view, item.value is already a percentage (0-100)
+                      // When in absolute view, calculate percentage from absolute value
+                      const percentage = isPercentage
+                        ? item.absValue.toFixed(1)
+                        : netWorth !== 0 
+                          ? ((item.value / Math.abs(netWorth)) * 100).toFixed(1)
+                          : "0.0";
+                      
+                      return (
+                        <div
+                          key={item.name}
+                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] touch-none"
+                        >
+                          <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                            {formatAccountTypeName(item.name)}
+                          </div>
+                          <div className="text-sm sm:text-base font-semibold">
+                            {isPercentage
+                              ? `${percentage}%`
+                              : formatValue(item.value)}
+                          </div>
+                          {!isPercentage && (
+                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                              {percentage}%
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       }
@@ -261,9 +389,9 @@ export function ChartHeader({
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 w-full">
       {/* Primary metrics */}
-      <div>{renderMetrics()}</div>
+      <div className="w-full">{renderMetrics()}</div>
     </div>
   );
 }

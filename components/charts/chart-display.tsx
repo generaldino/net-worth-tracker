@@ -397,13 +397,22 @@ export function ChartDisplay({
           "Net Worth": latest.netWorth,
         };
         if (accountTypeData) {
+          const netWorth = latest.netWorth;
+          const absNetWorth = Math.abs(netWorth);
           Object.keys(accountTypeData).forEach((key) => {
             if (
               key !== "month" &&
               key !== "monthKey" &&
               typeof accountTypeData[key] === "number"
             ) {
-              metrics[key] = accountTypeData[key] as number;
+              const balance = accountTypeData[key] as number;
+              // If in percentage view, convert to percentage; otherwise use absolute value
+              if (totalOptions?.viewType === "percentage") {
+                metrics[key] =
+                  absNetWorth > 0 ? (balance / absNetWorth) * 100 : 0;
+              } else {
+                metrics[key] = balance;
+              }
             }
           });
         }
@@ -2106,6 +2115,7 @@ export function ChartDisplay({
         latestData={latestData}
         chartCurrency={chartCurrency}
         totalOptions={totalOptions}
+        projectionOptions={projectionOptions}
       />
 
       {/* Chart Container with touch support */}
