@@ -8,6 +8,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { MaskingProviderWrapper } from "@/components/masking-provider-wrapper";
 import { ExchangeRatesProvider } from "@/contexts/exchange-rates-context";
 import { DisplayCurrencyProvider } from "@/contexts/display-currency-context";
+import { ProjectionProvider } from "@/contexts/projection-context";
+import { NetWorthProvider } from "@/contexts/net-worth-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -56,8 +58,12 @@ export default async function RootLayout({
         <MaskingProviderWrapper>
           <ExchangeRatesProvider>
             <DisplayCurrencyProvider>
-              <Navbar />
-              {children}
+              <ProjectionProvider>
+                <NetWorthProvider>
+                  <Navbar />
+                  {children}
+                </NetWorthProvider>
+              </ProjectionProvider>
             </DisplayCurrencyProvider>
           </ExchangeRatesProvider>
         </MaskingProviderWrapper>

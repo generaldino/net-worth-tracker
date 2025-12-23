@@ -1,11 +1,11 @@
 import { ChartControls } from "@/components/charts/chart-controls";
-import { getChartData } from "@/lib/actions";
-import { getAccounts } from "@/lib/actions";
+import { getChartData, getAccounts, getProjectionScenarios } from "@/lib/actions";
 
 export async function ChartSection() {
-  const [initialData, accounts] = await Promise.all([
+  const [initialData, accounts, scenarios] = await Promise.all([
     getChartData("all"), // No currency conversion - done client-side
     getAccounts(),
+    getProjectionScenarios(),
   ]);
 
   // Get unique owners from accounts
@@ -13,7 +13,7 @@ export async function ChartSection() {
 
   return (
     <div className="space-y-4">
-      <ChartControls initialData={initialData} owners={owners} />
+      <ChartControls initialData={initialData} owners={owners} scenarios={scenarios} />
     </div>
   );
 }

@@ -27,6 +27,7 @@ import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
+import { useProjection } from "@/contexts/projection-context";
 
 interface PieTooltipPayload {
   name: string;
@@ -71,6 +72,7 @@ export function ChartDisplay({
   const { isMasked } = useMasking();
   const { getChartCurrency } = useDisplayCurrency();
   const chartCurrency = getChartCurrency() as Currency;
+  const { projectionData: projectionDataFromContext } = useProjection();
 
   // Calculate responsive bar size based on data length and screen size
   const getBarSize = (dataLength: number) => {
@@ -1465,6 +1467,109 @@ export function ChartDisplay({
                   style={{ cursor: "pointer" }}
                 />
               </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        );
+
+      case "projection":
+        if (!projectionDataFromContext || !projectionDataFromContext.projectionData || projectionDataFromContext.projectionData.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center">
+              <p className="text-muted-foreground mb-2">No projection data available</p>
+              <p className="text-sm text-muted-foreground">
+                Calculate a projection in the Wealth Projection Setup section below, or select a saved scenario.
+              </p>
+            </div>
+          );
+        }
+
+        // Format data for chart (same as ProjectionChart component)
+        const projectionChartData = projectionDataFromContext.projectionData.map((point) => ({
+          month: new Date(point.month + "-01").toLocaleDateString("en-GB", {
+            month: "short",
+            year: "numeric",
+          }),
+          monthKey: point.month,
+          "Net Worth": point.netWorth,
+        }));
+
+        interface ProjectionTooltipProps {
+          active?: boolean;
+          payload?: Array<{
+            name: string;
+            value: number;
+            color: string;
+            payload: {
+              month: string;
+            };
+          }>;
+        }
+
+        const ProjectionTooltip = ({ active, payload }: ProjectionTooltipProps) => {
+          if (active && payload && payload.length) {
+            return (
+              <div className="bg-background border rounded-lg shadow-lg p-3">
+                <p className="font-medium mb-2">{payload[0].payload.month}</p>
+                {payload.map((entry, index: number) => (
+                  <p key={index} className="text-sm" style={{ color: entry.color }}>
+                    {entry.name}:{" "}
+                    {isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(entry.value, chartCurrency)}
+                  </p>
+                ))}
+              </div>
+            );
+          }
+          return null;
+        };
+
+        return (
+          <ChartContainer
+            config={{
+              "Net Worth": {
+                label: "Net Worth",
+                color: "hsl(var(--chart-1))",
+              },
+            }}
+            className="h-[300px] sm:h-[400px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={projectionChartData} margin={margins}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  fontSize={fontSize}
+                  angle={-45}
+                  textAnchor="end"
+                  height={margins.bottom + 10}
+                  interval={Math.floor(projectionChartData.length / 12)}
+                  tick={{ fontSize }}
+                />
+                <YAxis
+                  tickFormatter={(value) =>
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }) + "K"
+                  }
+                  fontSize={fontSize}
+                  width={width && width < 640 ? 50 : 60}
+                  tick={{ fontSize }}
+                />
+                <ChartTooltip content={<ProjectionTooltip />} />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="Net Worth"
+                  stroke={COLORS[0]}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: COLORS[0] }}
+                  activeDot={{ r: 5, fill: COLORS[0] }}
+                />
+              </LineChart>
             </ResponsiveContainer>
           </ChartContainer>
         );

@@ -6,7 +6,8 @@ export type ChartType =
   | "savings-rate"
   | "monthly-growth-rate"
   | "allocation"
-  | "waterfall";
+  | "waterfall"
+  | "projection";
 
 export interface Account {
   id: string;

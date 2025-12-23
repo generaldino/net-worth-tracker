@@ -112,13 +112,13 @@ export function NetWorthDisplay({
     : null;
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 sm:gap-3">
-      <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-600">
+    <div className="flex items-baseline gap-2 sm:gap-3">
+      <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">
         {formattedAmount}
       </div>
       {formattedPercentage && percentageIncrease !== null && (
         <div
-          className={`text-lg sm:text-xl lg:text-2xl font-semibold ${
+          className={`text-sm sm:text-base lg:text-lg font-semibold ${
             percentageIncrease >= 0 ? "text-green-600" : "text-red-600"
           }`}
         >

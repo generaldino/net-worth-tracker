@@ -11,11 +11,11 @@ import {
   getAccountHistory,
   getNetWorthBreakdown,
   getFirstEntryNetWorth,
+  getProjectionScenarios,
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
-import { MaskToggleButton } from "@/components/mask-toggle-button";
-import { DashboardHeader } from "@/components/dashboard-header";
+import { NetWorthDataSetter } from "@/components/net-worth-data-setter";
 
 export async function AccountsManager() {
   const [netWorth, netWorthBreakdown, accounts, monthlyData, firstEntryData] =
@@ -60,18 +60,36 @@ export async function AccountsManager() {
     accountData.map(({ accountId, history }) => [accountId, history])
   );
 
-  return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <div className="container mx-auto py-4 px-4 sm:px-6 max-w-7xl">
-        <DashboardHeader
-          netWorth={netWorth}
-          netWorthBreakdown={netWorthBreakdown}
-          percentageIncrease={percentageIncrease}
-        />
+  // Fetch projection scenarios and prepare account types
+  const scenarios = await getProjectionScenarios();
+  const accountTypes = Array.from(
+    new Set(
+      accounts
+        .filter(
+          (account) =>
+            !account.isClosed &&
+            account.type !== "Credit_Card" &&
+            account.type !== "Loan"
+        )
+        .map((account) => account.type)
+    )
+  );
 
-        <div className="space-y-4 sm:space-y-6">
+  return (
+    <>
+      <NetWorthDataSetter
+        netWorth={netWorth}
+        netWorthBreakdown={netWorthBreakdown}
+        percentageIncrease={percentageIncrease}
+      />
+      <div className="min-h-screen bg-background overflow-x-hidden">
+        <div className="container mx-auto py-4 px-4 sm:px-6 max-w-7xl">
+          <div className="space-y-4 sm:space-y-6">
           <ChartSection />
-          <ProjectionSection />
+          <ProjectionSection
+            initialScenarios={scenarios}
+            accountTypes={accountTypes}
+          />
 
           <Card>
             <CardHeader className="pb-3 sm:pb-6">
@@ -80,7 +98,6 @@ export async function AccountsManager() {
                   Your Accounts
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <MaskToggleButton />
                   <ExportCSVButton />
                   <AddAccountButton />
                 </div>
@@ -122,8 +139,9 @@ export async function AccountsManager() {
               />
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

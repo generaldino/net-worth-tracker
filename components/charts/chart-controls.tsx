@@ -10,6 +10,9 @@ import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useChartCurrencyConverter } from "@/lib/chart-currency-converter";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import type { Currency } from "@/lib/fx-rates";
+import { useProjection } from "@/contexts/projection-context";
+import { calculateProjection } from "@/lib/actions";
+import type { AccountType } from "@/lib/types";
 import { AccountSelector } from "./controls/account-selector";
 import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ChartFilters } from "./controls/chart-filters";
@@ -19,15 +22,29 @@ import { accountTypes } from "@/lib/types";
 
 const accountCategories = ["Cash", "Investments"];
 
+interface ProjectionScenario {
+  id: string;
+  name: string;
+  monthlyIncome: number;
+  savingsRate: number;
+  timePeriodMonths: number;
+  growthRates: Record<string, number>;
+  savingsAllocation?: Record<string, number>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface ChartControlsProps {
   initialData: ChartData;
   owners: string[];
+  scenarios: ProjectionScenario[];
 }
 
-export function ChartControls({ initialData, owners }: ChartControlsProps) {
+export function ChartControls({ initialData, owners, scenarios }: ChartControlsProps) {
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
   const { fetchRates } = useExchangeRates();
+  const { setProjectionData, setSelectedScenarioId } = useProjection();
   const [chartType, setChartType] = useState<ChartType>("total");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
@@ -48,6 +65,9 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   // Allocation chart options
   const [allocationViewType, setAllocationViewType] = useState<"account-type" | "category">("account-type");
   const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<string | undefined>(undefined);
+  
+  // Projection chart options
+  const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<string | null>(null);
 
   // Extract all unique months from chart data for rate fetching
   // Convert from "YYYY-MM-DD" to "YYYY-MM" format
@@ -240,8 +260,89 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
       </CardHeader>
       <CardContent className="pt-0">
         {/* Chart-specific options */}
-        {(chartType === "by-account" || chartType === "allocation") && (
+        {(chartType === "by-account" || chartType === "allocation" || chartType === "projection") && (
           <div className="mb-4 p-3 bg-muted/30 rounded-lg border flex flex-wrap gap-4 items-center text-sm">
+            {chartType === "projection" && (
+              <>
+                <label className="flex items-center gap-2">
+                  <span>Scenario:</span>
+                  <select
+                    value={selectedProjectionScenario || ""}
+                    onChange={async (e) => {
+                      const scenarioId = e.target.value || null;
+                      setSelectedProjectionScenario(scenarioId);
+                      
+                      if (scenarioId) {
+                        // Find the scenario and trigger calculation
+                        const scenario = scenarios.find((s) => s.id === scenarioId);
+                        if (scenario) {
+                          setIsLoading(true);
+                          try {
+                            // Get default savings allocation if not present
+                            const assetAccountTypes: AccountType[] = [
+                              "Current",
+                              "Savings",
+                              "Investment",
+                              "Stock",
+                              "Crypto",
+                              "Pension",
+                              "Commodity",
+                              "Stock_options",
+                            ];
+                            
+                            const savingsAllocation = scenario.savingsAllocation || (() => {
+                              const defaults: Record<string, number> = {};
+                              const types = Object.keys(scenario.growthRates).filter(
+                                (type) => assetAccountTypes.includes(type as AccountType)
+                              ) as AccountType[];
+                              if (types.length > 0) {
+                                const basePercent = Math.floor(100 / types.length);
+                                const remainder = 100 - basePercent * types.length;
+                                types.forEach((type, index) => {
+                                  defaults[type] = basePercent + (index < remainder ? 1 : 0);
+                                });
+                              }
+                              return defaults as Record<AccountType, number>;
+                            })();
+
+                            const result = await calculateProjection({
+                              monthlyIncome: scenario.monthlyIncome,
+                              savingsRate: scenario.savingsRate,
+                              timePeriodMonths: scenario.timePeriodMonths,
+                              growthRates: scenario.growthRates as Record<AccountType, number>,
+                              savingsAllocation,
+                            });
+                            
+                            setProjectionData(result);
+                            setSelectedScenarioId(scenarioId);
+                          } catch (error) {
+                            console.error("Error calculating projection:", error);
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }
+                      } else {
+                        setProjectionData(null);
+                        setSelectedScenarioId(null);
+                      }
+                    }}
+                    className="px-2 py-1 rounded border bg-background min-w-[200px]"
+                  >
+                    <option value="">Select a scenario...</option>
+                    {scenarios.map((scenario) => (
+                      <option key={scenario.id} value={scenario.id}>
+                        {scenario.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {scenarios.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    No saved scenarios. Create one in the Wealth Projection Setup section below.
+                  </p>
+                )}
+              </>
+            )}
             {chartType === "by-account" && (
               <label className="flex items-center gap-2">
                 <span>Show top</span>

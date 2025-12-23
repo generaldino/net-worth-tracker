@@ -13,15 +13,14 @@ import {
   updateProjectionScenario,
   deleteProjectionScenario,
 } from "@/lib/actions";
-import { ProjectionChart } from "./projection-chart";
 import { ProjectionScenarioManager } from "./projection-scenario-manager";
 import type { AccountType } from "@/lib/types";
-import type { Currency } from "@/lib/fx-rates";
 import { useRouter } from "next/navigation";
 import { useMasking } from "@/contexts/masking-context";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
+import { useProjection } from "@/contexts/projection-context";
 
-interface ProjectionScenario {
+export interface ProjectionScenario {
   id: string;
   name: string;
   monthlyIncome: number;
@@ -53,39 +52,25 @@ export function ProjectionCalculator({
   const router = useRouter();
   const { isMasked } = useMasking();
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
-  const [projectionData, setProjectionData] = useState<{
-    currentNetWorth: number;
-    finalNetWorth: number;
-    totalGrowth: number;
-    growthPercentage: number;
-    projectionData: Array<{
-      month: string;
-      monthIndex: number;
-      netWorth: number;
-      accountBalances: Array<{
-        accountId: string;
-        accountName: string;
-        accountType: AccountType;
-        balance: number;
-        currency: Currency;
-      }>;
-    }>;
-  } | null>(null);
+  const { projectionData, setProjectionData, setSelectedScenarioId } = useProjection();
   const [isCalculating, setIsCalculating] = useState(false);
   const [scenarios, setScenarios] = useState<ProjectionScenario[]>(initialScenarios);
   const lastCalculatedScenarioRef = useRef<string | null>(null);
 
-  // Asset account types (exclude Credit_Card and Loan)
-  const assetAccountTypes: AccountType[] = [
-    "Current",
-    "Savings",
-    "Investment",
-    "Stock",
-    "Crypto",
-    "Pension",
-    "Commodity",
-    "Stock_options",
-  ];
+  // Asset account types (exclude Credit_Card and Loan) - memoized to prevent re-renders
+  const assetAccountTypes = useMemo<AccountType[]>(
+    () => [
+      "Current",
+      "Savings",
+      "Investment",
+      "Stock",
+      "Crypto",
+      "Pension",
+      "Commodity",
+      "Stock_options",
+    ],
+    []
+  );
 
   // Filter available account types to only asset types (memoized to prevent re-renders)
   const availableAssetTypes = useMemo(
@@ -93,7 +78,7 @@ export function ProjectionCalculator({
       availableAccountTypes.filter((type) =>
         assetAccountTypes.includes(type as AccountType)
       ) as AccountType[],
-    [availableAccountTypes]
+    [availableAccountTypes, assetAccountTypes]
   );
 
   // Initialize growth rates for available account types
@@ -159,9 +144,10 @@ export function ProjectionCalculator({
     } else {
       // Clear projection data when no scenario is selected
       setProjectionData(null);
+      setSelectedScenarioId(null);
       lastCalculatedScenarioRef.current = null;
     }
-  }, [selectedScenario, scenarios, reset, getDefaultSavingsAllocation]);
+  }, [selectedScenario, scenarios, reset, getDefaultSavingsAllocation, setProjectionData, setSelectedScenarioId]);
 
   // Auto-calculate when scenario form data is loaded (separate effect to avoid infinite loop)
   useEffect(() => {
@@ -194,6 +180,7 @@ export function ProjectionCalculator({
                 savingsAllocation: formData.savingsAllocation,
               });
               setProjectionData(result);
+              setSelectedScenarioId(selectedScenario);
               lastCalculatedScenarioRef.current = selectedScenario;
             }
           } catch (error) {
@@ -217,7 +204,7 @@ export function ProjectionCalculator({
         return () => clearTimeout(timeoutId);
       }
     }
-  }, [selectedScenario, scenarios, getDefaultSavingsAllocation, availableAssetTypes]);
+  }, [selectedScenario, scenarios, getDefaultSavingsAllocation, availableAssetTypes, setProjectionData, setSelectedScenarioId]);
 
   const onSubmit = async (data: FormData) => {
     // Validate that savings allocation percentages sum to 100%
@@ -251,6 +238,7 @@ export function ProjectionCalculator({
       });
 
       setProjectionData(result);
+      setSelectedScenarioId(null);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to calculate projection";
@@ -545,7 +533,7 @@ export function ProjectionCalculator({
         <CardContent>
           {projectionData ? (
             <>
-              <div className="grid gap-4 md:grid-cols-4 mb-6">
+              <div className="grid gap-4 md:grid-cols-4">
                 <div>
                   <Label className="text-muted-foreground">Current Net Worth</Label>
                   <p className="text-2xl font-bold">
@@ -577,7 +565,9 @@ export function ProjectionCalculator({
                   </p>
                 </div>
               </div>
-              <ProjectionChart data={projectionData.projectionData} />
+              <p className="text-sm text-muted-foreground mt-4">
+                View the projection chart by selecting &quot;Projection&quot; in the Charts section above.
+              </p>
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -587,7 +577,7 @@ export function ProjectionCalculator({
                   : "Calculate a projection or select a saved scenario to view results"}
               </p>
               <p className="text-sm text-muted-foreground">
-                Enter your projection parameters above and click "Calculate Projection"
+                Enter your projection parameters above and click &quot;Calculate Projection&quot;
               </p>
             </div>
           )}
