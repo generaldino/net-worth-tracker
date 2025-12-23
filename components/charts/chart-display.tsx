@@ -771,6 +771,7 @@ export function ChartDisplay({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) =>
                     isTotalPercentage
                       ? `${value.toFixed(0)}%` // Never mask percentages
@@ -953,6 +954,7 @@ export function ChartDisplay({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) =>
                     isMasked
                       ? "•••"
@@ -1086,6 +1088,7 @@ export function ChartDisplay({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) => `${value.toFixed(1)}%`}
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
@@ -1204,6 +1207,7 @@ export function ChartDisplay({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) =>
                     isMasked
                       ? "•••"
@@ -1324,6 +1328,7 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) =>
                     isMasked
                       ? "•••"
@@ -1444,6 +1449,7 @@ export function ChartDisplay({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) => `${value.toFixed(1)}%`}
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
@@ -1773,6 +1779,7 @@ export function ChartDisplay({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) =>
                     isMasked
                       ? "•••"
@@ -2028,6 +2035,7 @@ export function ChartDisplay({
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
+                  hide={true}
                   tickFormatter={(value) =>
                     isPercentage
                       ? `${value.toFixed(0)}%` // Never mask percentages
