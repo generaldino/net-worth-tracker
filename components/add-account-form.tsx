@@ -8,7 +8,7 @@ import { AddAccountFormFields } from "@/components/add-account-form-fields";
 
 export function AddAccountForm() {
   return (
-    <DialogContent className="sm:max-w-[425px] mx-4 max-h-[90vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>Add New Account</DialogTitle>
         <DialogDescription>

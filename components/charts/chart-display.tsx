@@ -447,7 +447,7 @@ export function ChartDisplay({
         return (
           <ChartContainer
             config={totalChartConfig}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={totalChartData} margin={margins}>
@@ -455,10 +455,14 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={Math.floor(totalChartData.length / 12)}
+                  interval={
+                    width && width < 640
+                      ? Math.floor(totalChartData.length / 6)
+                      : Math.floor(totalChartData.length / 12)
+                  }
                   tick={{ fontSize }}
                 />
                 <YAxis
@@ -559,7 +563,7 @@ export function ChartDisplay({
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={assetsVsLiabilitiesData} margin={margins}>
@@ -623,10 +627,10 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={0}
+                  interval={width && width < 640 ? "preserveStartEnd" : 0}
                   tick={{ fontSize }}
                 />
                 <YAxis
@@ -732,7 +736,7 @@ export function ChartDisplay({
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={growthRateData} margin={margins}>
@@ -740,10 +744,10 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={0}
+                  interval={width && width < 640 ? "preserveStartEnd" : 0}
                   tick={{ fontSize }}
                 />
                 <YAxis
@@ -876,7 +880,7 @@ export function ChartDisplay({
               }),
               {}
             )}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -888,10 +892,10 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={0}
+                  interval={width && width < 640 ? "preserveStartEnd" : 0}
                   tick={{ fontSize }}
                 />
                 <YAxis
@@ -956,7 +960,7 @@ export function ChartDisplay({
               }),
               {}
             )}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData.sourceData} margin={margins}>
@@ -987,10 +991,10 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={0}
+                  interval={width && width < 640 ? "preserveStartEnd" : 0}
                   tick={{ fontSize }}
                 />
                 <YAxis
@@ -1065,7 +1069,7 @@ export function ChartDisplay({
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData.sourceData} margin={margins}>
@@ -1093,10 +1097,10 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={0}
+                  interval={width && width < 640 ? "preserveStartEnd" : 0}
                   tick={{ fontSize }}
                 />
                 <YAxis
@@ -1172,7 +1176,7 @@ export function ChartDisplay({
 
         if (!selectedMonthData) {
           return (
-            <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
+            <div className="h-[250px] sm:h-[350px] md:h-[400px] w-full flex items-center justify-center">
               <div className="text-muted-foreground">No data available</div>
             </div>
           );
@@ -1286,7 +1290,7 @@ export function ChartDisplay({
                 }),
                 {} as Record<string, { label: string; color: string }>
               )}
-              className="h-[300px] sm:h-[400px] w-full"
+              className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
             >
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -1399,7 +1403,7 @@ export function ChartDisplay({
                 color: "hsl(var(--chart-1))",
               },
             }}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={waterfallData} margin={margins}>
@@ -1407,10 +1411,10 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={0}
+                  interval={width && width < 640 ? "preserveStartEnd" : 0}
                   tick={{ fontSize }}
                 />
                 <YAxis
@@ -1779,7 +1783,7 @@ export function ChartDisplay({
         return (
           <ChartContainer
             config={projectionChartConfig}
-            className="h-[300px] sm:h-[400px] w-full"
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={projectionChartData} margin={margins}>
@@ -1787,10 +1791,14 @@ export function ChartDisplay({
                 <XAxis
                   dataKey="month"
                   fontSize={fontSize}
-                  angle={-45}
+                  angle={width && width < 640 ? -60 : -45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={Math.floor(projectionChartData.length / 12)}
+                  interval={
+                    width && width < 640
+                      ? Math.floor(projectionChartData.length / 6)
+                      : Math.floor(projectionChartData.length / 12)
+                  }
                   tick={{ fontSize }}
                 />
                 <YAxis

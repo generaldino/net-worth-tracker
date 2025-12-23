@@ -123,7 +123,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           Add Month
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] mx-4 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Month for {account.name}</DialogTitle>
           <DialogDescription>

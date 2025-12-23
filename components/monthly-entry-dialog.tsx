@@ -127,7 +127,7 @@ export function MonthlyEntryDialog({
           Add Monthly Entry
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] mx-4 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Monthly Account Values</DialogTitle>
           <DialogDescription>
