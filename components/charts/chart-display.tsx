@@ -57,6 +57,10 @@ interface ChartDisplayProps {
     viewType?: "account-type" | "category";
     selectedMonth?: string;
   };
+  projectionOptions?: {
+    viewType?: "absolute" | "percentage";
+    selectedScenario?: string | null;
+  };
 }
 
 export function ChartDisplay({
@@ -67,6 +71,7 @@ export function ChartDisplay({
   isLoading,
   byAccountOptions = { topN: undefined },
   allocationOptions = { viewType: "account-type", selectedMonth: undefined },
+  projectionOptions = { viewType: "absolute", selectedScenario: null },
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
@@ -1483,15 +1488,76 @@ export function ChartDisplay({
           );
         }
 
-        // Format data for chart (same as ProjectionChart component)
-        const projectionChartData = projectionDataFromContext.projectionData.map((point) => ({
-          month: new Date(point.month + "-01").toLocaleDateString("en-GB", {
+        // Group account balances by account type
+        const accountTypeMap = new Map<string, string>(); // accountType -> display name
+        const allAccountTypes = new Set<string>();
+        
+        projectionDataFromContext.projectionData.forEach((point) => {
+          point.accountBalances.forEach((acc) => {
+            allAccountTypes.add(acc.accountType);
+            if (!accountTypeMap.has(acc.accountType)) {
+              accountTypeMap.set(acc.accountType, acc.accountType);
+            }
+          });
+        });
+
+        const accountTypesArray = Array.from(allAccountTypes).sort();
+        
+        // Format account type names for display
+        const formatAccountTypeName = (type: string): string => {
+          return type
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (l) => l.toUpperCase());
+        };
+        
+        // Format data for chart with account type breakdown
+        const projectionChartData = projectionDataFromContext.projectionData.map((point) => {
+          const monthFormatted = new Date(point.month + "-01").toLocaleDateString("en-GB", {
             month: "short",
             year: "numeric",
-          }),
-          monthKey: point.month,
-          "Net Worth": point.netWorth,
-        }));
+          });
+          
+          const dataPoint: Record<string, string | number> = {
+            month: monthFormatted,
+            monthKey: point.month,
+            "Net Worth": point.netWorth,
+          };
+
+          // Sum balances by account type
+          const typeBalances = new Map<string, number>();
+          point.accountBalances.forEach((acc) => {
+            const current = typeBalances.get(acc.accountType) || 0;
+            typeBalances.set(acc.accountType, current + acc.balance);
+          });
+
+          // Add account type values
+          accountTypesArray.forEach((type) => {
+            const balance = typeBalances.get(type) || 0;
+            if (projectionOptions?.viewType === "percentage") {
+              // Calculate percentage of net worth
+              dataPoint[type] = point.netWorth > 0 ? (balance / point.netWorth) * 100 : 0;
+            } else {
+              dataPoint[type] = balance;
+            }
+          });
+
+          return dataPoint;
+        });
+
+        // Create chart config for account types
+        const chartConfig: Record<string, { label: string; color: string }> = {
+          "Net Worth": {
+            label: "Net Worth",
+            color: "hsl(var(--chart-1))",
+          },
+        };
+
+        accountTypesArray.forEach((type, index) => {
+          chartConfig[type] = {
+            label: formatAccountTypeName(type),
+            color: COLORS[index % COLORS.length],
+          };
+        });
 
         interface ProjectionTooltipProps {
           active?: boolean;
@@ -1499,43 +1565,59 @@ export function ChartDisplay({
             name: string;
             value: number;
             color: string;
-            payload: {
-              month: string;
-            };
+            payload: Record<string, string | number>;
           }>;
         }
 
         const ProjectionTooltip = ({ active, payload }: ProjectionTooltipProps) => {
           if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            const total = data["Net Worth"] as number;
             return (
               <div className="bg-background border rounded-lg shadow-lg p-3">
-                <p className="font-medium mb-2">{payload[0].payload.month}</p>
-                {payload.map((entry, index: number) => (
-                  <p key={index} className="text-sm" style={{ color: entry.color }}>
-                    {entry.name}:{" "}
-                    {isMasked
-                      ? "•••"
-                      : formatCurrencyAmount(entry.value, chartCurrency)}
-                  </p>
-                ))}
+                <p className="font-medium mb-2">{data.month}</p>
+                {payload
+                  .filter((entry) => entry.name !== "Net Worth")
+                  .sort((a, b) => (b.value as number) - (a.value as number))
+                  .map((entry, index) => {
+                    const value = entry.value as number;
+                    const percentage = projectionOptions?.viewType === "percentage"
+                      ? value.toFixed(1) + "%"
+                      : total > 0
+                      ? ((value / total) * 100).toFixed(1) + "%"
+                      : "0%";
+                    return (
+                      <p key={index} className="text-sm" style={{ color: entry.color }}>
+                        {formatAccountTypeName(entry.name)}:{" "}
+                        {isMasked
+                          ? "•••"
+                          : projectionOptions?.viewType === "percentage"
+                          ? `${value.toFixed(1)}%`
+                          : formatCurrencyAmount(value, chartCurrency)}
+                        {projectionOptions?.viewType === "absolute" && (
+                          <span className="text-muted-foreground ml-1">({percentage})</span>
+                        )}
+                      </p>
+                    );
+                  })}
+                <p className="text-sm font-semibold mt-2 pt-2 border-t">
+                  Total: {isMasked ? "•••" : formatCurrencyAmount(total, chartCurrency)}
+                </p>
               </div>
             );
           }
           return null;
         };
 
+        const isPercentage = projectionOptions?.viewType === "percentage";
+
         return (
           <ChartContainer
-            config={{
-              "Net Worth": {
-                label: "Net Worth",
-                color: "hsl(var(--chart-1))",
-              },
-            }}
+            config={chartConfig}
             className="h-[300px] sm:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={projectionChartData} margin={margins}>
+              <AreaChart data={projectionChartData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
@@ -1550,6 +1632,8 @@ export function ChartDisplay({
                   tickFormatter={(value) =>
                     isMasked
                       ? "•••"
+                      : isPercentage
+                      ? `${value.toFixed(0)}%`
                       : formatCurrencyAmount(value / 1000, chartCurrency, {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
@@ -1561,15 +1645,18 @@ export function ChartDisplay({
                 />
                 <ChartTooltip content={<ProjectionTooltip />} />
                 <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="Net Worth"
-                  stroke={COLORS[0]}
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: COLORS[0] }}
-                  activeDot={{ r: 5, fill: COLORS[0] }}
-                />
-              </LineChart>
+                {accountTypesArray.map((type, index) => (
+                  <Area
+                    key={type}
+                    type="monotone"
+                    dataKey={type}
+                    stackId="projection"
+                    stroke={COLORS[index % COLORS.length]}
+                    fill={COLORS[index % COLORS.length]}
+                    fillOpacity={0.6}
+                  />
+                ))}
+              </AreaChart>
             </ResponsiveContainer>
           </ChartContainer>
         );

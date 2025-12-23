@@ -68,6 +68,7 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
   
   // Projection chart options
   const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<string | null>(null);
+  const [projectionViewType, setProjectionViewType] = useState<"absolute" | "percentage">("absolute");
 
   // Extract all unique months from chart data for rate fetching
   // Convert from "YYYY-MM-DD" to "YYYY-MM" format
@@ -341,6 +342,17 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
                     No saved scenarios. Create one in the Wealth Projection Setup section below.
                   </p>
                 )}
+                <label className="flex items-center gap-2">
+                  <span>View:</span>
+                  <select
+                    value={projectionViewType}
+                    onChange={(e) => setProjectionViewType(e.target.value as "absolute" | "percentage")}
+                    className="px-2 py-1 rounded border bg-background"
+                  >
+                    <option value="absolute">Absolute Values</option>
+                    <option value="percentage">Percentage Composition</option>
+                  </select>
+                </label>
               </>
             )}
             {chartType === "by-account" && (
@@ -404,6 +416,11 @@ export function ChartControls({ initialData, owners, scenarios }: ChartControlsP
           allocationOptions={
             chartType === "allocation"
               ? { viewType: allocationViewType, selectedMonth: allocationSelectedMonth }
+              : undefined
+          }
+          projectionOptions={
+            chartType === "projection"
+              ? { viewType: projectionViewType, selectedScenario: selectedProjectionScenario }
               : undefined
           }
         />
