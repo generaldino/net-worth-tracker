@@ -46,6 +46,38 @@ export function ChartHeader({
   const { isMasked } = useMasking();
   const displayData = hoveredData || latestData;
 
+  // Extract account types for total and projection charts - must be called before early return
+  const accountTypesForTotal = useMemo(() => {
+    if (chartType !== "total" || !displayData?.metrics) return [];
+    
+    return Object.entries(displayData.metrics)
+      .filter(([key]) => key !== "Net Worth")
+      .map(([key, value]) => ({
+        name: key,
+        value: value as number,
+        absValue: Math.abs(value as number),
+      }))
+      .filter((item) => item.absValue > 0) // Only show non-zero values
+      .sort((a, b) => b.absValue - a.absValue) // Sort by absolute value descending
+      .slice(0, 8); // Show top 8 account types
+  }, [chartType, displayData]);
+
+  const accountTypesForProjection = useMemo(() => {
+    if (chartType !== "projection" || !displayData?.metrics) return [];
+    
+    return Object.entries(displayData.metrics)
+      .filter(([key]) => key !== "Net Worth")
+      .map(([key, value]) => ({
+        name: key,
+        value: value as number,
+        absValue: Math.abs(value as number),
+      }))
+      .filter((item) => item.absValue > 0) // Only show non-zero values
+      .sort((a, b) => b.absValue - a.absValue) // Sort by absolute value descending
+      .slice(0, 8); // Show top 8 account types
+  }, [chartType, displayData]);
+
+  // Early return after all hooks
   if (!displayData) {
     return null;
   }
@@ -60,22 +92,10 @@ export function ChartHeader({
     return `${value >= 0 ? "+" : ""}${value.toFixed(decimals)}%`;
   };
 
-  // Calculate total return and rate of return from latest and first data point
-  const totalReturnMetrics = useMemo(() => {
-    if (!latestData || !latestData.metrics) return null;
-    const latestNetWorth = latestData.primaryValue || (latestData.metrics["Net Worth"] as number);
-    if (!latestNetWorth) return null;
-    
-    // We'll need to pass first entry value as a prop or calculate it differently
-    // For now, return null and calculate in parent if needed
-    return null;
-  }, [latestData]);
-
   // Helper component for scrollable secondary metrics
   const ScrollableMetrics = ({
     metrics,
     primaryValue,
-    primaryKey,
     formatValue: formatValueFn,
     getLabel,
     getColor,
@@ -84,7 +104,6 @@ export function ChartHeader({
   }: {
     metrics: Array<{ name: string; value: number; absValue: number }>;
     primaryValue?: number;
-    primaryKey?: string;
     formatValue: (value: number) => string;
     getLabel: (name: string) => string;
     getColor?: (name: string, value: number) => string;
@@ -136,37 +155,6 @@ export function ChartHeader({
       </div>
     );
   };
-
-  // Extract account types for total and projection charts
-  const accountTypesForTotal = useMemo(() => {
-    if (chartType !== "total" || !displayData.metrics) return [];
-    
-    return Object.entries(displayData.metrics)
-      .filter(([key]) => key !== "Net Worth")
-      .map(([key, value]) => ({
-        name: key,
-        value: value as number,
-        absValue: Math.abs(value as number),
-      }))
-      .filter((item) => item.absValue > 0) // Only show non-zero values
-      .sort((a, b) => b.absValue - a.absValue) // Sort by absolute value descending
-      .slice(0, 8); // Show top 8 account types
-  }, [chartType, displayData.metrics]);
-
-  const accountTypesForProjection = useMemo(() => {
-    if (chartType !== "projection" || !displayData.metrics) return [];
-    
-    return Object.entries(displayData.metrics)
-      .filter(([key]) => key !== "Net Worth")
-      .map(([key, value]) => ({
-        name: key,
-        value: value as number,
-        absValue: Math.abs(value as number),
-      }))
-      .filter((item) => item.absValue > 0) // Only show non-zero values
-      .sort((a, b) => b.absValue - a.absValue) // Sort by absolute value descending
-      .slice(0, 8); // Show top 8 account types
-  }, [chartType, displayData.metrics]);
 
   const renderMetrics = () => {
     if (!displayData.metrics) return null;

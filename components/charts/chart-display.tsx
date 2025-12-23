@@ -269,7 +269,7 @@ export function ChartDisplay({
 
   // Helper to extract hovered data from chart payload
   const extractHoveredData = (
-    payload: any,
+    payload: Array<{ payload?: Record<string, unknown> }> | undefined,
     chartType: ChartType
   ): HoveredData | null => {
     if (!payload || !payload.length) return null;
@@ -277,7 +277,7 @@ export function ChartDisplay({
     const dataPoint = payload[0]?.payload;
     if (!dataPoint) return null;
 
-    const month = dataPoint.month || "";
+    const month = (dataPoint.month as string) || "";
     const date = month; // Can be enhanced to format date properly
 
     const metrics: Record<string, number | string> = {};
@@ -604,16 +604,21 @@ export function ChartDisplay({
       default:
         return null;
     }
-  }, [chartData, chartType, allocationOptions, projectionDataFromContext]);
+  }, [
+    chartData,
+    chartType,
+    allocationOptions,
+    projectionDataFromContext,
+    totalOptions?.viewType,
+  ]);
 
   // Custom tooltip that updates header instead of showing tooltip
   const HeaderUpdateTooltip = ({
     active,
     payload,
-    label,
   }: {
     active?: boolean;
-    payload?: any[];
+    payload?: Array<{ payload?: Record<string, unknown> }>;
     label?: string;
   }) => {
     // Extract the month from payload to use as a stable identifier

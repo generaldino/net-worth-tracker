@@ -17,7 +17,6 @@ import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ChartFilters } from "./controls/chart-filters";
 import { AccountTypeSelector } from "./controls/account-type-selector";
 import { CategorySelector } from "./controls/category-selector";
-import { PeriodSelector } from "./period-selector";
 import { ProjectionCalculator } from "@/components/projections/projection-calculator";
 import {
   Collapsible,
