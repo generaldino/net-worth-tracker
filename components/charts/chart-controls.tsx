@@ -71,6 +71,9 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
   const [allocationViewType, setAllocationViewType] = useState<"account-type" | "category">("account-type");
   const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<string | undefined>(undefined);
   
+  // Total chart options (same as projection)
+  const [totalViewType, setTotalViewType] = useState<"absolute" | "percentage">("absolute");
+  
   // Projection chart options
   const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<string | null>(null);
   const [projectionViewType, setProjectionViewType] = useState<"absolute" | "percentage">("absolute");
@@ -267,8 +270,21 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
       </CardHeader>
       <CardContent className="pt-0">
         {/* Chart-specific options */}
-        {(chartType === "by-account" || chartType === "allocation" || chartType === "projection") && (
+        {(chartType === "total" || chartType === "by-account" || chartType === "allocation" || chartType === "projection") && (
           <div className="mb-4 p-3 bg-muted/30 rounded-lg border flex flex-wrap gap-4 items-center text-sm">
+            {chartType === "total" && (
+              <label className="flex items-center gap-2">
+                <span>View:</span>
+                <select
+                  value={totalViewType}
+                  onChange={(e) => setTotalViewType(e.target.value as "absolute" | "percentage")}
+                  className="px-2 py-1 rounded border bg-background"
+                >
+                  <option value="absolute">Absolute Values</option>
+                  <option value="percentage">Percentage Composition</option>
+                </select>
+              </label>
+            )}
             {chartType === "projection" && (
               <>
                 <label className="flex items-center gap-2">
@@ -424,6 +440,11 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
           allocationOptions={
             chartType === "allocation"
               ? { viewType: allocationViewType, selectedMonth: allocationSelectedMonth }
+              : undefined
+          }
+          totalOptions={
+            chartType === "total"
+              ? { viewType: totalViewType }
               : undefined
           }
           projectionOptions={

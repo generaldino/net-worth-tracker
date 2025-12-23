@@ -57,6 +57,9 @@ interface ChartDisplayProps {
     viewType?: "account-type" | "category";
     selectedMonth?: string;
   };
+  totalOptions?: {
+    viewType?: "absolute" | "percentage";
+  };
   projectionOptions?: {
     viewType?: "absolute" | "percentage";
     selectedScenario?: string | null;
@@ -71,6 +74,7 @@ export function ChartDisplay({
   isLoading,
   byAccountOptions = { topN: undefined },
   allocationOptions = { viewType: "account-type", selectedMonth: undefined },
+  totalOptions = { viewType: "absolute" },
   projectionOptions = { viewType: "absolute", selectedScenario: null },
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
@@ -122,7 +126,11 @@ export function ChartDisplay({
 
   // Handle bar click
   const handleBarClick = (
-    data: { month: string; netWorth?: number; [key: string]: number | string | undefined },
+    data: {
+      month: string;
+      netWorth?: number;
+      [key: string]: number | string | undefined;
+    },
     month: string
   ) => {
     if (chartType === "by-account") {
@@ -137,8 +145,11 @@ export function ChartDisplay({
       const reversedNetWorthData = [...chartData.netWorthData].reverse();
       const waterfallData = reversedSourceData.map((item, index) => {
         const previousNetWorth =
-          index > 0 ? reversedNetWorthData[index - 1].netWorth : reversedNetWorthData[0].netWorth;
-        const currentNetWorth = reversedNetWorthData[index]?.netWorth || previousNetWorth;
+          index > 0
+            ? reversedNetWorthData[index - 1].netWorth
+            : reversedNetWorthData[0].netWorth;
+        const currentNetWorth =
+          reversedNetWorthData[index]?.netWorth || previousNetWorth;
         return {
           month: item.month,
           monthKey: item.monthKey,
@@ -152,10 +163,10 @@ export function ChartDisplay({
       });
       const monthData = waterfallData.find((d) => d.month === month);
       if (monthData) {
-        setClickedData({ 
-          month, 
-          data: monthData, 
-          chartType 
+        setClickedData({
+          month,
+          data: monthData,
+          chartType,
         });
       }
     } else if (chartType === "assets-vs-liabilities") {
@@ -251,79 +262,195 @@ export function ChartDisplay({
     );
   }
 
+  // Format account type names for display (shared helper)
+  const formatAccountTypeName = (type: string): string => {
+    return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
   const renderChart = () => {
     switch (chartType) {
       case "total":
-        // Calculate trendline using linear regression
-        const calculateTrendline = (data: Array<{ netWorth: number }>) => {
-          const n = data.length;
-          if (n < 2) return data.map(() => 0);
-          
-          const x = data.map((_, i) => i);
-          const y = data.map((d) => d.netWorth);
-          
-          const sumX = x.reduce((a, b) => a + b, 0);
-          const sumY = y.reduce((a, b) => a + b, 0);
-          const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
-          const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
-          
-          const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-          const intercept = (sumY - slope * sumX) / n;
-          
-          return x.map((xi) => slope * xi + intercept);
+        // Get all account types from accountTypeData
+        const totalAllAccountTypes = new Set<string>();
+        chartData.accountTypeData.forEach((point) => {
+          Object.keys(point).forEach((key) => {
+            if (
+              key !== "month" &&
+              key !== "monthKey" &&
+              !key.endsWith("_currencies")
+            ) {
+              totalAllAccountTypes.add(key);
+            }
+          });
+        });
+
+        const totalAccountTypesArray = Array.from(totalAllAccountTypes).sort();
+
+        // Format data for chart with account type breakdown
+        const totalChartData = chartData.accountTypeData.map((point) => {
+          const dataPoint: Record<string, string | number> = {
+            month: point.month,
+            monthKey: point.monthKey,
+            "Net Worth":
+              chartData.netWorthData.find(
+                (nw) => nw.monthKey === point.monthKey
+              )?.netWorth || 0,
+          };
+
+          // Get net worth for percentage calculation
+          const netWorth = dataPoint["Net Worth"] as number;
+
+          // Add account type values
+          totalAccountTypesArray.forEach((type) => {
+            const balance = (point[type] as number) || 0;
+            if (totalOptions?.viewType === "percentage") {
+              // Calculate percentage of net worth, allowing negative for liabilities
+              // Use absolute net worth for denominator but preserve sign of balance
+              const absNetWorth = Math.abs(netWorth);
+              dataPoint[type] =
+                absNetWorth > 0 ? (balance / absNetWorth) * 100 : 0;
+            } else {
+              dataPoint[type] = balance;
+            }
+          });
+
+          return dataPoint;
+        });
+
+        // Create chart config for account types
+        const totalChartConfig: Record<
+          string,
+          { label: string; color: string }
+        > = {
+          "Net Worth": {
+            label: "Net Worth",
+            color: "hsl(var(--chart-1))",
+          },
         };
 
-        const trendlineValues = calculateTrendline(chartData.netWorthData);
-        const netWorthWithTrend = chartData.netWorthData.map((item, index) => ({
-          ...item,
-          trendline: trendlineValues[index],
-          // Calculate percentage change from previous month
-          growthRate:
-            index > 0
-              ? chartData.netWorthData[index - 1].netWorth !== 0
-                ? ((item.netWorth - chartData.netWorthData[index - 1].netWorth) /
-                    Math.abs(chartData.netWorthData[index - 1].netWorth)) *
-                  100
-                : 0
-              : 0,
-        }));
+        totalAccountTypesArray.forEach((type, index) => {
+          totalChartConfig[type] = {
+            label: formatAccountTypeName(type),
+            color: COLORS[index % COLORS.length],
+          };
+        });
+
+        interface TotalTooltipProps {
+          active?: boolean;
+          payload?: Array<{
+            name: string;
+            value: number;
+            color: string;
+            payload: Record<string, string | number>;
+          }>;
+        }
+
+        const TotalTooltip = ({ active, payload }: TotalTooltipProps) => {
+          if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            const total = data["Net Worth"] as number;
+            return (
+              <div className="bg-background border rounded-lg shadow-lg p-3">
+                <p className="font-medium mb-2">{data.month}</p>
+                {payload
+                  .filter((entry) => entry.name !== "Net Worth")
+                  .sort((a, b) => (b.value as number) - (a.value as number))
+                  .map((entry, index) => {
+                    const value = entry.value as number;
+                    const percentage =
+                      totalOptions?.viewType === "percentage"
+                        ? value.toFixed(1) + "%"
+                        : total > 0
+                        ? ((value / total) * 100).toFixed(1) + "%"
+                        : "0%";
+                    return (
+                      <p
+                        key={index}
+                        className="text-sm"
+                        style={{ color: entry.color }}
+                      >
+                        {formatAccountTypeName(entry.name)}:{" "}
+                        {isMasked
+                          ? "•••"
+                          : totalOptions?.viewType === "percentage"
+                          ? `${value.toFixed(1)}%`
+                          : formatCurrencyAmount(value, chartCurrency)}
+                        {totalOptions?.viewType === "absolute" && (
+                          <span className="text-muted-foreground ml-1">
+                            ({percentage})
+                          </span>
+                        )}
+                      </p>
+                    );
+                  })}
+                <p className="text-sm font-semibold mt-2 pt-2 border-t">
+                  Total:{" "}
+                  {isMasked
+                    ? "•••"
+                    : formatCurrencyAmount(total, chartCurrency)}
+                </p>
+              </div>
+            );
+          }
+          return null;
+        };
+
+        const isTotalPercentage = totalOptions?.viewType === "percentage";
+
+        // Calculate actual min/max values from all data points for tighter Y-axis
+        let yAxisMin: number | string = 0;
+        let yAxisMax: number | string = "auto";
+
+        if (isTotalPercentage) {
+          // For percentage, find min/max across all account types
+          const allValues: number[] = [];
+          totalChartData.forEach((point) => {
+            totalAccountTypesArray.forEach((type) => {
+              const value = point[type] as number;
+              if (typeof value === "number" && !isNaN(value)) {
+                allValues.push(value);
+              }
+            });
+          });
+          if (allValues.length > 0) {
+            const min = Math.min(...allValues);
+            const max = Math.max(...allValues);
+            // Add some padding (5% of range)
+            const padding = (max - min) * 0.05;
+            yAxisMin = Math.min(0, min - padding); // Allow negative, but start from 0 if all positive
+            yAxisMax = max + padding;
+          } else {
+            yAxisMin = 0;
+            yAxisMax = 100;
+          }
+        } else {
+          // For absolute values, find min/max across all account types
+          const allValues: number[] = [];
+          totalChartData.forEach((point) => {
+            totalAccountTypesArray.forEach((type) => {
+              const value = point[type] as number;
+              if (typeof value === "number" && !isNaN(value)) {
+                allValues.push(value);
+              }
+            });
+          });
+          if (allValues.length > 0) {
+            const min = Math.min(...allValues);
+            const max = Math.max(...allValues);
+            // Add some padding (5% of range)
+            const padding = (max - min) * 0.05;
+            yAxisMin = min < 0 ? min - padding : 0; // Start at 0 if all positive
+            yAxisMax = max + padding;
+          }
+        }
 
         return (
           <ChartContainer
-            config={{
-              netWorth: {
-                label: "Net Worth",
-                color: "hsl(var(--chart-1))",
-              },
-              trendline: {
-                label: "Trend",
-                color: "hsl(var(--chart-2))",
-              },
-            }}
+            config={totalChartConfig}
             className="h-[300px] sm:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={netWorthWithTrend} margin={margins}>
-                <defs>
-                  <linearGradient
-                    id="netWorthGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0.3}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
+              <AreaChart data={totalChartData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
@@ -331,13 +458,15 @@ export function ChartDisplay({
                   angle={-45}
                   textAnchor="end"
                   height={margins.bottom + 10}
-                  interval={0}
+                  interval={Math.floor(totalChartData.length / 12)}
                   tick={{ fontSize }}
                 />
                 <YAxis
                   tickFormatter={(value) =>
                     isMasked
                       ? "•••"
+                      : isTotalPercentage
+                      ? `${value.toFixed(0)}%`
                       : formatCurrencyAmount(value / 1000, chartCurrency, {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
@@ -346,108 +475,36 @@ export function ChartDisplay({
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
-                  domain={["auto", "auto"]}
-                  allowDataOverflow={true}
+                  domain={[yAxisMin, yAxisMax]}
                 />
-                <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      const netWorthEntry = payload.find(
-                        (p) => (p.dataKey as string) === "netWorth"
-                      );
-                      const trendEntry = payload.find(
-                        (p) => (p.dataKey as string) === "trendline"
-                      );
-                      const dataPoint = netWorthWithTrend.find(
-                        (d) => d.month === label
-                      );
-                      
-                      return (
-                        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-                          <p className="font-medium mb-2">{label}</p>
-                          {netWorthEntry && (
-                            <div className="flex items-center gap-2 text-sm mb-1">
-                              <div
-                                className="w-3 h-3 rounded-sm"
-                                style={{
-                                  backgroundColor: netWorthEntry.color as string,
-                                }}
-                              />
-                              <span className="font-medium">Net Worth:</span>
-                              <span>
-                                {isMasked
-                                  ? "••••••"
-                                  : formatCurrencyAmount(
-                                      netWorthEntry.value as number,
-                                      chartCurrency
-                                    )}
-                              </span>
-                            </div>
-                          )}
-                          {dataPoint && dataPoint.growthRate !== 0 && (
-                            <div className="text-xs mt-2">
-                              <span
-                                className={
-                                  dataPoint.growthRate >= 0
-                                    ? "text-green-600"
-                                    : "text-red-600"
-                                }
-                              >
-                                {dataPoint.growthRate >= 0 ? "+" : ""}
-                                {dataPoint.growthRate.toFixed(2)}% vs previous
-                              </span>
-                            </div>
-                          )}
-                          {trendEntry && (
-                            <div className="flex items-center gap-2 text-xs mt-1 text-muted-foreground">
-                              <div
-                                className="w-3 h-3 rounded-sm"
-                                style={{
-                                  backgroundColor: trendEntry.color as string,
-                                }}
-                              />
-                              <span>Trend</span>
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Click to pin details
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="netWorth"
-                  stroke="hsl(var(--chart-1))"
-                  fill="url(#netWorthGradient)"
-                  strokeWidth={2}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        netWorth: number;
-                      };
-                      handleBarClick(
-                        { month: payload.month, netWorth: payload.netWorth },
-                        payload.month
-                      );
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="trendline"
-                  stroke="hsl(var(--chart-2))"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={false}
-                  activeDot={false}
-                />
+                <ChartTooltip content={<TotalTooltip />} />
+                <Legend />
+                {totalAccountTypesArray.map((type, index) => (
+                  <Area
+                    key={type}
+                    type="monotone"
+                    dataKey={type}
+                    stackId="total"
+                    stroke={COLORS[index % COLORS.length]}
+                    fill={COLORS[index % COLORS.length]}
+                    fillOpacity={0.6}
+                    onClick={(data) => {
+                      if ("payload" in data) {
+                        const payload = data.payload as {
+                          month: string;
+                          monthKey: string;
+                          [key: string]: string | number;
+                        };
+                        const netWorth = payload["Net Worth"] as number;
+                        handleBarClick(
+                          { month: payload.month, netWorth },
+                          payload.month
+                        );
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
+                  />
+                ))}
               </AreaChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -654,7 +711,9 @@ export function ChartDisplay({
           const currentNetWorth = item.netWorth;
           const growthRate =
             previousNetWorth !== 0
-              ? ((currentNetWorth - previousNetWorth) / Math.abs(previousNetWorth)) * 100
+              ? ((currentNetWorth - previousNetWorth) /
+                  Math.abs(previousNetWorth)) *
+                100
               : 0;
 
           return {
@@ -707,7 +766,10 @@ export function ChartDisplay({
                             const name = entry.name as string;
                             const color = entry.color as string;
                             return (
-                              <div key={index} className="flex items-center gap-2 text-sm">
+                              <div
+                                key={index}
+                                className="flex items-center gap-2 text-sm"
+                              >
                                 <div
                                   className="w-3 h-3 rounded-sm"
                                   style={{ backgroundColor: color }}
@@ -715,12 +777,16 @@ export function ChartDisplay({
                                 <span className="font-medium">{name}:</span>
                                 <span
                                   className={
-                                    value >= 0 ? "text-green-600" : "text-red-600"
+                                    value >= 0
+                                      ? "text-green-600"
+                                      : "text-red-600"
                                   }
                                 >
                                   {isMasked
                                     ? "•••"
-                                    : `${value >= 0 ? "+" : ""}${Number(value.toFixed(2))}%`}
+                                    : `${value >= 0 ? "+" : ""}${Number(
+                                        value.toFixed(2)
+                                      )}%`}
                                 </span>
                               </div>
                             );
@@ -767,8 +833,10 @@ export function ChartDisplay({
 
       case "by-account":
         // Get latest month's data for sorting
-        const latestAccountData = chartData.accountData[chartData.accountData.length - 1] || chartData.accountData[0];
-        
+        const latestAccountData =
+          chartData.accountData[chartData.accountData.length - 1] ||
+          chartData.accountData[0];
+
         // Always sort by current value (largest to smallest)
         let accountsToDisplay = chartData.accounts
           .map((account) => {
@@ -782,16 +850,16 @@ export function ChartDisplay({
           })
           .sort((a, b) => b.currentValue - a.currentValue)
           .map((item) => item.account);
-        
+
         // Apply top N filter if specified
         if (byAccountOptions?.topN && byAccountOptions.topN > 0) {
           accountsToDisplay = accountsToDisplay.slice(0, byAccountOptions.topN);
         }
-        
+
         const accountBarSize = getBarSize(chartData.accountData.length);
         // Always stack bars
         const stackId = "by-account-stack";
-        
+
         return (
           <ChartContainer
             config={accountsToDisplay.reduce(
@@ -1069,7 +1137,10 @@ export function ChartDisplay({
                         "Savings Rate": number;
                       };
                       handleBarClick(
-                        { month: payload.month, "Savings Rate": payload["Savings Rate"] },
+                        {
+                          month: payload.month,
+                          "Savings Rate": payload["Savings Rate"],
+                        },
                         payload.month
                       );
                     }
@@ -1083,14 +1154,21 @@ export function ChartDisplay({
 
       case "allocation":
         // Determine which data source to use based on view type
-        const sourceDataArray = allocationOptions.viewType === "category" 
-          ? chartData.categoryData 
-          : chartData.accountTypeData;
-        
+        const sourceDataArray =
+          allocationOptions.viewType === "category"
+            ? chartData.categoryData
+            : chartData.accountTypeData;
+
         // Get selected month's data or most recent (last item since data is sorted asc)
         const selectedMonthData = allocationOptions.selectedMonth
-          ? sourceDataArray.find((item) => item.month === allocationOptions.selectedMonth || item.monthKey === allocationOptions.selectedMonth)
-          : (sourceDataArray.length > 0 ? sourceDataArray[sourceDataArray.length - 1] : null);
+          ? sourceDataArray.find(
+              (item) =>
+                item.month === allocationOptions.selectedMonth ||
+                item.monthKey === allocationOptions.selectedMonth
+            )
+          : sourceDataArray.length > 0
+          ? sourceDataArray[sourceDataArray.length - 1]
+          : null;
 
         if (!selectedMonthData) {
           return (
@@ -1135,9 +1213,10 @@ export function ChartDisplay({
           if (active && payload && payload.length) {
             const data = payload[0];
             const fill = data.payload?.fill || COLORS[0];
-            const percentage = totalAllocation > 0
-              ? ((data.value / totalAllocation) * 100).toFixed(1)
-              : "0";
+            const percentage =
+              totalAllocation > 0
+                ? ((data.value / totalAllocation) * 100).toFixed(1)
+                : "0";
             return (
               <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
                 <p className="font-medium mb-2">{data.name}</p>
@@ -1151,9 +1230,7 @@ export function ChartDisplay({
                       ? "••••••"
                       : formatCurrencyAmount(data.value, chartCurrency)}
                   </span>
-                  <span className="text-muted-foreground">
-                    ({percentage}%)
-                  </span>
+                  <span className="text-muted-foreground">({percentage}%)</span>
                 </div>
               </div>
             );
@@ -1193,7 +1270,10 @@ export function ChartDisplay({
         return (
           <div className="space-y-4">
             <div className="text-center text-sm text-muted-foreground">
-              {allocationOptions.viewType === "category" ? "Category" : "Account Type"} Allocation as of {selectedMonthData.month}
+              {allocationOptions.viewType === "category"
+                ? "Category"
+                : "Account Type"}{" "}
+              Allocation as of {selectedMonthData.month}
             </div>
             <ChartContainer
               config={allocationData.reduce(
@@ -1239,10 +1319,12 @@ export function ChartDisplay({
                     verticalAlign="bottom"
                     height={36}
                     formatter={(value, entry) => {
-                      const entryValue = (entry.payload as { value?: number })?.value;
-                      const percentage = totalAllocation > 0 && entryValue
-                        ? ((entryValue / totalAllocation) * 100).toFixed(1)
-                        : "0";
+                      const entryValue = (entry.payload as { value?: number })
+                        ?.value;
+                      const percentage =
+                        totalAllocation > 0 && entryValue
+                          ? ((entryValue / totalAllocation) * 100).toFixed(1)
+                          : "0";
                       return `${value} (${percentage}%)`;
                     }}
                   />
@@ -1268,10 +1350,13 @@ export function ChartDisplay({
         const waterfallData = reversedSourceData.map((item, index) => {
           // Get previous month's net worth (starting balance)
           const previousNetWorth =
-            index > 0 ? reversedNetWorthData[index - 1].netWorth : reversedNetWorthData[0].netWorth;
-          
+            index > 0
+              ? reversedNetWorthData[index - 1].netWorth
+              : reversedNetWorthData[0].netWorth;
+
           // Get current month's net worth (ending balance)
-          const currentNetWorth = reversedNetWorthData[index]?.netWorth || previousNetWorth;
+          const currentNetWorth =
+            reversedNetWorthData[index]?.netWorth || previousNetWorth;
 
           const savingsFromIncome = item["Savings from Income"] || 0;
           const interestEarned = item["Interest Earned"] || 0;
@@ -1378,7 +1463,10 @@ export function ChartDisplay({
                               }
 
                               return (
-                                <div key={idx} className="flex items-center gap-2 text-sm mb-1">
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-2 text-sm mb-1"
+                                >
                                   <div
                                     className="w-3 h-3 rounded-sm"
                                     style={{ backgroundColor: color }}
@@ -1388,16 +1476,26 @@ export function ChartDisplay({
                                     className={
                                       key === "Capital Gains" && value < 0
                                         ? "text-red-600"
-                                        : key === "Starting Balance" || key === "Ending Balance"
+                                        : key === "Starting Balance" ||
+                                          key === "Ending Balance"
                                         ? ""
                                         : "text-green-600"
                                     }
                                   >
                                     {isMasked
                                       ? "••••••"
-                                      : key === "Starting Balance" || key === "Ending Balance"
-                                      ? formatCurrencyAmount(value, chartCurrency)
-                                      : `${value >= 0 ? "+" : ""}${formatCurrencyAmount(value, chartCurrency)}`}
+                                      : key === "Starting Balance" ||
+                                        key === "Ending Balance"
+                                      ? formatCurrencyAmount(
+                                          value,
+                                          chartCurrency
+                                        )
+                                      : `${
+                                          value >= 0 ? "+" : ""
+                                        }${formatCurrencyAmount(
+                                          value,
+                                          chartCurrency
+                                        )}`}
                                   </span>
                                 </div>
                               );
@@ -1477,83 +1575,90 @@ export function ChartDisplay({
         );
 
       case "projection":
-        if (!projectionDataFromContext || !projectionDataFromContext.projectionData || projectionDataFromContext.projectionData.length === 0) {
+        if (
+          !projectionDataFromContext ||
+          !projectionDataFromContext.projectionData ||
+          projectionDataFromContext.projectionData.length === 0
+        ) {
           return (
             <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center">
-              <p className="text-muted-foreground mb-2">No projection data available</p>
+              <p className="text-muted-foreground mb-2">
+                No projection data available
+              </p>
               <p className="text-sm text-muted-foreground">
-                Calculate a projection in the Wealth Projection Setup section below, or select a saved scenario.
+                Calculate a projection in the Wealth Projection Setup section
+                below, or select a saved scenario.
               </p>
             </div>
           );
         }
 
         // Group account balances by account type
-        const accountTypeMap = new Map<string, string>(); // accountType -> display name
-        const allAccountTypes = new Set<string>();
-        
+        const projectionAllAccountTypes = new Set<string>();
+
         projectionDataFromContext.projectionData.forEach((point) => {
           point.accountBalances.forEach((acc) => {
-            allAccountTypes.add(acc.accountType);
-            if (!accountTypeMap.has(acc.accountType)) {
-              accountTypeMap.set(acc.accountType, acc.accountType);
-            }
+            projectionAllAccountTypes.add(acc.accountType);
           });
         });
 
-        const accountTypesArray = Array.from(allAccountTypes).sort();
-        
-        // Format account type names for display
-        const formatAccountTypeName = (type: string): string => {
-          return type
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase());
-        };
-        
+        const projectionAccountTypesArray = Array.from(
+          projectionAllAccountTypes
+        ).sort();
+
         // Format data for chart with account type breakdown
-        const projectionChartData = projectionDataFromContext.projectionData.map((point) => {
-          const monthFormatted = new Date(point.month + "-01").toLocaleDateString("en-GB", {
-            month: "short",
-            year: "numeric",
-          });
-          
-          const dataPoint: Record<string, string | number> = {
-            month: monthFormatted,
-            monthKey: point.month,
-            "Net Worth": point.netWorth,
-          };
+        const projectionChartData =
+          projectionDataFromContext.projectionData.map((point) => {
+            const monthFormatted = new Date(
+              point.month + "-01"
+            ).toLocaleDateString("en-GB", {
+              month: "short",
+              year: "numeric",
+            });
 
-          // Sum balances by account type
-          const typeBalances = new Map<string, number>();
-          point.accountBalances.forEach((acc) => {
-            const current = typeBalances.get(acc.accountType) || 0;
-            typeBalances.set(acc.accountType, current + acc.balance);
-          });
+            const dataPoint: Record<string, string | number> = {
+              month: monthFormatted,
+              monthKey: point.month,
+              "Net Worth": point.netWorth,
+            };
 
-          // Add account type values
-          accountTypesArray.forEach((type) => {
-            const balance = typeBalances.get(type) || 0;
-            if (projectionOptions?.viewType === "percentage") {
-              // Calculate percentage of net worth
-              dataPoint[type] = point.netWorth > 0 ? (balance / point.netWorth) * 100 : 0;
-            } else {
-              dataPoint[type] = balance;
-            }
-          });
+            // Sum balances by account type
+            const typeBalances = new Map<string, number>();
+            point.accountBalances.forEach((acc) => {
+              const current = typeBalances.get(acc.accountType) || 0;
+              typeBalances.set(acc.accountType, current + acc.balance);
+            });
 
-          return dataPoint;
-        });
+            // Add account type values
+            projectionAccountTypesArray.forEach((type) => {
+              const balance = typeBalances.get(type) || 0;
+              if (projectionOptions?.viewType === "percentage") {
+                // Calculate percentage of net worth, allowing negative for liabilities
+                // Use absolute net worth for denominator but preserve sign of balance
+                const absNetWorth = Math.abs(point.netWorth);
+                dataPoint[type] =
+                  absNetWorth > 0 ? (balance / absNetWorth) * 100 : 0;
+              } else {
+                dataPoint[type] = balance;
+              }
+            });
+
+            return dataPoint;
+          });
 
         // Create chart config for account types
-        const chartConfig: Record<string, { label: string; color: string }> = {
+        const projectionChartConfig: Record<
+          string,
+          { label: string; color: string }
+        > = {
           "Net Worth": {
             label: "Net Worth",
             color: "hsl(var(--chart-1))",
           },
         };
 
-        accountTypesArray.forEach((type, index) => {
-          chartConfig[type] = {
+        projectionAccountTypesArray.forEach((type, index) => {
+          projectionChartConfig[type] = {
             label: formatAccountTypeName(type),
             color: COLORS[index % COLORS.length],
           };
@@ -1569,7 +1674,10 @@ export function ChartDisplay({
           }>;
         }
 
-        const ProjectionTooltip = ({ active, payload }: ProjectionTooltipProps) => {
+        const ProjectionTooltip = ({
+          active,
+          payload,
+        }: ProjectionTooltipProps) => {
           if (active && payload && payload.length) {
             const data = payload[0].payload;
             const total = data["Net Worth"] as number;
@@ -1581,13 +1689,18 @@ export function ChartDisplay({
                   .sort((a, b) => (b.value as number) - (a.value as number))
                   .map((entry, index) => {
                     const value = entry.value as number;
-                    const percentage = projectionOptions?.viewType === "percentage"
-                      ? value.toFixed(1) + "%"
-                      : total > 0
-                      ? ((value / total) * 100).toFixed(1) + "%"
-                      : "0%";
+                    const percentage =
+                      projectionOptions?.viewType === "percentage"
+                        ? value.toFixed(1) + "%"
+                        : total > 0
+                        ? ((value / total) * 100).toFixed(1) + "%"
+                        : "0%";
                     return (
-                      <p key={index} className="text-sm" style={{ color: entry.color }}>
+                      <p
+                        key={index}
+                        className="text-sm"
+                        style={{ color: entry.color }}
+                      >
                         {formatAccountTypeName(entry.name)}:{" "}
                         {isMasked
                           ? "•••"
@@ -1595,13 +1708,18 @@ export function ChartDisplay({
                           ? `${value.toFixed(1)}%`
                           : formatCurrencyAmount(value, chartCurrency)}
                         {projectionOptions?.viewType === "absolute" && (
-                          <span className="text-muted-foreground ml-1">({percentage})</span>
+                          <span className="text-muted-foreground ml-1">
+                            ({percentage})
+                          </span>
                         )}
                       </p>
                     );
                   })}
                 <p className="text-sm font-semibold mt-2 pt-2 border-t">
-                  Total: {isMasked ? "•••" : formatCurrencyAmount(total, chartCurrency)}
+                  Total:{" "}
+                  {isMasked
+                    ? "•••"
+                    : formatCurrencyAmount(total, chartCurrency)}
                 </p>
               </div>
             );
@@ -1611,9 +1729,56 @@ export function ChartDisplay({
 
         const isPercentage = projectionOptions?.viewType === "percentage";
 
+        // Calculate actual min/max values from all data points for tighter Y-axis
+        let projectionYAxisMin: number | string = 0;
+        let projectionYAxisMax: number | string = "auto";
+
+        if (isPercentage) {
+          // For percentage, find min/max across all account types
+          const allProjectionValues: number[] = [];
+          projectionChartData.forEach((point) => {
+            projectionAccountTypesArray.forEach((type) => {
+              const value = point[type] as number;
+              if (typeof value === "number" && !isNaN(value)) {
+                allProjectionValues.push(value);
+              }
+            });
+          });
+          if (allProjectionValues.length > 0) {
+            const min = Math.min(...allProjectionValues);
+            const max = Math.max(...allProjectionValues);
+            // Add some padding (5% of range)
+            const padding = (max - min) * 0.05;
+            projectionYAxisMin = Math.min(0, min - padding); // Allow negative, but start from 0 if all positive
+            projectionYAxisMax = max + padding;
+          } else {
+            projectionYAxisMin = 0;
+            projectionYAxisMax = 100;
+          }
+        } else {
+          // For absolute values, find min/max across all account types
+          const allProjectionValues: number[] = [];
+          projectionChartData.forEach((point) => {
+            projectionAccountTypesArray.forEach((type) => {
+              const value = point[type] as number;
+              if (typeof value === "number" && !isNaN(value)) {
+                allProjectionValues.push(value);
+              }
+            });
+          });
+          if (allProjectionValues.length > 0) {
+            const min = Math.min(...allProjectionValues);
+            const max = Math.max(...allProjectionValues);
+            // Add some padding (5% of range)
+            const padding = (max - min) * 0.05;
+            projectionYAxisMin = min < 0 ? min - padding : 0; // Start at 0 if all positive
+            projectionYAxisMax = max + padding;
+          }
+        }
+
         return (
           <ChartContainer
-            config={chartConfig}
+            config={projectionChartConfig}
             className="h-[300px] sm:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
@@ -1642,10 +1807,11 @@ export function ChartDisplay({
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
+                  domain={[projectionYAxisMin, projectionYAxisMax]}
                 />
                 <ChartTooltip content={<ProjectionTooltip />} />
                 <Legend />
-                {accountTypesArray.map((type, index) => (
+                {projectionAccountTypesArray.map((type, index) => (
                   <Area
                     key={type}
                     type="monotone"
