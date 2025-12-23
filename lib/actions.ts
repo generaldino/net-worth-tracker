@@ -1421,6 +1421,7 @@ export async function createProjectionScenario(data: {
   savingsRate: number;
   timePeriodMonths: number;
   growthRates: Record<AccountType, number>;
+  savingsAllocation?: Record<AccountType, number>;
 }) {
   try {
     const userId = await getUserId();
@@ -1438,6 +1439,7 @@ export async function createProjectionScenario(data: {
         savingsRate: data.savingsRate.toString(),
         timePeriodMonths: data.timePeriodMonths,
         growthRates: data.growthRates,
+        savingsAllocation: data.savingsAllocation || null,
       })
       .returning();
 
@@ -1469,6 +1471,9 @@ export async function getProjectionScenarios() {
       savingsRate: Number(scenario.savingsRate),
       timePeriodMonths: scenario.timePeriodMonths,
       growthRates: scenario.growthRates as Record<AccountType, number>,
+      savingsAllocation:
+        (scenario.savingsAllocation as Record<AccountType, number> | null) ||
+        undefined,
       createdAt: scenario.createdAt,
       updatedAt: scenario.updatedAt,
     }));
@@ -1486,6 +1491,7 @@ export async function updateProjectionScenario(
     savingsRate: number;
     timePeriodMonths: number;
     growthRates: Record<AccountType, number>;
+    savingsAllocation?: Record<AccountType, number>;
   }
 ) {
   try {
@@ -1503,6 +1509,7 @@ export async function updateProjectionScenario(
         savingsRate: data.savingsRate.toString(),
         timePeriodMonths: data.timePeriodMonths,
         growthRates: data.growthRates,
+        savingsAllocation: data.savingsAllocation || null,
         updatedAt: new Date(),
       })
       .where(
@@ -1553,6 +1560,7 @@ export async function calculateProjection(data: {
   savingsRate: number;
   timePeriodMonths: number;
   growthRates: Record<AccountType, number>;
+  savingsAllocation?: Record<AccountType, number>;
 }) {
   try {
     // Get all accounts (excluding closed and liabilities)
@@ -1590,12 +1598,6 @@ export async function calculateProjection(data: {
     const monthlySavings = (data.monthlyIncome * data.savingsRate) / 100;
 
     // Calculate how to distribute savings across accounts
-    // For now, distribute proportionally based on current balances
-    const totalBalance = Array.from(currentBalances.values()).reduce(
-      (sum, balance) => sum + balance,
-      0
-    );
-
     const savingsDistribution = new Map<string, number>();
     if (activeAccounts.length === 0) {
       // No active accounts, return empty projection
@@ -1608,19 +1610,102 @@ export async function calculateProjection(data: {
       };
     }
 
-    if (totalBalance > 0) {
-      activeAccounts.forEach((account) => {
-        const balance = currentBalances.get(account.id) || 0;
-        const proportion = balance / totalBalance;
-        savingsDistribution.set(account.id, monthlySavings * proportion);
+    // Asset account types (exclude Credit_Card and Loan)
+    const assetAccountTypes: AccountType[] = [
+      "Current",
+      "Savings",
+      "Investment",
+      "Stock",
+      "Crypto",
+      "Pension",
+      "Commodity",
+      "Stock_options",
+    ];
+
+    if (data.savingsAllocation) {
+      // Use user-defined savings allocation
+      // Validate that accounts exist for each allocated type
+      const allocatedTypes = Object.keys(data.savingsAllocation).filter(
+        (type) => data.savingsAllocation![type as AccountType] > 0
+      ) as AccountType[];
+
+      // Check that at least one account exists for each allocated type
+      for (const type of allocatedTypes) {
+        if (!assetAccountTypes.includes(type)) {
+          continue; // Skip non-asset types
+        }
+        const hasAccount = activeAccounts.some((acc) => acc.type === type);
+        if (!hasAccount) {
+          throw new Error(
+            `No account found for allocated type: ${type}. Please create an account of this type or adjust your savings allocation.`
+          );
+        }
+      }
+
+      // Group accounts by type
+      const accountsByType = new Map<AccountType, typeof activeAccounts>();
+      assetAccountTypes.forEach((type) => {
+        accountsByType.set(
+          type,
+          activeAccounts.filter((acc) => acc.type === type)
+        );
+      });
+
+      // Distribute savings by type based on allocation percentages
+      allocatedTypes.forEach((type) => {
+        if (!assetAccountTypes.includes(type)) {
+          return; // Skip non-asset types
+        }
+        const allocationPercent = data.savingsAllocation![type] || 0;
+        const typeSavings = (monthlySavings * allocationPercent) / 100;
+        const typeAccounts = accountsByType.get(type) || [];
+
+        if (typeAccounts.length > 0) {
+          // Distribute proportionally among accounts of this type based on current balances
+          const typeTotalBalance = typeAccounts.reduce(
+            (sum, acc) => sum + (currentBalances.get(acc.id) || 0),
+            0
+          );
+
+          if (typeTotalBalance > 0) {
+            // Distribute proportionally based on balances
+            typeAccounts.forEach((account) => {
+              const balance = currentBalances.get(account.id) || 0;
+              const proportion = balance / typeTotalBalance;
+              savingsDistribution.set(account.id, typeSavings * proportion);
+            });
+          } else {
+            // If no balances, distribute evenly among accounts of this type
+            const perAccount = typeSavings / typeAccounts.length;
+            typeAccounts.forEach((account) => {
+              savingsDistribution.set(account.id, perAccount);
+            });
+          }
+        }
       });
     } else {
-      // If no balances, distribute evenly
-      const perAccount =
-        activeAccounts.length > 0 ? monthlySavings / activeAccounts.length : 0;
-      activeAccounts.forEach((account) => {
-        savingsDistribution.set(account.id, perAccount);
-      });
+      // Fallback to proportional distribution based on current balances
+      const totalBalance = Array.from(currentBalances.values()).reduce(
+        (sum, balance) => sum + balance,
+        0
+      );
+
+      if (totalBalance > 0) {
+        activeAccounts.forEach((account) => {
+          const balance = currentBalances.get(account.id) || 0;
+          const proportion = balance / totalBalance;
+          savingsDistribution.set(account.id, monthlySavings * proportion);
+        });
+      } else {
+        // If no balances, distribute evenly
+        const perAccount =
+          activeAccounts.length > 0
+            ? monthlySavings / activeAccounts.length
+            : 0;
+        activeAccounts.forEach((account) => {
+          savingsDistribution.set(account.id, perAccount);
+        });
+      }
     }
 
     // Generate projection data month by month
@@ -1715,6 +1800,10 @@ export async function calculateProjection(data: {
     };
   } catch (error) {
     console.error("Error calculating projection:", error);
+    // Re-throw validation errors (e.g., missing accounts for allocated types)
+    if (error instanceof Error && error.message.includes("No account found")) {
+      throw error;
+    }
     return {
       currentNetWorth: 0,
       finalNetWorth: 0,

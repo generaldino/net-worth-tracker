@@ -41,6 +41,7 @@ interface ProjectionScenario {
   savingsRate: number;
   timePeriodMonths: number;
   growthRates: Record<string, number>;
+  savingsAllocation?: Record<string, number>;
   createdAt: Date;
   updatedAt: Date;
 }

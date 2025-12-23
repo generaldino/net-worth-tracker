@@ -40,6 +40,18 @@ export function ProjectionChart({ data }: ProjectionChartProps) {
   const { getChartCurrency } = useDisplayCurrency();
   const chartCurrency = getChartCurrency() as Currency;
 
+  // Show empty state if no data
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center">
+        <p className="text-muted-foreground mb-2">No projection data available</p>
+        <p className="text-sm text-muted-foreground">
+          Calculate a projection to view the chart
+        </p>
+      </div>
+    );
+  }
+
   // Format data for chart
   const chartData = data.map((point) => ({
     month: new Date(point.month + "-01").toLocaleDateString("en-GB", {

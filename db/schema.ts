@@ -101,6 +101,7 @@ export const projectionScenarios = pgTable("projection_scenarios", {
   savingsRate: numeric("savings_rate").notNull(), // Percentage (0-100)
   timePeriodMonths: integer("time_period_months").notNull(),
   growthRates: jsonb("growth_rates").notNull(), // JSON object: { "Current": 0, "Savings": 2.5, ... }
+  savingsAllocation: jsonb("savings_allocation"), // JSON object: { "Current": 20, "Stock": 40, ... } - percentages that sum to 100
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
