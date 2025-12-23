@@ -519,7 +519,7 @@ export async function updateMonthlyEntry(
 }
 
 export async function getChartData(
-  timePeriod: "YTD" | "1Y" | "all",
+  timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "all",
   owner: string = "all",
   selectedAccountIds: string[] = [],
   selectedTypes: string[] = [],
@@ -946,18 +946,40 @@ export async function getChartData(
 
 function getFilteredMonths(
   months: string[],
-  timePeriod: "YTD" | "1Y" | "all"
+  timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "all"
 ): string[] {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
+  if (months.length === 0) return months;
+  
+  // Get the latest month from the data (not current date)
+  // months are sorted ascending (YYYY-MM format), so last is latest
+  const latestMonth = months[months.length - 1];
+  const [latestYear, latestMonthNum] = latestMonth.split("-").map(Number);
+  // latestMonthNum is 1-indexed (1-12), Date constructor expects 0-indexed (0-11)
 
   switch (timePeriod) {
-    case "YTD":
-      return months.filter((month) => month.startsWith(currentYear.toString()));
-    case "1Y":
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(currentYear - 1);
+    case "1M": {
+      // Go back 1 month from latest month
+      const oneMonthAgo = new Date(latestYear, latestMonthNum - 2, 1);
+      return months.filter((month) => new Date(month + "-01") >= oneMonthAgo);
+    }
+    case "3M": {
+      // Go back 3 months from latest month
+      const threeMonthsAgo = new Date(latestYear, latestMonthNum - 4, 1);
+      return months.filter((month) => new Date(month + "-01") >= threeMonthsAgo);
+    }
+    case "6M": {
+      // Go back 6 months from latest month
+      const sixMonthsAgo = new Date(latestYear, latestMonthNum - 7, 1);
+      return months.filter((month) => new Date(month + "-01") >= sixMonthsAgo);
+    }
+    case "1Y": {
+      // Go back 12 months from latest month
+      const oneYearAgo = new Date(latestYear, latestMonthNum - 13, 1);
       return months.filter((month) => new Date(month + "-01") >= oneYearAgo);
+    }
+    case "YTD":
+      // Year to date from the latest month's year
+      return months.filter((month) => month.startsWith(latestYear.toString()));
     case "all":
     default:
       return months;

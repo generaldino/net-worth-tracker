@@ -18,6 +18,7 @@ import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ChartFilters } from "./controls/chart-filters";
 import { AccountTypeSelector } from "./controls/account-type-selector";
 import { CategorySelector } from "./controls/category-selector";
+import { PeriodSelector } from "./period-selector";
 import { ProjectionCalculator } from "@/components/projections/projection-calculator";
 import {
   Collapsible,
@@ -51,7 +52,7 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
   const { fetchRates } = useExchangeRates();
   const { setProjectionData, setSelectedScenarioId } = useProjection();
   const [chartType, setChartType] = useState<ChartType>("total");
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("all");
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("1Y");
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
@@ -253,8 +254,6 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
               owners={owners}
               selectedOwner={selectedOwner}
               onOwnerChange={setSelectedOwner}
-              timePeriod={timePeriod}
-              onTimePeriodChange={setTimePeriod}
               isLoading={isLoading}
             />
             <ChartTypeSelector
@@ -432,6 +431,8 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
           clickedData={clickedData}
           setClickedData={setClickedData}
           isLoading={isLoading}
+          timePeriod={timePeriod}
+          onTimePeriodChange={setTimePeriod}
           byAccountOptions={
             chartType === "by-account"
               ? { topN }

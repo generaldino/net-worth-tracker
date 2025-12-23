@@ -58,7 +58,7 @@ export type MonthlyEntry = {
 
 export type MonthlyData = Record<string, MonthlyEntry[]>;
 
-export type TimePeriod = "YTD" | "1Y" | "all";
+export type TimePeriod = "1M" | "3M" | "6M" | "1Y" | "YTD" | "all";
 
 export type ValueTimePeriod = "1M" | "3M" | "6M" | "1Y" | "YTD" | "ALL";
 

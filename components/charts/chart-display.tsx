@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import {
@@ -22,12 +23,18 @@ import {
 } from "recharts";
 import { ChartType, ChartData, ClickedData } from "@/components/charts/types";
 import { DataDetailsPanel } from "@/components/charts/data-details-panel";
+import {
+  ChartHeader,
+  type HoveredData,
+} from "@/components/charts/chart-header";
+import { PeriodSelector } from "./period-selector";
 import { COLORS } from "./constants";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useProjection } from "@/contexts/projection-context";
+import type { TimePeriod } from "@/lib/types";
 
 interface PieTooltipPayload {
   name: string;
@@ -50,6 +57,8 @@ interface ChartDisplayProps {
   clickedData: ClickedData | null;
   setClickedData: (data: ClickedData | null) => void;
   isLoading: boolean;
+  timePeriod?: TimePeriod;
+  onTimePeriodChange?: (value: TimePeriod) => void;
   byAccountOptions?: {
     topN?: number;
   };
@@ -72,6 +81,8 @@ export function ChartDisplay({
   clickedData,
   setClickedData,
   isLoading,
+  timePeriod,
+  onTimePeriodChange,
   byAccountOptions = { topN: undefined },
   allocationOptions = { viewType: "account-type", selectedMonth: undefined },
   totalOptions = { viewType: "absolute" },
@@ -82,6 +93,56 @@ export function ChartDisplay({
   const { getChartCurrency } = useDisplayCurrency();
   const chartCurrency = getChartCurrency() as Currency;
   const { projectionData: projectionDataFromContext } = useProjection();
+
+  // Hover state management - all hooks must be called before any early returns
+  const [hoveredData, setHoveredData] = useState<HoveredData | null>(null);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const isTouchingRef = useRef(false);
+
+  // Ref to track the last processed data to avoid infinite loops
+  const lastProcessedDataRef = useRef<{
+    month: string | null;
+    active: boolean;
+  }>({
+    month: null,
+    active: false,
+  });
+
+  // Touch event handlers for mobile
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container) return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      isTouchingRef.current = true;
+      // Find the nearest data point based on touch position
+      // This is a simplified version - Recharts handles most of this internally
+      // The tooltip handler will be called by Recharts
+    };
+
+    const handleTouchEnd = () => {
+      // Delay clearing hover to prevent flicker
+      setTimeout(() => {
+        if (!isTouchingRef.current) {
+          setHoveredData(null);
+        }
+        isTouchingRef.current = false;
+      }, 100);
+    };
+
+    container.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    container.addEventListener("touchend", handleTouchEnd);
+    container.addEventListener("touchcancel", handleTouchEnd);
+
+    return () => {
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, []);
 
   // Calculate responsive bar size based on data length and screen size
   const getBarSize = (dataLength: number) => {
@@ -108,16 +169,16 @@ export function ChartDisplay({
     return width < 640 ? 9 : width < 1024 ? 10 : 11;
   };
 
-  // Get responsive margins
+  // Get responsive margins (reduced bottom margin since no x-axis)
   const getMargins = () => {
-    if (!width) return { top: 20, right: 20, left: 20, bottom: 60 };
+    if (!width) return { top: 20, right: 20, left: 20, bottom: 10 };
 
     if (width < 640) {
-      return { top: 15, right: 10, left: 15, bottom: 70 };
+      return { top: 15, right: 10, left: 15, bottom: 10 };
     } else if (width < 1024) {
-      return { top: 20, right: 15, left: 20, bottom: 65 };
+      return { top: 20, right: 15, left: 20, bottom: 10 };
     } else {
-      return { top: 20, right: 20, left: 25, bottom: 60 };
+      return { top: 20, right: 20, left: 25, bottom: 10 };
     }
   };
 
@@ -204,63 +265,370 @@ export function ChartDisplay({
     }
   };
 
-  // Custom tooltip content
-  const CustomTooltip = ({
+  // Helper to extract hovered data from chart payload
+  const extractHoveredData = (
+    payload: any,
+    chartType: ChartType
+  ): HoveredData | null => {
+    if (!payload || !payload.length) return null;
+
+    const dataPoint = payload[0]?.payload;
+    if (!dataPoint) return null;
+
+    const month = dataPoint.month || "";
+    const date = month; // Can be enhanced to format date properly
+
+    const metrics: Record<string, number | string> = {};
+    let primaryValue: number | undefined;
+
+    // Extract values based on chart type
+    switch (chartType) {
+      case "total": {
+        primaryValue = dataPoint["Net Worth"] as number;
+        Object.keys(dataPoint).forEach((key) => {
+          if (
+            key !== "month" &&
+            key !== "monthKey" &&
+            typeof dataPoint[key] === "number"
+          ) {
+            metrics[key] = dataPoint[key] as number;
+          }
+        });
+        break;
+      }
+      case "assets-vs-liabilities": {
+        primaryValue = dataPoint["Net Worth"] as number;
+        metrics["Assets"] = dataPoint["Assets"] as number;
+        metrics["Liabilities"] = dataPoint["Liabilities"] as number;
+        metrics["Net Worth"] = primaryValue;
+        break;
+      }
+      case "monthly-growth-rate": {
+        primaryValue = dataPoint["Growth Rate"] as number;
+        metrics["Growth Rate"] = primaryValue;
+        metrics["netWorth"] = dataPoint["netWorth"] as number;
+        break;
+      }
+      case "by-account": {
+        // Calculate total from all account values
+        let total = 0;
+        Object.keys(dataPoint).forEach((key) => {
+          if (
+            key !== "month" &&
+            key !== "monthKey" &&
+            typeof dataPoint[key] === "number"
+          ) {
+            const val = dataPoint[key] as number;
+            total += val;
+            metrics[key] = val;
+          }
+        });
+        primaryValue = total;
+        metrics["Total"] = total;
+        break;
+      }
+      case "by-wealth-source": {
+        const savings = dataPoint["Savings from Income"] as number;
+        const interest = dataPoint["Interest Earned"] as number;
+        const gains = dataPoint["Capital Gains"] as number;
+        metrics["Savings from Income"] = savings || 0;
+        metrics["Interest Earned"] = interest || 0;
+        metrics["Capital Gains"] = gains || 0;
+        primaryValue = (savings || 0) + (interest || 0) + (gains || 0);
+        break;
+      }
+      case "savings-rate": {
+        primaryValue = dataPoint["Savings Rate"] as number;
+        metrics["Savings Rate"] = primaryValue;
+        metrics["Total Income"] = dataPoint["Total Income"] as number;
+        metrics["Savings from Income"] = dataPoint[
+          "Savings from Income"
+        ] as number;
+        break;
+      }
+      case "waterfall": {
+        primaryValue = dataPoint["Ending Balance"] as number;
+        metrics["Starting Balance"] = dataPoint["Starting Balance"] as number;
+        metrics["Savings from Income"] = dataPoint[
+          "Savings from Income"
+        ] as number;
+        metrics["Interest Earned"] = dataPoint["Interest Earned"] as number;
+        metrics["Capital Gains"] = dataPoint["Capital Gains"] as number;
+        metrics["Ending Balance"] = primaryValue;
+        break;
+      }
+      case "projection": {
+        primaryValue = dataPoint["Net Worth"] as number;
+        metrics["Net Worth"] = primaryValue;
+        Object.keys(dataPoint).forEach((key) => {
+          if (
+            key !== "month" &&
+            key !== "monthKey" &&
+            typeof dataPoint[key] === "number"
+          ) {
+            metrics[key] = dataPoint[key] as number;
+          }
+        });
+        break;
+      }
+    }
+
+    return {
+      date,
+      month,
+      primaryValue,
+      metrics,
+    };
+  };
+
+  // Calculate latest data for initial display
+  const latestData = useMemo(() => {
+    if (!chartData) return null;
+
+    switch (chartType) {
+      case "total": {
+        const latest =
+          chartData.netWorthData[chartData.netWorthData.length - 1];
+        if (!latest) return null;
+        const accountTypeData = chartData.accountTypeData.find(
+          (d) => d.monthKey === latest.monthKey
+        );
+        const metrics: Record<string, number | string> = {
+          "Net Worth": latest.netWorth,
+        };
+        if (accountTypeData) {
+          Object.keys(accountTypeData).forEach((key) => {
+            if (
+              key !== "month" &&
+              key !== "monthKey" &&
+              typeof accountTypeData[key] === "number"
+            ) {
+              metrics[key] = accountTypeData[key] as number;
+            }
+          });
+        }
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: latest.netWorth,
+          metrics,
+        };
+      }
+      case "assets-vs-liabilities": {
+        const latest =
+          chartData.netWorthData[chartData.netWorthData.length - 1];
+        if (!latest) return null;
+        const assets =
+          latest.accountBalances
+            ?.filter((acc) => !acc.isLiability)
+            .reduce((sum, acc) => sum + acc.balance, 0) || 0;
+        const liabilities =
+          latest.accountBalances
+            ?.filter((acc) => acc.isLiability)
+            .reduce((sum, acc) => sum + acc.balance, 0) || 0;
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: latest.netWorth,
+          metrics: {
+            Assets: assets,
+            Liabilities: liabilities,
+            "Net Worth": latest.netWorth,
+          },
+        };
+      }
+      case "monthly-growth-rate": {
+        if (chartData.netWorthData.length < 2) return null;
+        const latest =
+          chartData.netWorthData[chartData.netWorthData.length - 1];
+        const previous =
+          chartData.netWorthData[chartData.netWorthData.length - 2];
+        const growthRate =
+          previous.netWorth !== 0
+            ? ((latest.netWorth - previous.netWorth) /
+                Math.abs(previous.netWorth)) *
+              100
+            : 0;
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: growthRate,
+          metrics: {
+            "Growth Rate": growthRate,
+            netWorth: latest.netWorth,
+          },
+        };
+      }
+      case "by-account": {
+        const latest = chartData.accountData[chartData.accountData.length - 1];
+        if (!latest) return null;
+        let total = 0;
+        const metrics: Record<string, number | string> = {};
+        Object.keys(latest).forEach((key) => {
+          if (
+            key !== "month" &&
+            key !== "monthKey" &&
+            typeof latest[key] === "number"
+          ) {
+            const val = latest[key] as number;
+            total += val;
+            metrics[key] = val;
+          }
+        });
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: total,
+          metrics: { ...metrics, Total: total },
+        };
+      }
+      case "by-wealth-source": {
+        const latest = chartData.sourceData[chartData.sourceData.length - 1];
+        if (!latest) return null;
+        const savings = latest["Savings from Income"] || 0;
+        const interest = latest["Interest Earned"] || 0;
+        const gains = latest["Capital Gains"] || 0;
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: savings + interest + gains,
+          metrics: {
+            "Savings from Income": savings,
+            "Interest Earned": interest,
+            "Capital Gains": gains,
+          },
+        };
+      }
+      case "savings-rate": {
+        const latest = chartData.sourceData[chartData.sourceData.length - 1];
+        if (!latest) return null;
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: latest["Savings Rate"] || 0,
+          metrics: {
+            "Savings Rate": latest["Savings Rate"] || 0,
+            "Total Income": latest["Total Income"] || 0,
+            "Savings from Income": latest["Savings from Income"] || 0,
+          },
+        };
+      }
+      case "allocation": {
+        // For allocation, use selected month or latest
+        const sourceData =
+          allocationOptions.viewType === "category"
+            ? chartData.categoryData
+            : chartData.accountTypeData;
+        const selected = allocationOptions.selectedMonth
+          ? sourceData.find((d) => d.month === allocationOptions.selectedMonth)
+          : sourceData[sourceData.length - 1];
+        if (!selected) return null;
+        let total = 0;
+        Object.keys(selected).forEach((key) => {
+          if (
+            key !== "month" &&
+            key !== "monthKey" &&
+            typeof selected[key] === "number"
+          ) {
+            total += Math.abs(selected[key] as number);
+          }
+        });
+        return {
+          date: selected.month,
+          month: selected.month,
+          primaryValue: total,
+          metrics: {},
+        };
+      }
+      case "waterfall": {
+        const latestSource =
+          chartData.sourceData[chartData.sourceData.length - 1];
+        const latestNetWorth =
+          chartData.netWorthData[chartData.netWorthData.length - 1];
+        if (!latestSource || !latestNetWorth) return null;
+        const previousNetWorth =
+          chartData.netWorthData.length > 1
+            ? chartData.netWorthData[chartData.netWorthData.length - 2].netWorth
+            : latestNetWorth.netWorth;
+        return {
+          date: latestSource.month,
+          month: latestSource.month,
+          primaryValue: latestNetWorth.netWorth,
+          metrics: {
+            "Starting Balance": previousNetWorth,
+            "Savings from Income": latestSource["Savings from Income"] || 0,
+            "Interest Earned": latestSource["Interest Earned"] || 0,
+            "Capital Gains": latestSource["Capital Gains"] || 0,
+            "Ending Balance": latestNetWorth.netWorth,
+          },
+        };
+      }
+      case "projection": {
+        if (
+          !projectionDataFromContext ||
+          !projectionDataFromContext.projectionData ||
+          projectionDataFromContext.projectionData.length === 0
+        ) {
+          return null;
+        }
+        const latest =
+          projectionDataFromContext.projectionData[
+            projectionDataFromContext.projectionData.length - 1
+          ];
+        const metrics: Record<string, number | string> = {
+          "Net Worth": latest.netWorth,
+        };
+        // Add account type breakdown
+        latest.accountBalances.forEach((acc) => {
+          const current = (metrics[acc.accountType] as number) || 0;
+          metrics[acc.accountType] = current + acc.balance;
+        });
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: latest.netWorth,
+          metrics,
+        };
+      }
+      default:
+        return null;
+    }
+  }, [chartData, chartType, allocationOptions, projectionDataFromContext]);
+
+  // Custom tooltip that updates header instead of showing tooltip
+  const HeaderUpdateTooltip = ({
     active,
     payload,
     label,
   }: {
     active?: boolean;
-    payload?: Array<{
-      name: string;
-      value: number;
-      color: string;
-    }>;
+    payload?: any[];
     label?: string;
   }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-medium mb-2">{label}</p>
-          {payload.map(
-            (
-              entry: { name: string; value: number; color: string },
-              index: number
-            ) => (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <div
-                  className="w-3 h-3 rounded-sm"
-                  style={{ backgroundColor: entry.color }}
-                />
-                <span className="font-medium">{entry.name}:</span>
-                <span>
-                  {entry.name === "Savings Rate"
-                    ? isMasked
-                      ? "•••"
-                      : `${Number(entry.value.toFixed(1))}%`
-                    : isMasked
-                    ? "••••••"
-                    : formatCurrencyAmount(entry.value, chartCurrency)}
-                </span>
-              </div>
-            )
-          )}
-          <p className="text-xs text-muted-foreground mt-2">
-            Click to pin details
-          </p>
-        </div>
-      );
-    }
+    // Extract the month from payload to use as a stable identifier
+    const currentMonth = (payload?.[0]?.payload?.month as string) || null;
+
+    useEffect(() => {
+      const lastProcessed = lastProcessedDataRef.current;
+
+      // Only update if something actually changed
+      if (active && payload && payload.length) {
+        if (currentMonth !== lastProcessed.month || !lastProcessed.active) {
+          const hoverData = extractHoveredData(payload, chartType);
+          lastProcessedDataRef.current = { month: currentMonth, active: true };
+          setHoveredData(hoverData);
+        }
+      } else if (!active && lastProcessed.active) {
+        // Clear when no longer active
+        lastProcessedDataRef.current = { month: null, active: false };
+        setHoveredData(null);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [active, currentMonth, chartType]); // payload intentionally omitted to avoid infinite loops
+
+    // Return null to hide the tooltip (we're using header instead)
     return null;
   };
-
-  if (isLoading) {
-    return (
-      <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
-        <div className="text-muted-foreground">Loading chart data...</div>
-      </div>
-    );
-  }
 
   // Format account type names for display (shared helper)
   const formatAccountTypeName = (type: string): string => {
@@ -335,66 +703,6 @@ export function ChartDisplay({
           };
         });
 
-        interface TotalTooltipProps {
-          active?: boolean;
-          payload?: Array<{
-            name: string;
-            value: number;
-            color: string;
-            payload: Record<string, string | number>;
-          }>;
-        }
-
-        const TotalTooltip = ({ active, payload }: TotalTooltipProps) => {
-          if (active && payload && payload.length) {
-            const data = payload[0].payload;
-            const total = data["Net Worth"] as number;
-            return (
-              <div className="bg-background border rounded-lg shadow-lg p-3">
-                <p className="font-medium mb-2">{data.month}</p>
-                {payload
-                  .filter((entry) => entry.name !== "Net Worth")
-                  .sort((a, b) => (b.value as number) - (a.value as number))
-                  .map((entry, index) => {
-                    const value = entry.value as number;
-                    const percentage =
-                      totalOptions?.viewType === "percentage"
-                        ? value.toFixed(1) + "%"
-                        : total > 0
-                        ? ((value / total) * 100).toFixed(1) + "%"
-                        : "0%";
-                    return (
-                      <p
-                        key={index}
-                        className="text-sm"
-                        style={{ color: entry.color }}
-                      >
-                        {formatAccountTypeName(entry.name)}:{" "}
-                        {totalOptions?.viewType === "percentage"
-                          ? `${value.toFixed(1)}%` // Never mask percentages
-                          : isMasked
-                          ? "•••"
-                          : formatCurrencyAmount(value, chartCurrency)}
-                        {totalOptions?.viewType === "absolute" && (
-                          <span className="text-muted-foreground ml-1">
-                            ({percentage})
-                          </span>
-                        )}
-                      </p>
-                    );
-                  })}
-                <p className="text-sm font-semibold mt-2 pt-2 border-t">
-                  Total:{" "}
-                  {isMasked
-                    ? "•••"
-                    : formatCurrencyAmount(total, chartCurrency)}
-                </p>
-              </div>
-            );
-          }
-          return null;
-        };
-
         const isTotalPercentage = totalOptions?.viewType === "percentage";
 
         // Calculate actual min/max values from all data points for tighter Y-axis
@@ -452,19 +760,7 @@ export function ChartDisplay({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={totalChartData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={
-                    width && width < 640
-                      ? Math.floor(totalChartData.length / 6)
-                      : Math.floor(totalChartData.length / 12)
-                  }
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   tickFormatter={(value) =>
                     isTotalPercentage
@@ -481,7 +777,28 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                   domain={[yAxisMin, yAxisMax]}
                 />
-                <ChartTooltip content={<TotalTooltip />} />
+                <ChartTooltip
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
+                  }}
+                />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 <Legend />
                 {totalAccountTypesArray.map((type, index) => (
                   <Area
@@ -492,6 +809,7 @@ export function ChartDisplay({
                     stroke={COLORS[index % COLORS.length]}
                     fill={COLORS[index % COLORS.length]}
                     fillOpacity={0.6}
+                    isAnimationActive={false}
                     onClick={(data) => {
                       if ("payload" in data) {
                         const payload = data.payload as {
@@ -624,15 +942,7 @@ export function ChartDisplay({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={width && width < 640 ? "preserveStartEnd" : 0}
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   tickFormatter={(value) =>
                     isMasked
@@ -649,7 +959,28 @@ export function ChartDisplay({
                   allowDataOverflow={true}
                 />
                 <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip content={<CustomTooltip />} />
+                <ChartTooltip
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
+                  }}
+                />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 <Area
                   type="monotone"
                   dataKey="Assets"
@@ -657,6 +988,7 @@ export function ChartDisplay({
                   stroke="hsl(var(--chart-2))"
                   fill="url(#assetsGradient)"
                   strokeWidth={2}
+                  isAnimationActive={false}
                 />
                 <Area
                   type="monotone"
@@ -665,6 +997,7 @@ export function ChartDisplay({
                   stroke="hsl(var(--chart-3))"
                   fill="url(#liabilitiesGradient)"
                   strokeWidth={2}
+                  isAnimationActive={false}
                 />
                 <Area
                   type="monotone"
@@ -673,6 +1006,7 @@ export function ChartDisplay({
                   fill="url(#netWorthLineGradient)"
                   strokeWidth={2}
                   strokeDasharray="5 5"
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -741,15 +1075,7 @@ export function ChartDisplay({
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={growthRateData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={width && width < 640 ? "preserveStartEnd" : 0}
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   tickFormatter={(value) => `${value.toFixed(1)}%`}
                   fontSize={fontSize}
@@ -760,50 +1086,27 @@ export function ChartDisplay({
                 />
                 <ReferenceLine y={0} stroke="#666" strokeDasharray="2 2" />
                 <ChartTooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-                          <p className="font-medium mb-2">{label}</p>
-                          {payload.map((entry, index) => {
-                            const value = entry.value as number;
-                            const name = entry.name as string;
-                            const color = entry.color as string;
-                            return (
-                              <div
-                                key={index}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                <div
-                                  className="w-3 h-3 rounded-sm"
-                                  style={{ backgroundColor: color }}
-                                />
-                                <span className="font-medium">{name}:</span>
-                                <span
-                                  className={
-                                    value >= 0
-                                      ? "text-green-600"
-                                      : "text-red-600"
-                                  }
-                                >
-                                  {isMasked
-                                    ? "•••"
-                                    : `${value >= 0 ? "+" : ""}${Number(
-                                        value.toFixed(2)
-                                      )}%`}
-                                </span>
-                              </div>
-                            );
-                          })}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Click to pin details
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
                   }}
                 />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 <Line
                   type="monotone"
                   dataKey="Growth Rate"
@@ -811,6 +1114,7 @@ export function ChartDisplay({
                   strokeWidth={2}
                   dot={{ r: 4, fill: "hsl(var(--chart-1))" }}
                   activeDot={{ r: 6 }}
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -889,15 +1193,7 @@ export function ChartDisplay({
                 barCategoryGap="20%"
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={width && width < 640 ? "preserveStartEnd" : 0}
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   tickFormatter={(value) =>
                     isMasked
@@ -912,7 +1208,28 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                 />
                 <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip content={<CustomTooltip />} />
+                <ChartTooltip
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
+                  }}
+                />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 {accountsToDisplay.map((account, index) => {
                   const uniqueName = `${account.name} (${account.type}${
                     account.isISA ? " ISA" : ""
@@ -931,7 +1248,7 @@ export function ChartDisplay({
                         stackId={stackId}
                         onClick={(data) => handleBarClick(data, data.month)}
                         style={{ cursor: "pointer" }}
-                        isAnimationActive={true}
+                        isAnimationActive={false}
                       />
                     );
                   }
@@ -1013,7 +1330,28 @@ export function ChartDisplay({
                   allowDataOverflow={true}
                 />
                 <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip content={<CustomTooltip />} />
+                <ChartTooltip
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
+                  }}
+                />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 {sourceKeys.map((source, index) => {
                   const hasData = chartData.sourceData.some(
                     (monthData) => (monthData[source] || 0) !== 0
@@ -1028,6 +1366,7 @@ export function ChartDisplay({
                         stroke={COLORS[index % COLORS.length]}
                         fill={`url(#${source.replace(/\s+/g, "")}Gradient)`}
                         strokeWidth={2}
+                        isAnimationActive={false}
                         onClick={(data) => {
                           if ("payload" in data) {
                             const payload = data.payload as {
@@ -1094,15 +1433,7 @@ export function ChartDisplay({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={width && width < 640 ? "preserveStartEnd" : 0}
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   tickFormatter={(value) => `${value.toFixed(1)}%`}
                   fontSize={fontSize}
@@ -1127,13 +1458,35 @@ export function ChartDisplay({
                     position: "right",
                   }}
                 />
-                <ChartTooltip content={<CustomTooltip />} />
+                <ChartTooltip
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
+                  }}
+                />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 <Area
                   type="monotone"
                   dataKey="Savings Rate"
                   stroke="hsl(var(--chart-1))"
                   fill="url(#savingsRateGradient)"
                   strokeWidth={2}
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -1304,6 +1657,7 @@ export function ChartDisplay({
                     innerRadius={width && width < 640 ? 40 : 50}
                     fill="#8884d8"
                     dataKey="value"
+                    isAnimationActive={false}
                     onClick={(data) => {
                       handleBarClick(
                         {
@@ -1408,15 +1762,7 @@ export function ChartDisplay({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={waterfallData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={width && width < 640 ? "preserveStartEnd" : 0}
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   tickFormatter={(value) =>
                     isMasked
@@ -1434,96 +1780,40 @@ export function ChartDisplay({
                 />
                 <ReferenceLine y={0} stroke="#666" />
                 <ChartTooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
-                          <p className="font-medium mb-2">{label}</p>
-                          {payload
-                            .filter((entry) => {
-                              const key = entry.dataKey as string;
-                              return (
-                                key === "Starting Balance" ||
-                                key === "Savings from Income" ||
-                                key === "Interest Earned" ||
-                                key === "Capital Gains" ||
-                                key === "Ending Balance"
-                              );
-                            })
-                            .map((entry, idx) => {
-                              const value = entry.value as number;
-                              const name = entry.name as string;
-                              const color = entry.color as string;
-                              const key = entry.dataKey as string;
-
-                              // Only show non-zero values (except starting and ending)
-                              if (
-                                (key === "Savings from Income" ||
-                                  key === "Interest Earned" ||
-                                  key === "Capital Gains") &&
-                                value === 0
-                              ) {
-                                return null;
-                              }
-
-                              return (
-                                <div
-                                  key={idx}
-                                  className="flex items-center gap-2 text-sm mb-1"
-                                >
-                                  <div
-                                    className="w-3 h-3 rounded-sm"
-                                    style={{ backgroundColor: color }}
-                                  />
-                                  <span className="font-medium">{name}:</span>
-                                  <span
-                                    className={
-                                      key === "Capital Gains" && value < 0
-                                        ? "text-red-600"
-                                        : key === "Starting Balance" ||
-                                          key === "Ending Balance"
-                                        ? ""
-                                        : "text-green-600"
-                                    }
-                                  >
-                                    {isMasked
-                                      ? "••••••"
-                                      : key === "Starting Balance" ||
-                                        key === "Ending Balance"
-                                      ? formatCurrencyAmount(
-                                          value,
-                                          chartCurrency
-                                        )
-                                      : `${
-                                          value >= 0 ? "+" : ""
-                                        }${formatCurrencyAmount(
-                                          value,
-                                          chartCurrency
-                                        )}`}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            Click to pin details
-                          </p>
-                        </div>
-                      );
-                    }
-                    return null;
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
                   }}
                 />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 {/* Starting Balance - transparent bar for positioning */}
                 <Bar
                   dataKey="Starting Balance"
                   fill="transparent"
                   stackId="waterfall"
+                  isAnimationActive={false}
                 />
                 {/* Savings from Income */}
                 <Bar
                   dataKey="Savings from Income"
                   fill={COLORS[0]}
                   stackId="waterfall"
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -1542,6 +1832,7 @@ export function ChartDisplay({
                   dataKey="Interest Earned"
                   fill={COLORS[1]}
                   stackId="waterfall"
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -1560,6 +1851,7 @@ export function ChartDisplay({
                   dataKey="Capital Gains"
                   fill={COLORS[2]}
                   stackId="waterfall"
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -1668,69 +1960,6 @@ export function ChartDisplay({
           };
         });
 
-        interface ProjectionTooltipProps {
-          active?: boolean;
-          payload?: Array<{
-            name: string;
-            value: number;
-            color: string;
-            payload: Record<string, string | number>;
-          }>;
-        }
-
-        const ProjectionTooltip = ({
-          active,
-          payload,
-        }: ProjectionTooltipProps) => {
-          if (active && payload && payload.length) {
-            const data = payload[0].payload;
-            const total = data["Net Worth"] as number;
-            return (
-              <div className="bg-background border rounded-lg shadow-lg p-3">
-                <p className="font-medium mb-2">{data.month}</p>
-                {payload
-                  .filter((entry) => entry.name !== "Net Worth")
-                  .sort((a, b) => (b.value as number) - (a.value as number))
-                  .map((entry, index) => {
-                    const value = entry.value as number;
-                    const percentage =
-                      projectionOptions?.viewType === "percentage"
-                        ? value.toFixed(1) + "%"
-                        : total > 0
-                        ? ((value / total) * 100).toFixed(1) + "%"
-                        : "0%";
-                    return (
-                      <p
-                        key={index}
-                        className="text-sm"
-                        style={{ color: entry.color }}
-                      >
-                        {formatAccountTypeName(entry.name)}:{" "}
-                        {projectionOptions?.viewType === "percentage"
-                          ? `${value.toFixed(1)}%` // Never mask percentages
-                          : isMasked
-                          ? "•••"
-                          : formatCurrencyAmount(value, chartCurrency)}
-                        {projectionOptions?.viewType === "absolute" && (
-                          <span className="text-muted-foreground ml-1">
-                            ({percentage})
-                          </span>
-                        )}
-                      </p>
-                    );
-                  })}
-                <p className="text-sm font-semibold mt-2 pt-2 border-t">
-                  Total:{" "}
-                  {isMasked
-                    ? "•••"
-                    : formatCurrencyAmount(total, chartCurrency)}
-                </p>
-              </div>
-            );
-          }
-          return null;
-        };
-
         const isPercentage = projectionOptions?.viewType === "percentage";
 
         // Calculate actual min/max values from all data points for tighter Y-axis
@@ -1788,19 +2017,7 @@ export function ChartDisplay({
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={projectionChartData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={
-                    width && width < 640
-                      ? Math.floor(projectionChartData.length / 6)
-                      : Math.floor(projectionChartData.length / 12)
-                  }
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   tickFormatter={(value) =>
                     isPercentage
@@ -1817,7 +2034,28 @@ export function ChartDisplay({
                   tick={{ fontSize }}
                   domain={[projectionYAxisMin, projectionYAxisMax]}
                 />
-                <ChartTooltip content={<ProjectionTooltip />} />
+                <ChartTooltip
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
+                  }}
+                />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 12,
+                    }}
+                  />
+                )}
                 <Legend />
                 {projectionAccountTypesArray.map((type, index) => (
                   <Area
@@ -1828,6 +2066,7 @@ export function ChartDisplay({
                     stroke={COLORS[index % COLORS.length]}
                     fill={COLORS[index % COLORS.length]}
                     fillOpacity={0.6}
+                    isAnimationActive={false}
                   />
                 ))}
               </AreaChart>
@@ -1837,9 +2076,53 @@ export function ChartDisplay({
     }
   };
 
+  // Early return for loading state - must be after all hooks
+  if (isLoading) {
+    return (
+      <>
+        <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
+          <div className="text-muted-foreground">Loading chart data...</div>
+        </div>
+        {/* Period Selector - below the chart */}
+        {timePeriod !== undefined && onTimePeriodChange && (
+          <div className="mt-4 flex justify-center">
+            <PeriodSelector
+              value={timePeriod}
+              onChange={onTimePeriodChange}
+              isLoading={isLoading}
+            />
+          </div>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
-      <div className="w-full overflow-x-auto">{renderChart()}</div>
+      {/* Chart Header */}
+      <ChartHeader
+        chartType={chartType}
+        hoveredData={hoveredData}
+        latestData={latestData}
+        chartCurrency={chartCurrency}
+        totalOptions={totalOptions}
+      />
+
+      {/* Chart Container with touch support */}
+      <div ref={chartContainerRef} className="w-full overflow-x-auto">
+        {renderChart()}
+      </div>
+
+      {/* Period Selector - below the chart */}
+      {timePeriod !== undefined && onTimePeriodChange && (
+        <div className="mt-4 flex justify-center">
+          <PeriodSelector
+            value={timePeriod}
+            onChange={onTimePeriodChange}
+            isLoading={isLoading}
+          />
+        </div>
+      )}
 
       {/* Show clicked data details */}
       {clickedData && (
@@ -1847,13 +2130,6 @@ export function ChartDisplay({
           clickedData={clickedData}
           onClose={() => setClickedData(null)}
         />
-      )}
-
-      {/* Show instruction text */}
-      {!clickedData && !isLoading && (
-        <div className="mt-4 text-center text-xs sm:text-sm text-muted-foreground px-2">
-          Hover over bars to see values, click to pin details
-        </div>
       )}
     </>
   );
