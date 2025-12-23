@@ -23,7 +23,7 @@ export function TimePeriodSelector({
       value={selectedTimePeriod}
       onValueChange={(value: ValueTimePeriod) => onTimePeriodChange(value)}
     >
-      <SelectTrigger className="w-full sm:w-[140px]">
+      <SelectTrigger className="w-full">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

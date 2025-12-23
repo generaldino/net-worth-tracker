@@ -22,7 +22,7 @@ export function ChartTypeSelector({
 }: ChartTypeSelectorProps) {
   return (
     <Select value={value} onValueChange={onChange} disabled={isLoading}>
-      <SelectTrigger className="w-full sm:w-[200px]">
+      <SelectTrigger className="w-full">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

@@ -27,7 +27,7 @@ export function ChartFilters({
       onValueChange={onOwnerChange}
       disabled={isLoading}
     >
-      <SelectTrigger className="w-full sm:w-[120px]">
+      <SelectTrigger className="w-full">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

@@ -232,37 +232,52 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
     <div className="w-full">
       <div className="pb-3 sm:pb-6">
         <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
-            <AccountSelector
-              accounts={initialData.accounts}
-              selectedAccounts={selectedAccounts}
-              onAccountsChange={setSelectedAccounts}
-              isLoading={isLoading}
-            />
-            <AccountTypeSelector
-              selectedTypes={selectedTypes}
-              onTypesChange={setSelectedTypes}
-              isLoading={isLoading}
-            />
-            <CategorySelector
-              selectedCategories={selectedCategories}
-              onCategoriesChange={setSelectedCategories}
-              isLoading={isLoading}
-            />
-            <ChartFilters
-              owners={owners}
-              selectedOwner={selectedOwner}
-              onOwnerChange={setSelectedOwner}
-              isLoading={isLoading}
-            />
-            <ChartTypeSelector
-              value={chartType}
-              onChange={(value) => {
-                setChartType(value);
-                setClickedData(null);
-              }}
-              isLoading={isLoading}
-            />
+          <div 
+            className="flex gap-2 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
+              <div className="flex-shrink-0 min-w-[200px]">
+                <AccountSelector
+                  accounts={initialData.accounts}
+                  selectedAccounts={selectedAccounts}
+                  onAccountsChange={setSelectedAccounts}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-[180px]">
+                <AccountTypeSelector
+                  selectedTypes={selectedTypes}
+                  onTypesChange={setSelectedTypes}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-[180px]">
+                <CategorySelector
+                  selectedCategories={selectedCategories}
+                  onCategoriesChange={setSelectedCategories}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-[180px]">
+                <ChartFilters
+                  owners={owners}
+                  selectedOwner={selectedOwner}
+                  onOwnerChange={setSelectedOwner}
+                  isLoading={isLoading}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-[200px]">
+                <ChartTypeSelector
+                  value={chartType}
+                  onChange={(value) => {
+                    setChartType(value);
+                    setClickedData(null);
+                  }}
+                  isLoading={isLoading}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

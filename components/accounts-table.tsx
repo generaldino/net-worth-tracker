@@ -328,38 +328,51 @@ export function AccountsTable({
       <div className="flex flex-col gap-4">
         {/* Filters Section */}
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 w-full">
-              <AccountSelector
-                accounts={accounts}
-                selectedAccounts={selectedAccounts}
-                onAccountsChange={setSelectedAccounts}
-              />
-              <AccountTypeSelector
-                selectedTypes={selectedTypes}
-                onTypesChange={setSelectedTypes}
-              />
-              <CategorySelector
-                selectedCategories={selectedCategories}
-                onCategoriesChange={setSelectedCategories}
-              />
-              <Select value={selectedOwner} onValueChange={setSelectedOwner}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Owners</SelectItem>
-                  {owners.map((owner) => (
-                    <SelectItem key={owner} value={owner}>
-                      {owner}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <TimePeriodSelector
-                selectedTimePeriod={selectedTimePeriod}
-                onTimePeriodChange={setSelectedTimePeriod}
-              />
+          <div 
+            className="flex gap-2 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
+              <div className="flex-shrink-0 min-w-[200px]">
+                <AccountSelector
+                  accounts={accounts}
+                  selectedAccounts={selectedAccounts}
+                  onAccountsChange={setSelectedAccounts}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-[180px]">
+                <AccountTypeSelector
+                  selectedTypes={selectedTypes}
+                  onTypesChange={setSelectedTypes}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-[180px]">
+                <CategorySelector
+                  selectedCategories={selectedCategories}
+                  onCategoriesChange={setSelectedCategories}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-[180px]">
+                <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Owners</SelectItem>
+                    {owners.map((owner) => (
+                      <SelectItem key={owner} value={owner}>
+                        {owner}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-shrink-0 min-w-[180px]">
+                <TimePeriodSelector
+                  selectedTimePeriod={selectedTimePeriod}
+                  onTimePeriodChange={setSelectedTimePeriod}
+                />
+              </div>
             </div>
           </div>
 
