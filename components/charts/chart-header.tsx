@@ -116,10 +116,14 @@ export function ChartHeader({
       <div className="w-full">
         <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
         <div 
-          className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'thin',
+            msOverflowStyle: '-ms-autohiding-scrollbar'
+          }}
         >
-          <div className="flex gap-3 pb-1" style={{ width: 'max-content' }}>
+          <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
             {metrics.map((item) => {
               const percentage = isPercentage
                 ? item.absValue.toFixed(1)
@@ -132,7 +136,7 @@ export function ChartHeader({
               return (
                 <div
                   key={item.name}
-                  className={`flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] touch-none ${colorClass}`}
+                  className={`flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none ${colorClass}`}
                 >
                   <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
                     {getLabel(item.name)}
@@ -176,10 +180,14 @@ export function ChartHeader({
               <div className="w-full">
                 <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
                 <div 
-                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-                  style={{ WebkitOverflowScrolling: 'touch' }}
+                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
+                  style={{ 
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'thin',
+                    msOverflowStyle: '-ms-autohiding-scrollbar'
+                  }}
                 >
-                  <div className="flex gap-3 pb-1" style={{ width: 'max-content' }}>
+                  <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
                     {accountTypesForTotal.map((item) => {
                       // When in percentage view, item.value is already a percentage (0-100)
                       // When in absolute view, calculate percentage from absolute value
@@ -192,7 +200,7 @@ export function ChartHeader({
                       return (
                         <div
                           key={item.name}
-                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] touch-none"
+                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none"
                         >
                           <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
                             {formatAccountTypeName(item.name)}
@@ -451,10 +459,14 @@ export function ChartHeader({
               <div className="w-full">
                 <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
                 <div 
-                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-                  style={{ WebkitOverflowScrolling: 'touch' }}
+                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
+                  style={{ 
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'thin',
+                    msOverflowStyle: '-ms-autohiding-scrollbar'
+                  }}
                 >
-                  <div className="flex gap-3 pb-1" style={{ width: 'max-content' }}>
+                  <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
                     {accountTypesForProjection.map((item) => {
                       // When in percentage view, item.value is already a percentage (0-100)
                       // When in absolute view, calculate percentage from absolute value
@@ -467,7 +479,7 @@ export function ChartHeader({
                       return (
                         <div
                           key={item.name}
-                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] touch-none"
+                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none"
                         >
                           <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
                             {formatAccountTypeName(item.name)}
