@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
@@ -34,6 +34,13 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Store initial data in a ref to prevent unnecessary re-renders
+  // This ref will only be set once on mount and won't trigger re-renders
+  const initialDataRef = useRef(initialData);
+  const initialAccountIdsRef = useRef<string[]>(
+    initialData.accounts.map((account) => account.id)
+  );
   
   // By Account chart options
   const [topN, setTopN] = useState<number | undefined>(undefined);
@@ -101,12 +108,39 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allocationViewType, chartData.categoryData, chartData.accountTypeData]);
+  
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
     initialData.accounts.map((account) => account.id)
   );
   const [selectedTypes, setSelectedTypes] = useState<string[]>(accountTypes);
   const [selectedCategories, setSelectedCategories] =
     useState<string[]>(accountCategories);
+
+  // Memoize comparison values to prevent unnecessary re-renders
+  const initialAccountsString = useMemo(
+    () => [...initialAccountIdsRef.current].sort().join(","),
+    []
+  );
+  const selectedAccountsString = useMemo(
+    () => [...selectedAccounts].sort().join(","),
+    [selectedAccounts]
+  );
+  const accountTypesString = useMemo(
+    () => [...accountTypes].sort().join(","),
+    []
+  );
+  const selectedTypesString = useMemo(
+    () => [...selectedTypes].sort().join(","),
+    [selectedTypes]
+  );
+  const accountCategoriesString = useMemo(
+    () => [...accountCategories].sort().join(","),
+    []
+  );
+  const selectedCategoriesString = useMemo(
+    () => [...selectedCategories].sort().join(","),
+    [selectedCategories]
+  );
 
   useEffect(() => {
     async function loadChartData() {
@@ -129,25 +163,39 @@ export function ChartControls({ initialData, owners }: ChartControlsProps) {
       }
     }
 
-    if (
+    // Check if filters differ from initial state
+    const hasFiltersChanged =
       timePeriod !== "all" ||
       selectedOwner !== "all" ||
-      selectedAccounts.length !== initialData.accounts.length ||
-      selectedTypes.length !== accountTypes.length ||
-      selectedCategories.length !== accountCategories.length
-    ) {
+      selectedAccountsString !== initialAccountsString ||
+      selectedTypesString !== accountTypesString ||
+      selectedCategoriesString !== accountCategoriesString;
+
+    if (hasFiltersChanged) {
       loadChartData();
     } else {
-      setRawChartData(initialData);
+      // Use initial data only if we haven't loaded filtered data yet
+      // This prevents unnecessary state updates
+      setRawChartData((prev) => {
+        // If we already have data with the same account count, keep it
+        if (prev.accounts.length === initialDataRef.current.accounts.length) {
+          return prev;
+        }
+        return initialDataRef.current;
+      });
       setClickedData(null);
     }
+    // Removed initialData from dependencies to prevent re-renders when parent re-renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     timePeriod,
     selectedOwner,
-    selectedAccounts,
-    selectedTypes,
-    selectedCategories,
-    initialData,
+    selectedAccountsString,
+    initialAccountsString,
+    selectedTypesString,
+    accountTypesString,
+    selectedCategoriesString,
+    accountCategoriesString,
   ]);
 
   return (

@@ -5,6 +5,8 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import type { Currency } from "@/lib/fx-rates";
@@ -34,14 +36,18 @@ export function ExchangeRatesProvider({ children }: { children: ReactNode }) {
   const [rates, setRates] = useState<Record<string, ExchangeRate>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use a ref to track rates so fetchRates doesn't need to depend on rates
+  const ratesRef = useRef(rates);
+  ratesRef.current = rates;
 
-  const fetchRates = async (months: string[]) => {
+  const fetchRates = useCallback(async (months: string[]) => {
     if (months.length === 0) return;
 
-    // Check which months we already have
+    // Check which months we already have using the ref
     const missingMonths = months.filter((month) => {
       const lastDay = getLastDayOfMonth(month);
-      return !rates[lastDay];
+      return !ratesRef.current[lastDay];
     });
 
     if (missingMonths.length === 0) {
@@ -56,18 +62,19 @@ export function ExchangeRatesProvider({ children }: { children: ReactNode }) {
       const fetchedRates = await fetchExchangeRatesForMonths(missingMonths);
 
       // Convert to our format and merge with existing rates
-      const newRates: Record<string, ExchangeRate> = { ...rates };
-      fetchedRates.forEach((rate) => {
-        newRates[rate.date] = {
-          date: rate.date,
-          gbpRate: Number(rate.gbpRate),
-          eurRate: Number(rate.eurRate),
-          usdRate: Number(rate.usdRate),
-          aedRate: Number(rate.aedRate),
-        };
+      setRates((prevRates) => {
+        const newRates: Record<string, ExchangeRate> = { ...prevRates };
+        fetchedRates.forEach((rate) => {
+          newRates[rate.date] = {
+            date: rate.date,
+            gbpRate: Number(rate.gbpRate),
+            eurRate: Number(rate.eurRate),
+            usdRate: Number(rate.usdRate),
+            aedRate: Number(rate.aedRate),
+          };
+        });
+        return newRates;
       });
-
-      setRates(newRates);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch exchange rates"
@@ -76,7 +83,7 @@ export function ExchangeRatesProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []); // Empty deps - function is stable now
 
   const getRate = (month: string, currency: Currency): number | null => {
     // Handle "latest" by using the most recent rate
