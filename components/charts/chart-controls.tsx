@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
@@ -230,8 +229,8 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
   ]);
 
   return (
-    <Card>
-      <CardHeader className="pb-3 sm:pb-6">
+    <div className="w-full">
+      <div className="pb-3 sm:pb-6">
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
             <AccountSelector
@@ -266,8 +265,8 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
             />
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
+      </div>
+      <div className="pt-0">
         {/* Chart-specific options */}
         {(chartType === "total" || chartType === "by-account" || chartType === "allocation" || chartType === "projection") && (
           <div className="mb-4 p-2 sm:p-3 bg-muted/30 rounded-lg border flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-start sm:items-center text-xs sm:text-sm">
@@ -468,7 +467,7 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
             </CollapsibleContent>
           </Collapsible>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
