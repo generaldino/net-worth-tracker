@@ -12,19 +12,13 @@ export function MaskToggleButton() {
       onClick={toggleMasking}
       variant="outline"
       size="sm"
-      className="gap-2"
+      className="p-2"
       aria-label={isMasked ? "Show values" : "Hide values"}
     >
       {isMasked ? (
-        <>
-          <EyeOff className="size-4" />
-          <span className="hidden sm:inline">Show Values</span>
-        </>
+        <EyeOff className="size-4" />
       ) : (
-        <>
-          <Eye className="size-4" />
-          <span className="hidden sm:inline">Hide Values</span>
-        </>
+        <Eye className="size-4" />
       )}
     </Button>
   );

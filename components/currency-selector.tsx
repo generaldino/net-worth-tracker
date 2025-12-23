@@ -33,9 +33,9 @@ export function CurrencySelector({
 
   return (
     <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="w-auto min-w-[50px] h-9 px-2 sm:px-3">
+      <SelectTrigger size="sm" className="w-auto min-w-[40px] px-2">
         <SelectValue>
-          <span className="text-base font-medium">{getDisplaySymbol()}</span>
+          <span className="text-sm font-medium">{getDisplaySymbol()}</span>
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
