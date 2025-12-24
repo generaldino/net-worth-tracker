@@ -172,14 +172,14 @@ export function ChartDisplay({
 
   // Get responsive margins (reduced bottom margin since no x-axis, increased top for date labels)
   const getMargins = () => {
-    if (!width) return { top: 35, right: 20, left: 20, bottom: 10 };
+    if (!width) return { top: 50, right: 20, left: 20, bottom: 10 };
 
     if (width < 640) {
-      return { top: 30, right: 10, left: 15, bottom: 10 };
+      return { top: 45, right: 10, left: 15, bottom: 10 };
     } else if (width < 1024) {
-      return { top: 35, right: 15, left: 20, bottom: 10 };
+      return { top: 50, right: 15, left: 20, bottom: 10 };
     } else {
-      return { top: 35, right: 20, left: 25, bottom: 10 };
+      return { top: 50, right: 20, left: 25, bottom: 10 };
     }
   };
 
@@ -810,6 +810,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
@@ -937,6 +938,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
@@ -1065,6 +1067,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
@@ -1191,6 +1194,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
@@ -1314,6 +1318,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
@@ -1423,6 +1428,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
@@ -1775,6 +1781,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
@@ -2031,6 +2038,7 @@ export function ChartDisplay({
                     label={{
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
+                      offset: 5,
                       fill: "hsl(var(--foreground))",
                       fontSize: 12,
                     }}
