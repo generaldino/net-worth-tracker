@@ -2,11 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import type { ClickedData } from "@/components/charts/types";
-import {
-  COLORS,
-  SOURCE_KEYS,
-  getUniqueColor,
-} from "@/components/charts/constants";
+import { SOURCE_KEYS, getUniqueColor } from "@/components/charts/constants";
 import { useState } from "react";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
