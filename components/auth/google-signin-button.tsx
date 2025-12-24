@@ -38,8 +38,9 @@ export function GoogleSignInButton({}: GoogleSignInButtonProps) {
   return (
     <Button
       variant="outline"
+      size="lg"
       onClick={handleSignIn}
-      className="gap-2 w-full"
+      className="gap-2 w-full text-base sm:text-lg h-12 sm:h-14 border-2 hover:bg-accent"
       disabled={isLoading}
     >
       {isLoading ? (

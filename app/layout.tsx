@@ -2,7 +2,7 @@ import type React from "react";
 import "@/app/globals.css";
 import { Inter } from "next/font/google";
 import { auth } from "@/lib/auth";
-import { GoogleSignInButton } from "@/components/auth/google-signin-button";
+import { LandingPage } from "@/components/auth/landing-page";
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 import { MaskingProviderWrapper } from "@/components/masking-provider-wrapper";
@@ -35,17 +35,7 @@ export default async function RootLayout({
     return (
       <html lang="en">
         <body className={inter.className}>
-          <div className="min-h-screen bg-background flex items-center justify-center">
-            <div className="w-full max-w-md p-8 space-y-6">
-              <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold">💰 Wealth Tracker</h1>
-                <p className="text-muted-foreground">
-                  Sign in to start tracking your net worth
-                </p>
-              </div>
-              <GoogleSignInButton />
-            </div>
-          </div>
+          <LandingPage />
           <Toaster />
         </body>
       </html>
