@@ -12,7 +12,6 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  LineChart,
   Line,
   PieChart,
   Pie,
@@ -28,7 +27,7 @@ import {
   type HoveredData,
 } from "@/components/charts/chart-header";
 import { PeriodSelector } from "./period-selector";
-import { COLORS } from "./constants";
+import { COLORS, CHART_GREEN, CHART_RED } from "./constants";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
@@ -887,11 +886,11 @@ export function ChartDisplay({
             config={{
               Assets: {
                 label: "Assets",
-                color: "hsl(var(--chart-2))",
+                color: CHART_GREEN,
               },
               Liabilities: {
                 label: "Liabilities",
-                color: "hsl(var(--chart-3))",
+                color: CHART_RED,
               },
               "Net Worth": {
                 label: "Net Worth",
@@ -902,62 +901,6 @@ export function ChartDisplay({
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={assetsVsLiabilitiesData} margin={margins}>
-                <defs>
-                  <linearGradient
-                    id="assetsGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--chart-2))"
-                      stopOpacity={0.4}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--chart-2))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                  <linearGradient
-                    id="liabilitiesGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--chart-3))"
-                      stopOpacity={0.4}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--chart-3))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                  <linearGradient
-                    id="netWorthLineGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0.3}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -1003,8 +946,9 @@ export function ChartDisplay({
                   type="monotone"
                   dataKey="Assets"
                   stackId="1"
-                  stroke="hsl(var(--chart-2))"
-                  fill="url(#assetsGradient)"
+                  stroke={CHART_GREEN}
+                  fill={CHART_GREEN}
+                  fillOpacity={0.6}
                   strokeWidth={2}
                   isAnimationActive={false}
                 />
@@ -1012,18 +956,19 @@ export function ChartDisplay({
                   type="monotone"
                   dataKey="Liabilities"
                   stackId="1"
-                  stroke="hsl(var(--chart-3))"
-                  fill="url(#liabilitiesGradient)"
+                  stroke={CHART_RED}
+                  fill={CHART_RED}
+                  fillOpacity={0.6}
                   strokeWidth={2}
                   isAnimationActive={false}
                 />
-                <Area
+                <Line
                   type="monotone"
                   dataKey="Net Worth"
                   stroke="hsl(var(--chart-1))"
-                  fill="url(#netWorthLineGradient)"
                   strokeWidth={2}
                   strokeDasharray="5 5"
+                  dot={false}
                   isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
@@ -1150,11 +1095,7 @@ export function ChartDisplay({
                   {growthRateData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={
-                        entry["Growth Rate"] >= 0
-                          ? "hsl(142, 71%, 45%)"
-                          : "hsl(0, 84%, 60%)"
-                      }
+                      fill={entry["Growth Rate"] >= 0 ? CHART_GREEN : CHART_RED}
                     />
                   ))}
                 </Bar>
