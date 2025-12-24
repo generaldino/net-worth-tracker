@@ -54,28 +54,34 @@ export function AccountSelector({
           <CommandInput placeholder="Search accounts..." />
           <CommandEmpty>No account found.</CommandEmpty>
           <CommandGroup>
-            {accounts.map((account) => (
-              <CommandItem
-                key={account.id}
-                onSelect={() => {
-                  onAccountsChange(
-                    selectedAccounts.includes(account.id)
-                      ? selectedAccounts.filter((id) => id !== account.id)
-                      : [...selectedAccounts, account.id]
-                  );
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    selectedAccounts.includes(account.id)
-                      ? "opacity-100"
-                      : "opacity-0"
-                  )}
-                />
-                {account.name} ({account.type})
-              </CommandItem>
-            ))}
+            {accounts
+              .filter(
+                (account, index, self) =>
+                  index === self.findIndex((a) => a.id === account.id)
+              )
+              .map((account) => (
+                <CommandItem
+                  key={account.id}
+                  value={`${account.id}-${account.name}-${account.type}`}
+                  onSelect={() => {
+                    onAccountsChange(
+                      selectedAccounts.includes(account.id)
+                        ? selectedAccounts.filter((id) => id !== account.id)
+                        : [...selectedAccounts, account.id]
+                    );
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedAccounts.includes(account.id)
+                        ? "opacity-100"
+                        : "opacity-0"
+                    )}
+                  />
+                  {account.name} ({account.type})
+                </CommandItem>
+              ))}
           </CommandGroup>
         </Command>
       </PopoverContent>
