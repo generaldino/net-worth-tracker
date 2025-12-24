@@ -61,8 +61,8 @@ export function Navbar() {
         isMobile && !isVisible ? "-translate-y-full" : "translate-y-0"
       }`}
     >
-      <div className="container px-4 sm:px-6">
-        <div className="flex items-center justify-between gap-4 py-3 min-h-[56px]">
+      <div className="w-full px-4 sm:px-6">
+        <div className="flex items-center justify-between gap-4 py-3 min-h-[56px] w-full">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="font-semibold text-base sm:text-lg shrink-0">
               💰 Wealth Tracker
@@ -78,7 +78,7 @@ export function Navbar() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
             <CurrencySelector
               value={displayCurrency}
               onValueChange={setDisplayCurrency}
