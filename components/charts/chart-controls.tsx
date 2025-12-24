@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
@@ -54,6 +60,8 @@ export function ChartControls({
   // Store initial data in a ref to prevent unnecessary re-renders
   // This ref will only be set once on mount and won't trigger re-renders
   const initialDataRef = useRef(initialData);
+  // Track if we've preloaded the first scenario to avoid duplicate loads
+  const hasPreloadedRef = useRef(false);
 
   // Allocation chart options
   const [allocationViewType, setAllocationViewType] = useState<
@@ -77,7 +85,83 @@ export function ChartControls({
   >("absolute");
   const [showProjectionForm, setShowProjectionForm] = useState(false); // Default to hidden
 
-  // Auto-select first scenario when projection chart is selected
+  // Helper function to calculate projection for a scenario
+  const calculateProjectionForScenario = useCallback(
+    async (scenario: ProjectionScenario, scenarioId: string) => {
+      const assetAccountTypes: AccountType[] = [
+        "Current",
+        "Savings",
+        "Investment",
+        "Stock",
+        "Crypto",
+        "Pension",
+        "Commodity",
+        "Stock_options",
+      ];
+
+      const savingsAllocation =
+        scenario.savingsAllocation ||
+        (() => {
+          const defaults: Record<string, number> = {};
+          const types = Object.keys(scenario.growthRates).filter((type) =>
+            assetAccountTypes.includes(type as AccountType)
+          ) as AccountType[];
+          if (types.length > 0) {
+            const basePercent = Math.floor(100 / types.length);
+            const remainder = 100 - basePercent * types.length;
+            types.forEach((type, index) => {
+              defaults[type] = basePercent + (index < remainder ? 1 : 0);
+            });
+          }
+          return defaults as Record<AccountType, number>;
+        })();
+
+      const result = await calculateProjection({
+        monthlyIncome: scenario.monthlyIncome,
+        savingsRate: scenario.savingsRate,
+        timePeriodMonths: scenario.timePeriodMonths,
+        growthRates: scenario.growthRates as Record<AccountType, number>,
+        savingsAllocation,
+      });
+
+      // Check for error in response (error field is optional and only present on errors)
+      if (result && "error" in result && result.error) {
+        console.error("Error calculating projection:", result.error);
+        return false;
+      } else {
+        // Type assertion needed since error field is optional
+        setProjectionData(result as Parameters<typeof setProjectionData>[0]);
+        setSelectedScenarioId(scenarioId);
+        return true;
+      }
+    },
+    [setProjectionData, setSelectedScenarioId]
+  );
+
+  // Preload first scenario projection data on mount to make switching instant
+  useEffect(() => {
+    if (scenarios.length > 0 && !hasPreloadedRef.current) {
+      hasPreloadedRef.current = true;
+      const firstScenarioId = scenarios[0].id;
+      const firstScenario = scenarios[0];
+
+      // Preload in background without blocking UI
+      calculateProjectionForScenario(firstScenario, firstScenarioId).catch(
+        (error: unknown) => {
+          console.error("Error preloading projection:", error);
+        }
+      );
+
+      // Also set the selected scenario ID so it's ready
+      setSelectedProjectionScenario(firstScenarioId);
+    }
+  }, [
+    scenarios,
+    calculateProjectionForScenario,
+    setSelectedProjectionScenario,
+  ]);
+
+  // Auto-select first scenario when projection chart is selected (if not already selected)
   useEffect(() => {
     if (
       chartType === "projection" &&
@@ -91,63 +175,13 @@ export function ChartControls({
       const scenario = scenarios[0];
       if (scenario) {
         setIsLoading(true);
-        const calculateProjectionForScenario = async () => {
-          try {
-            const assetAccountTypes: AccountType[] = [
-              "Current",
-              "Savings",
-              "Investment",
-              "Stock",
-              "Crypto",
-              "Pension",
-              "Commodity",
-              "Stock_options",
-            ];
-
-            const savingsAllocation =
-              scenario.savingsAllocation ||
-              (() => {
-                const defaults: Record<string, number> = {};
-                const types = Object.keys(scenario.growthRates).filter((type) =>
-                  assetAccountTypes.includes(type as AccountType)
-                ) as AccountType[];
-                if (types.length > 0) {
-                  const basePercent = Math.floor(100 / types.length);
-                  const remainder = 100 - basePercent * types.length;
-                  types.forEach((type, index) => {
-                    defaults[type] = basePercent + (index < remainder ? 1 : 0);
-                  });
-                }
-                return defaults as Record<AccountType, number>;
-              })();
-
-            const result = await calculateProjection({
-              monthlyIncome: scenario.monthlyIncome,
-              savingsRate: scenario.savingsRate,
-              timePeriodMonths: scenario.timePeriodMonths,
-              growthRates: scenario.growthRates as Record<AccountType, number>,
-              savingsAllocation,
-            });
-
-            // Check for error in response (error field is optional and only present on errors)
-            if (result && "error" in result && result.error) {
-              console.error("Error calculating projection:", result.error);
-              // Don't set projection data if there's an error
-            } else {
-              // Type assertion needed since error field is optional
-              setProjectionData(
-                result as Parameters<typeof setProjectionData>[0]
-              );
-              setSelectedScenarioId(firstScenarioId);
-            }
-          } catch (error) {
+        calculateProjectionForScenario(scenario, firstScenarioId)
+          .catch((error: unknown) => {
             console.error("Error calculating projection:", error);
-          } finally {
+          })
+          .finally(() => {
             setIsLoading(false);
-          }
-        };
-
-        calculateProjectionForScenario();
+          });
       }
     }
   }, [
@@ -459,82 +493,16 @@ export function ChartControls({
                           );
                           if (scenario) {
                             setIsLoading(true);
-                            try {
-                              const assetAccountTypes: AccountType[] = [
-                                "Current",
-                                "Savings",
-                                "Investment",
-                                "Stock",
-                                "Crypto",
-                                "Pension",
-                                "Commodity",
-                                "Stock_options",
-                              ];
-
-                              const savingsAllocation =
-                                scenario.savingsAllocation ||
-                                (() => {
-                                  const defaults: Record<string, number> = {};
-                                  const types = Object.keys(
-                                    scenario.growthRates
-                                  ).filter((type) =>
-                                    assetAccountTypes.includes(
-                                      type as AccountType
-                                    )
-                                  ) as AccountType[];
-                                  if (types.length > 0) {
-                                    const basePercent = Math.floor(
-                                      100 / types.length
-                                    );
-                                    const remainder =
-                                      100 - basePercent * types.length;
-                                    types.forEach((type, index) => {
-                                      defaults[type] =
-                                        basePercent +
-                                        (index < remainder ? 1 : 0);
-                                    });
-                                  }
-                                  return defaults as Record<
-                                    AccountType,
-                                    number
-                                  >;
-                                })();
-
-                              const result = await calculateProjection({
-                                monthlyIncome: scenario.monthlyIncome,
-                                savingsRate: scenario.savingsRate,
-                                timePeriodMonths: scenario.timePeriodMonths,
-                                growthRates: scenario.growthRates as Record<
-                                  AccountType,
-                                  number
-                                >,
-                                savingsAllocation,
-                              });
-
-                              // Check for error in response (error field is optional and only present on errors)
-                              if (result && "error" in result && result.error) {
+                            calculateProjectionForScenario(scenario, scenarioId)
+                              .catch((error: unknown) => {
                                 console.error(
                                   "Error calculating projection:",
-                                  result.error
+                                  error
                                 );
-                                // Don't set projection data if there's an error
-                              } else {
-                                // Type assertion needed since error field is optional
-                                setProjectionData(
-                                  result as Parameters<
-                                    typeof setProjectionData
-                                  >[0]
-                                );
-                                setSelectedScenarioId(scenarioId);
-                              }
-                            } catch (error) {
-                              console.error(
-                                "Error calculating projection:",
-                                error
-                              );
-                            } finally {
-                              setIsLoading(false);
-                            }
+                              })
+                              .finally(() => {
+                                setIsLoading(false);
+                              });
                           }
                         } else {
                           setProjectionData(null);
