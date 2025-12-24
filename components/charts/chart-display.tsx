@@ -1311,9 +1311,9 @@ export function ChartDisplay({
                         key={source}
                         type="monotone"
                         dataKey={source}
-                        stackId="1"
                         stroke={getUniqueColor(index)}
                         fill={`url(#${source.replace(/\s+/g, "")}Gradient)`}
+                        fillOpacity={0.6}
                         strokeWidth={2}
                         isAnimationActive={false}
                         onClick={(data) => {
