@@ -6,7 +6,7 @@ import {
   monthlyEntries,
   projectionScenarios,
 } from "@/db/schema";
-import { desc, asc, eq, and } from "drizzle-orm";
+import { desc, asc, eq, and, inArray } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth-helpers";
@@ -528,14 +528,24 @@ export async function getChartData(
   try {
     type Currency = "GBP" | "EUR" | "USD" | "AED";
 
-    // Get all monthly entries ordered by month (desc)
-    const entries = await db
-      .select()
-      .from(monthlyEntries)
-      .orderBy(desc(monthlyEntries.month));
+    // Get userId to filter data - this is critical for performance and security
+    const userId = await getUserId();
+    if (!userId) {
+      return {
+        netWorthData: [],
+        accountData: [],
+        accountTypeData: [],
+        categoryData: [],
+        sourceData: [],
+        accounts: [],
+      };
+    }
 
-    // Get all accounts
-    const accounts = await db.select().from(accountsTable);
+    // Get accounts filtered by userId first (performance optimization)
+    const accounts = await db
+      .select()
+      .from(accountsTable)
+      .where(eq(accountsTable.userId, userId));
 
     // Filter accounts by owner if specified
     let filteredAccounts =
@@ -563,6 +573,20 @@ export async function getChartData(
         selectedCategories.includes(account.category)
       );
     }
+
+    // Filter monthly entries to only include entries for filtered accounts (performance optimization)
+    // This prevents querying all entries from all users
+    const filteredAccountIds = filteredAccounts.map((account) => account.id);
+    
+    // Get monthly entries only for filtered accounts
+    const entries =
+      filteredAccountIds.length > 0
+        ? await db
+            .select()
+            .from(monthlyEntries)
+            .where(inArray(monthlyEntries.accountId, filteredAccountIds))
+            .orderBy(desc(monthlyEntries.month))
+        : [];
 
     // Transform the data into the required format
     const monthlyData: Record<
@@ -847,6 +871,8 @@ export async function getChartData(
         totalWorkIncome += Number(entry.workIncome || 0);
 
         // Calculate savings from income (cash flow)
+        // cashFlow = cashIn - cashOut + workIncome represents net cash added to the account
+        // This is the savings amount for this account in this month
         if (entry.cashFlow !== 0) {
           savingsFromIncome += entry.cashFlow;
           savingsAccounts.push({

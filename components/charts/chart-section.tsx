@@ -8,9 +8,6 @@ export async function ChartSection() {
     getProjectionScenarios(),
   ]);
 
-  // Get unique owners from accounts
-  const owners = Array.from(new Set(accounts.map((account) => account.owner)));
-
   // Get account types for projection form
   const accountTypes = Array.from(
     new Set(
@@ -29,7 +26,6 @@ export async function ChartSection() {
     <div className="space-y-4">
       <ChartControls 
         initialData={initialData} 
-        owners={owners} 
         scenarios={scenarios}
         accountTypes={accountTypes}
       />

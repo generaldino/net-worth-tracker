@@ -170,16 +170,16 @@ export function ChartDisplay({
     return width < 640 ? 9 : width < 1024 ? 10 : 11;
   };
 
-  // Get responsive margins (reduced bottom margin since no x-axis)
+  // Get responsive margins (reduced bottom margin since no x-axis, increased top for date labels)
   const getMargins = () => {
-    if (!width) return { top: 20, right: 20, left: 20, bottom: 10 };
+    if (!width) return { top: 35, right: 20, left: 20, bottom: 10 };
 
     if (width < 640) {
-      return { top: 15, right: 10, left: 15, bottom: 10 };
+      return { top: 30, right: 10, left: 15, bottom: 10 };
     } else if (width < 1024) {
-      return { top: 20, right: 15, left: 20, bottom: 10 };
+      return { top: 35, right: 15, left: 20, bottom: 10 };
     } else {
-      return { top: 20, right: 20, left: 25, bottom: 10 };
+      return { top: 35, right: 20, left: 25, bottom: 10 };
     }
   };
 
@@ -1372,33 +1372,13 @@ export function ChartDisplay({
             config={{
               "Savings Rate": {
                 label: "Savings Rate",
-                color: "hsl(var(--chart-1))",
+                color: CHART_GREEN,
               },
             }}
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData.sourceData} margin={margins}>
-                <defs>
-                  <linearGradient
-                    id="savingsRateGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0.3}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -1448,11 +1428,13 @@ export function ChartDisplay({
                     }}
                   />
                 )}
+                {/* Savings Rate as primary metric - simple area chart */}
                 <Area
                   type="monotone"
                   dataKey="Savings Rate"
-                  stroke="hsl(var(--chart-1))"
-                  fill="url(#savingsRateGradient)"
+                  stroke={CHART_GREEN}
+                  fill={CHART_GREEN}
+                  fillOpacity={0.6}
                   strokeWidth={2}
                   isAnimationActive={false}
                   onClick={(data) => {
@@ -1460,11 +1442,15 @@ export function ChartDisplay({
                       const payload = data.payload as {
                         month: string;
                         "Savings Rate": number;
+                        "Total Income": number;
+                        "Savings from Income": number;
                       };
                       handleBarClick(
                         {
                           month: payload.month,
                           "Savings Rate": payload["Savings Rate"],
+                          "Total Income": payload["Total Income"],
+                          "Savings from Income": payload["Savings from Income"],
                         },
                         payload.month
                       );
@@ -1669,7 +1655,7 @@ export function ChartDisplay({
       case "waterfall":
         // Process data for waterfall chart showing month-to-month net worth changes
         // For each month, show: Starting Balance (from previous month) -> +Savings -> +Interest -> +Capital Gains
-        // Reverse the arrays to work with chronological order (oldest first)
+        // Data is already in chronological order (oldest to newest) from the source
         const reversedSourceData = [...chartData.sourceData].reverse();
         const reversedNetWorthData = [...chartData.netWorthData].reverse();
 
@@ -1700,6 +1686,30 @@ export function ChartDisplay({
             breakdown: item.breakdown,
           };
         });
+
+        // Calculate min/max for auto-scaling y-axis (not starting from zero)
+        // For stacked bars, we need to account for all possible bar positions
+        const allWaterfallValues: number[] = [];
+        waterfallData.forEach((point) => {
+          // Include starting balance (base of bar)
+          allWaterfallValues.push(point["Starting Balance"]);
+          // Include ending balance (top of stacked bar)
+          allWaterfallValues.push(point["Ending Balance"]);
+        });
+
+        // Calculate domain for y-axis - use explicit array to avoid default zero-starting behavior
+        let waterfallDomain: [number, number] = [0, 100];
+
+        if (allWaterfallValues.length > 0) {
+          const min = Math.min(...allWaterfallValues);
+          const max = Math.max(...allWaterfallValues);
+
+          // Use very minimal padding - just enough to prevent clipping (0.5% of range)
+          const range = max - min;
+          const padding = range > 0 ? range * 0.005 : 0;
+
+          waterfallDomain = [min - padding, max + padding];
+        }
 
         return (
           <ChartContainer
@@ -1744,7 +1754,7 @@ export function ChartDisplay({
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
-                  domain={["auto", "auto"]}
+                  domain={waterfallDomain}
                   allowDataOverflow={true}
                 />
                 <ReferenceLine y={0} stroke="#666" />

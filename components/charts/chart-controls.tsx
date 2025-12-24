@@ -12,11 +12,7 @@ import type { Currency } from "@/lib/fx-rates";
 import { useProjection } from "@/contexts/projection-context";
 import { calculateProjection } from "@/lib/actions";
 import type { AccountType } from "@/lib/types";
-import { AccountSelector } from "./controls/account-selector";
 import { ChartTypeSelector } from "./controls/chart-type-selector";
-import { ChartFilters } from "./controls/chart-filters";
-import { AccountTypeSelector } from "./controls/account-type-selector";
-import { CategorySelector } from "./controls/category-selector";
 import { ProjectionCalculator } from "@/components/projections/projection-calculator";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
@@ -36,14 +32,12 @@ interface ProjectionScenario {
 
 interface ChartControlsProps {
   initialData: ChartData;
-  owners: string[];
   scenarios: ProjectionScenario[];
   accountTypes: string[];
 }
 
 export function ChartControls({
   initialData,
-  owners,
   scenarios,
   accountTypes,
 }: ChartControlsProps) {
@@ -53,7 +47,6 @@ export function ChartControls({
   const { setProjectionData, setSelectedScenarioId } = useProjection();
   const [chartType, setChartType] = useState<ChartType>("total");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("1Y");
-  const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,9 +54,6 @@ export function ChartControls({
   // Store initial data in a ref to prevent unnecessary re-renders
   // This ref will only be set once on mount and won't trigger re-renders
   const initialDataRef = useRef(initialData);
-  const initialAccountIdsRef = useRef<string[]>(
-    initialData.accounts.map((account) => account.id)
-  );
 
   // Allocation chart options
   const [allocationViewType, setAllocationViewType] = useState<
@@ -86,6 +76,87 @@ export function ChartControls({
     "absolute" | "percentage"
   >("absolute");
   const [showProjectionForm, setShowProjectionForm] = useState(false); // Default to hidden
+
+  // Auto-select first scenario when projection chart is selected
+  useEffect(() => {
+    if (
+      chartType === "projection" &&
+      scenarios.length > 0 &&
+      !selectedProjectionScenario
+    ) {
+      const firstScenarioId = scenarios[0].id;
+      setSelectedProjectionScenario(firstScenarioId);
+
+      // Trigger calculation for first scenario
+      const scenario = scenarios[0];
+      if (scenario) {
+        setIsLoading(true);
+        const calculateProjectionForScenario = async () => {
+          try {
+            const assetAccountTypes: AccountType[] = [
+              "Current",
+              "Savings",
+              "Investment",
+              "Stock",
+              "Crypto",
+              "Pension",
+              "Commodity",
+              "Stock_options",
+            ];
+
+            const savingsAllocation =
+              scenario.savingsAllocation ||
+              (() => {
+                const defaults: Record<string, number> = {};
+                const types = Object.keys(scenario.growthRates).filter((type) =>
+                  assetAccountTypes.includes(type as AccountType)
+                ) as AccountType[];
+                if (types.length > 0) {
+                  const basePercent = Math.floor(100 / types.length);
+                  const remainder = 100 - basePercent * types.length;
+                  types.forEach((type, index) => {
+                    defaults[type] = basePercent + (index < remainder ? 1 : 0);
+                  });
+                }
+                return defaults as Record<AccountType, number>;
+              })();
+
+            const result = await calculateProjection({
+              monthlyIncome: scenario.monthlyIncome,
+              savingsRate: scenario.savingsRate,
+              timePeriodMonths: scenario.timePeriodMonths,
+              growthRates: scenario.growthRates as Record<AccountType, number>,
+              savingsAllocation,
+            });
+
+            // Check for error in response (error field is optional and only present on errors)
+            if (result && "error" in result && result.error) {
+              console.error("Error calculating projection:", result.error);
+              // Don't set projection data if there's an error
+            } else {
+              // Type assertion needed since error field is optional
+              setProjectionData(
+                result as Parameters<typeof setProjectionData>[0]
+              );
+              setSelectedScenarioId(firstScenarioId);
+            }
+          } catch (error) {
+            console.error("Error calculating projection:", error);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        calculateProjectionForScenario();
+      }
+    }
+  }, [
+    chartType,
+    scenarios,
+    selectedProjectionScenario,
+    setProjectionData,
+    setSelectedScenarioId,
+  ]);
 
   // Extract all unique months from chart data for rate fetching
   // Convert from "YYYY-MM-DD" to "YYYY-MM" format
@@ -254,38 +325,14 @@ export function ChartControls({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allocationViewType, chartData.categoryData, chartData.accountTypeData]);
 
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
-    initialData.accounts.map((account) => account.id)
+  // Always use all accounts, all types, all categories, and all owners (no filtering via UI)
+  const selectedAccounts = useMemo(
+    () => initialData.accounts.map((account) => account.id),
+    [initialData.accounts]
   );
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(accountTypes);
-  const [selectedCategories, setSelectedCategories] =
-    useState<string[]>(accountCategories);
-
-  // Memoize comparison values to prevent unnecessary re-renders
-  const initialAccountsString = useMemo(
-    () => [...initialAccountIdsRef.current].sort().join(","),
-    []
-  );
-  const selectedAccountsString = useMemo(
-    () => [...selectedAccounts].sort().join(","),
-    [selectedAccounts]
-  );
-  const accountTypesString = useMemo(
-    () => [...accountTypes].sort().join(","),
-    [accountTypes]
-  );
-  const selectedTypesString = useMemo(
-    () => [...selectedTypes].sort().join(","),
-    [selectedTypes]
-  );
-  const accountCategoriesString = useMemo(
-    () => [...accountCategories].sort().join(","),
-    []
-  );
-  const selectedCategoriesString = useMemo(
-    () => [...selectedCategories].sort().join(","),
-    [selectedCategories]
-  );
+  const selectedTypes = useMemo(() => accountTypes, []);
+  const selectedCategories = useMemo(() => accountCategories, []);
+  const selectedOwner = "all";
 
   useEffect(() => {
     async function loadChartData() {
@@ -308,13 +355,9 @@ export function ChartControls({
       }
     }
 
-    // Check if filters (excluding timePeriod) differ from initial state
+    // Since we always use all accounts, types, categories, and owners, filters never change
     // Time period filtering is now done client-side, so we don't need to refetch on timePeriod change
-    const hasFiltersChanged =
-      selectedOwner !== "all" ||
-      selectedAccountsString !== initialAccountsString ||
-      selectedTypesString !== accountTypesString ||
-      selectedCategoriesString !== accountCategoriesString;
+    const hasFiltersChanged = false;
 
     if (hasFiltersChanged) {
       loadChartData();
@@ -332,70 +375,12 @@ export function ChartControls({
     }
     // Removed initialData and timePeriod from dependencies to prevent re-renders when parent re-renders
     // timePeriod is now handled client-side
+    // No dependencies needed since filters never change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    selectedOwner,
-    selectedAccountsString,
-    initialAccountsString,
-    selectedTypesString,
-    accountTypesString,
-    selectedCategoriesString,
-    accountCategoriesString,
-  ]);
+  }, []);
 
   return (
     <div className="w-full">
-      <div className="pb-3 sm:pb-6">
-        <div className="flex flex-col gap-3">
-          <div
-            className="flex gap-2 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-            <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
-              <div className="flex-shrink-0 min-w-[200px]">
-                <ChartTypeSelector
-                  value={chartType}
-                  onChange={(value) => {
-                    setChartType(value);
-                    setClickedData(null);
-                  }}
-                  isLoading={isLoading}
-                />
-              </div>
-              <div className="flex-shrink-0 min-w-[200px]">
-                <AccountSelector
-                  accounts={initialData.accounts}
-                  selectedAccounts={selectedAccounts}
-                  onAccountsChange={setSelectedAccounts}
-                  isLoading={isLoading}
-                />
-              </div>
-              <div className="flex-shrink-0 min-w-[180px]">
-                <AccountTypeSelector
-                  selectedTypes={selectedTypes}
-                  onTypesChange={setSelectedTypes}
-                  isLoading={isLoading}
-                />
-              </div>
-              <div className="flex-shrink-0 min-w-[180px]">
-                <CategorySelector
-                  selectedCategories={selectedCategories}
-                  onCategoriesChange={setSelectedCategories}
-                  isLoading={isLoading}
-                />
-              </div>
-              <div className="flex-shrink-0 min-w-[180px]">
-                <ChartFilters
-                  owners={owners}
-                  selectedOwner={selectedOwner}
-                  onOwnerChange={setSelectedOwner}
-                  isLoading={isLoading}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
       <div className="pt-0">
         <ChartDisplay
           chartType={chartType}
@@ -425,132 +410,30 @@ export function ChartControls({
               : undefined
           }
           headerControls={
-            chartType === "total" ? (
-              <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                <span className="whitespace-nowrap">View:</span>
-                <select
-                  value={totalViewType}
-                  onChange={(e) =>
-                    setTotalViewType(
-                      e.target.value as "absolute" | "percentage"
-                    )
-                  }
-                  className="px-2 py-1 rounded border bg-background min-w-[150px]"
-                >
-                  <option value="absolute">Absolute Values</option>
-                  <option value="percentage">Percentage Composition</option>
-                </select>
-              </label>
-            ) : chartType === "projection" ? (
-              <React.Fragment>
-                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                  <span className="whitespace-nowrap">Scenario:</span>
-                  <select
-                    value={selectedProjectionScenario || ""}
-                    onChange={async (e) => {
-                      const scenarioId = e.target.value || null;
-                      setSelectedProjectionScenario(scenarioId);
-
-                      if (scenarioId) {
-                        const scenario = scenarios.find(
-                          (s) => s.id === scenarioId
-                        );
-                        if (scenario) {
-                          setIsLoading(true);
-                          try {
-                            const assetAccountTypes: AccountType[] = [
-                              "Current",
-                              "Savings",
-                              "Investment",
-                              "Stock",
-                              "Crypto",
-                              "Pension",
-                              "Commodity",
-                              "Stock_options",
-                            ];
-
-                            const savingsAllocation =
-                              scenario.savingsAllocation ||
-                              (() => {
-                                const defaults: Record<string, number> = {};
-                                const types = Object.keys(
-                                  scenario.growthRates
-                                ).filter((type) =>
-                                  assetAccountTypes.includes(
-                                    type as AccountType
-                                  )
-                                ) as AccountType[];
-                                if (types.length > 0) {
-                                  const basePercent = Math.floor(
-                                    100 / types.length
-                                  );
-                                  const remainder =
-                                    100 - basePercent * types.length;
-                                  types.forEach((type, index) => {
-                                    defaults[type] =
-                                      basePercent + (index < remainder ? 1 : 0);
-                                  });
-                                }
-                                return defaults as Record<AccountType, number>;
-                              })();
-
-                            const result = await calculateProjection({
-                              monthlyIncome: scenario.monthlyIncome,
-                              savingsRate: scenario.savingsRate,
-                              timePeriodMonths: scenario.timePeriodMonths,
-                              growthRates: scenario.growthRates as Record<
-                                AccountType,
-                                number
-                              >,
-                              savingsAllocation,
-                            });
-
-                            // Check for error in response (error field is optional and only present on errors)
-                            if (result && "error" in result && result.error) {
-                              console.error(
-                                "Error calculating projection:",
-                                result.error
-                              );
-                              // Don't set projection data if there's an error
-                            } else {
-                              // Type assertion needed since error field is optional
-                              setProjectionData(
-                                result as Parameters<
-                                  typeof setProjectionData
-                                >[0]
-                              );
-                              setSelectedScenarioId(scenarioId);
-                            }
-                          } catch (error) {
-                            console.error(
-                              "Error calculating projection:",
-                              error
-                            );
-                          } finally {
-                            setIsLoading(false);
-                          }
-                        }
-                      } else {
-                        setProjectionData(null);
-                        setSelectedScenarioId(null);
-                      }
-                    }}
-                    className="px-2 py-1 rounded border bg-background min-w-[180px]"
-                  >
-                    <option value="">Select a scenario...</option>
-                    {scenarios.map((scenario) => (
-                      <option key={scenario.id} value={scenario.id}>
-                        {scenario.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+            <>
+              <div className="flex-shrink-0 min-w-[200px]">
+                <ChartTypeSelector
+                  value={chartType}
+                  onChange={(value) => {
+                    setChartType(value);
+                    setClickedData(null);
+                    // Clear projection scenario when switching away from projection chart
+                    if (value !== "projection") {
+                      setSelectedProjectionScenario(null);
+                      setProjectionData(null);
+                      setSelectedScenarioId(null);
+                    }
+                  }}
+                  isLoading={isLoading}
+                />
+              </div>
+              {chartType === "total" ? (
                 <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">View:</span>
                   <select
-                    value={projectionViewType}
+                    value={totalViewType}
                     onChange={(e) =>
-                      setProjectionViewType(
+                      setTotalViewType(
                         e.target.value as "absolute" | "percentage"
                       )
                     }
@@ -560,53 +443,177 @@ export function ChartControls({
                     <option value="percentage">Percentage Composition</option>
                   </select>
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowProjectionForm(!showProjectionForm)}
-                  className="flex-shrink-0 px-3 py-1 rounded border bg-background hover:bg-muted text-xs sm:text-sm whitespace-nowrap"
-                >
-                  {showProjectionForm ? "Hide" : "Show"} Setup Form
-                </button>
-              </React.Fragment>
-            ) : chartType === "allocation" ? (
-              <>
-                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                  <span className="whitespace-nowrap">View by:</span>
-                  <select
-                    value={allocationViewType}
-                    onChange={(e) =>
-                      setAllocationViewType(
-                        e.target.value as "account-type" | "category"
-                      )
-                    }
-                    className="px-2 py-1 rounded border bg-background min-w-[140px]"
+              ) : chartType === "projection" ? (
+                <React.Fragment>
+                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
+                    <span className="whitespace-nowrap">Scenario:</span>
+                    <select
+                      value={selectedProjectionScenario || ""}
+                      onChange={async (e) => {
+                        const scenarioId = e.target.value || null;
+                        setSelectedProjectionScenario(scenarioId);
+
+                        if (scenarioId) {
+                          const scenario = scenarios.find(
+                            (s) => s.id === scenarioId
+                          );
+                          if (scenario) {
+                            setIsLoading(true);
+                            try {
+                              const assetAccountTypes: AccountType[] = [
+                                "Current",
+                                "Savings",
+                                "Investment",
+                                "Stock",
+                                "Crypto",
+                                "Pension",
+                                "Commodity",
+                                "Stock_options",
+                              ];
+
+                              const savingsAllocation =
+                                scenario.savingsAllocation ||
+                                (() => {
+                                  const defaults: Record<string, number> = {};
+                                  const types = Object.keys(
+                                    scenario.growthRates
+                                  ).filter((type) =>
+                                    assetAccountTypes.includes(
+                                      type as AccountType
+                                    )
+                                  ) as AccountType[];
+                                  if (types.length > 0) {
+                                    const basePercent = Math.floor(
+                                      100 / types.length
+                                    );
+                                    const remainder =
+                                      100 - basePercent * types.length;
+                                    types.forEach((type, index) => {
+                                      defaults[type] =
+                                        basePercent +
+                                        (index < remainder ? 1 : 0);
+                                    });
+                                  }
+                                  return defaults as Record<
+                                    AccountType,
+                                    number
+                                  >;
+                                })();
+
+                              const result = await calculateProjection({
+                                monthlyIncome: scenario.monthlyIncome,
+                                savingsRate: scenario.savingsRate,
+                                timePeriodMonths: scenario.timePeriodMonths,
+                                growthRates: scenario.growthRates as Record<
+                                  AccountType,
+                                  number
+                                >,
+                                savingsAllocation,
+                              });
+
+                              // Check for error in response (error field is optional and only present on errors)
+                              if (result && "error" in result && result.error) {
+                                console.error(
+                                  "Error calculating projection:",
+                                  result.error
+                                );
+                                // Don't set projection data if there's an error
+                              } else {
+                                // Type assertion needed since error field is optional
+                                setProjectionData(
+                                  result as Parameters<
+                                    typeof setProjectionData
+                                  >[0]
+                                );
+                                setSelectedScenarioId(scenarioId);
+                              }
+                            } catch (error) {
+                              console.error(
+                                "Error calculating projection:",
+                                error
+                              );
+                            } finally {
+                              setIsLoading(false);
+                            }
+                          }
+                        } else {
+                          setProjectionData(null);
+                          setSelectedScenarioId(null);
+                        }
+                      }}
+                      className="px-2 py-1 rounded border bg-background min-w-[180px]"
+                    >
+                      <option value="">Select a scenario...</option>
+                      {scenarios.map((scenario) => (
+                        <option key={scenario.id} value={scenario.id}>
+                          {scenario.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
+                    <span className="whitespace-nowrap">View:</span>
+                    <select
+                      value={projectionViewType}
+                      onChange={(e) =>
+                        setProjectionViewType(
+                          e.target.value as "absolute" | "percentage"
+                        )
+                      }
+                      className="px-2 py-1 rounded border bg-background min-w-[150px]"
+                    >
+                      <option value="absolute">Absolute Values</option>
+                      <option value="percentage">Percentage Composition</option>
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowProjectionForm(!showProjectionForm)}
+                    className="flex-shrink-0 px-3 py-1 rounded border bg-background hover:bg-muted text-xs sm:text-sm whitespace-nowrap"
                   >
-                    <option value="account-type">Account Type</option>
-                    <option value="category">Category</option>
-                  </select>
-                </label>
-                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                  <span className="whitespace-nowrap">Month:</span>
-                  <select
-                    value={allocationSelectedMonth || ""}
-                    onChange={(e) =>
-                      setAllocationSelectedMonth(e.target.value || undefined)
-                    }
-                    className="px-2 py-1 rounded border bg-background min-w-[120px]"
-                  >
-                    <option value="">Latest</option>
-                    {(allocationViewType === "category"
-                      ? chartData.categoryData
-                      : chartData.accountTypeData
-                    ).map((item) => (
-                      <option key={item.monthKey} value={item.month}>
-                        {item.month}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            ) : null
+                    {showProjectionForm ? "Hide" : "Show"} Setup Form
+                  </button>
+                </React.Fragment>
+              ) : chartType === "allocation" ? (
+                <>
+                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
+                    <span className="whitespace-nowrap">View by:</span>
+                    <select
+                      value={allocationViewType}
+                      onChange={(e) =>
+                        setAllocationViewType(
+                          e.target.value as "account-type" | "category"
+                        )
+                      }
+                      className="px-2 py-1 rounded border bg-background min-w-[140px]"
+                    >
+                      <option value="account-type">Account Type</option>
+                      <option value="category">Category</option>
+                    </select>
+                  </label>
+                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
+                    <span className="whitespace-nowrap">Month:</span>
+                    <select
+                      value={allocationSelectedMonth || ""}
+                      onChange={(e) =>
+                        setAllocationSelectedMonth(e.target.value || undefined)
+                      }
+                      className="px-2 py-1 rounded border bg-background min-w-[120px]"
+                    >
+                      <option value="">Latest</option>
+                      {(allocationViewType === "category"
+                        ? chartData.categoryData
+                        : chartData.accountTypeData
+                      ).map((item) => (
+                        <option key={item.monthKey} value={item.month}>
+                          {item.month}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </>
+              ) : null}
+            </>
           }
         />
 
