@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
@@ -442,7 +442,7 @@ export function ChartControls({
                 </select>
               </label>
             ) : chartType === "projection" ? (
-              <>
+              <React.Fragment>
                 <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">Scenario:</span>
                   <select
@@ -505,8 +505,22 @@ export function ChartControls({
                               savingsAllocation,
                             });
 
-                            setProjectionData(result);
-                            setSelectedScenarioId(scenarioId);
+                            // Check for error in response (error field is optional and only present on errors)
+                            if (result && "error" in result && result.error) {
+                              console.error(
+                                "Error calculating projection:",
+                                result.error
+                              );
+                              // Don't set projection data if there's an error
+                            } else {
+                              // Type assertion needed since error field is optional
+                              setProjectionData(
+                                result as Parameters<
+                                  typeof setProjectionData
+                                >[0]
+                              );
+                              setSelectedScenarioId(scenarioId);
+                            }
                           } catch (error) {
                             console.error(
                               "Error calculating projection:",
@@ -553,7 +567,7 @@ export function ChartControls({
                 >
                   {showProjectionForm ? "Hide" : "Show"} Setup Form
                 </button>
-              </>
+              </React.Fragment>
             ) : chartType === "allocation" ? (
               <>
                 <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">

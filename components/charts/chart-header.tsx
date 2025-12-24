@@ -77,8 +77,23 @@ export function ChartHeader({
       .slice(0, 8); // Show top 8 account types
   }, [chartType, displayData]);
 
-  // Early return after all hooks
+  // Early return after all hooks - but still render headerControls even if no data
   if (!displayData) {
+    // Still render header controls even when there's no data (e.g., for scenario selection)
+    if (headerControls) {
+      return (
+        <div className="mb-4 w-full">
+          <div 
+            className="w-full mt-3 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
+              {headerControls}
+            </div>
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 

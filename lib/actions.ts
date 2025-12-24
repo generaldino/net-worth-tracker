@@ -1822,16 +1822,16 @@ export async function calculateProjection(data: {
     };
   } catch (error) {
     console.error("Error calculating projection:", error);
-    // Re-throw validation errors (e.g., missing accounts for allocated types)
-    if (error instanceof Error && error.message.includes("No account found")) {
-      throw error;
-    }
+    // Return error information instead of throwing to avoid Next.js serialization issues
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    // Return a response with error flag instead of throwing
     return {
       currentNetWorth: 0,
       finalNetWorth: 0,
       totalGrowth: 0,
       growthPercentage: 0,
       projectionData: [],
+      error: errorMessage,
     };
   }
 }
