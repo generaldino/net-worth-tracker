@@ -18,10 +18,7 @@ import { ChartFilters } from "./controls/chart-filters";
 import { AccountTypeSelector } from "./controls/account-type-selector";
 import { CategorySelector } from "./controls/category-selector";
 import { ProjectionCalculator } from "@/components/projections/projection-calculator";
-import {
-  Collapsible,
-  CollapsibleContent,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 const accountCategories = ["Cash", "Investments"];
 
@@ -44,7 +41,12 @@ interface ChartControlsProps {
   accountTypes: string[];
 }
 
-export function ChartControls({ initialData, owners, scenarios, accountTypes }: ChartControlsProps) {
+export function ChartControls({
+  initialData,
+  owners,
+  scenarios,
+  accountTypes,
+}: ChartControlsProps) {
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
   const { fetchRates } = useExchangeRates();
@@ -55,24 +57,34 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Store initial data in a ref to prevent unnecessary re-renders
   // This ref will only be set once on mount and won't trigger re-renders
   const initialDataRef = useRef(initialData);
   const initialAccountIdsRef = useRef<string[]>(
     initialData.accounts.map((account) => account.id)
   );
-  
+
   // Allocation chart options
-  const [allocationViewType, setAllocationViewType] = useState<"account-type" | "category">("account-type");
-  const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<string | undefined>(undefined);
-  
+  const [allocationViewType, setAllocationViewType] = useState<
+    "account-type" | "category"
+  >("account-type");
+  const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<
+    string | undefined
+  >(undefined);
+
   // Total chart options (same as projection)
-  const [totalViewType, setTotalViewType] = useState<"absolute" | "percentage">("absolute");
-  
+  const [totalViewType, setTotalViewType] = useState<"absolute" | "percentage">(
+    "absolute"
+  );
+
   // Projection chart options
-  const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<string | null>(null);
-  const [projectionViewType, setProjectionViewType] = useState<"absolute" | "percentage">("absolute");
+  const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<
+    string | null
+  >(null);
+  const [projectionViewType, setProjectionViewType] = useState<
+    "absolute" | "percentage"
+  >("absolute");
   const [showProjectionForm, setShowProjectionForm] = useState(false); // Default to hidden
 
   // Extract all unique months from chart data for rate fetching
@@ -84,7 +96,7 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
       if (/^\d{4}-\d{2}-\d{2}$/.test(monthKey)) return monthKey.substring(0, 7);
       return monthKey;
     };
-    
+
     rawChartData.netWorthData.forEach((item) => {
       if (item.monthKey) months.add(toMonthFormat(item.monthKey));
     });
@@ -123,18 +135,25 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
 
   // Update selected month to latest when view type changes or data updates
   useEffect(() => {
-    const sourceData = allocationViewType === "category" 
-      ? chartData.categoryData 
-      : chartData.accountTypeData;
-    const latestMonth = sourceData.length > 0 ? sourceData[sourceData.length - 1]?.month : undefined;
-    
+    const sourceData =
+      allocationViewType === "category"
+        ? chartData.categoryData
+        : chartData.accountTypeData;
+    const latestMonth =
+      sourceData.length > 0
+        ? sourceData[sourceData.length - 1]?.month
+        : undefined;
+
     // Only update if current selection is invalid or not set
-    if (!allocationSelectedMonth || !sourceData.find(item => item.month === allocationSelectedMonth)) {
+    if (
+      !allocationSelectedMonth ||
+      !sourceData.find((item) => item.month === allocationSelectedMonth)
+    ) {
       setAllocationSelectedMonth(latestMonth);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allocationViewType, chartData.categoryData, chartData.accountTypeData]);
-  
+
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>(
     initialData.accounts.map((account) => account.id)
   );
@@ -228,11 +247,21 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
     <div className="w-full">
       <div className="pb-3 sm:pb-6">
         <div className="flex flex-col gap-3">
-          <div 
+          <div
             className="flex gap-2 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
-            <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
+            <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
+              <div className="flex-shrink-0 min-w-[200px]">
+                <ChartTypeSelector
+                  value={chartType}
+                  onChange={(value) => {
+                    setChartType(value);
+                    setClickedData(null);
+                  }}
+                  isLoading={isLoading}
+                />
+              </div>
               <div className="flex-shrink-0 min-w-[200px]">
                 <AccountSelector
                   accounts={initialData.accounts}
@@ -263,16 +292,6 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                   isLoading={isLoading}
                 />
               </div>
-              <div className="flex-shrink-0 min-w-[200px]">
-                <ChartTypeSelector
-                  value={chartType}
-                  onChange={(value) => {
-                    setChartType(value);
-                    setClickedData(null);
-                  }}
-                  isLoading={isLoading}
-                />
-              </div>
             </div>
           </div>
         </div>
@@ -288,17 +307,21 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
           onTimePeriodChange={setTimePeriod}
           allocationOptions={
             chartType === "allocation"
-              ? { viewType: allocationViewType, selectedMonth: allocationSelectedMonth }
+              ? {
+                  viewType: allocationViewType,
+                  selectedMonth: allocationSelectedMonth,
+                }
               : undefined
           }
           totalOptions={
-            chartType === "total"
-              ? { viewType: totalViewType }
-              : undefined
+            chartType === "total" ? { viewType: totalViewType } : undefined
           }
           projectionOptions={
             chartType === "projection"
-              ? { viewType: projectionViewType, selectedScenario: selectedProjectionScenario }
+              ? {
+                  viewType: projectionViewType,
+                  selectedScenario: selectedProjectionScenario,
+                }
               : undefined
           }
           headerControls={
@@ -307,7 +330,11 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                 <span className="whitespace-nowrap">View:</span>
                 <select
                   value={totalViewType}
-                  onChange={(e) => setTotalViewType(e.target.value as "absolute" | "percentage")}
+                  onChange={(e) =>
+                    setTotalViewType(
+                      e.target.value as "absolute" | "percentage"
+                    )
+                  }
                   className="px-2 py-1 rounded border bg-background min-w-[150px]"
                 >
                   <option value="absolute">Absolute Values</option>
@@ -323,9 +350,11 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                     onChange={async (e) => {
                       const scenarioId = e.target.value || null;
                       setSelectedProjectionScenario(scenarioId);
-                      
+
                       if (scenarioId) {
-                        const scenario = scenarios.find((s) => s.id === scenarioId);
+                        const scenario = scenarios.find(
+                          (s) => s.id === scenarioId
+                        );
                         if (scenario) {
                           setIsLoading(true);
                           try {
@@ -339,34 +368,50 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                               "Commodity",
                               "Stock_options",
                             ];
-                            
-                            const savingsAllocation = scenario.savingsAllocation || (() => {
-                              const defaults: Record<string, number> = {};
-                              const types = Object.keys(scenario.growthRates).filter(
-                                (type) => assetAccountTypes.includes(type as AccountType)
-                              ) as AccountType[];
-                              if (types.length > 0) {
-                                const basePercent = Math.floor(100 / types.length);
-                                const remainder = 100 - basePercent * types.length;
-                                types.forEach((type, index) => {
-                                  defaults[type] = basePercent + (index < remainder ? 1 : 0);
-                                });
-                              }
-                              return defaults as Record<AccountType, number>;
-                            })();
+
+                            const savingsAllocation =
+                              scenario.savingsAllocation ||
+                              (() => {
+                                const defaults: Record<string, number> = {};
+                                const types = Object.keys(
+                                  scenario.growthRates
+                                ).filter((type) =>
+                                  assetAccountTypes.includes(
+                                    type as AccountType
+                                  )
+                                ) as AccountType[];
+                                if (types.length > 0) {
+                                  const basePercent = Math.floor(
+                                    100 / types.length
+                                  );
+                                  const remainder =
+                                    100 - basePercent * types.length;
+                                  types.forEach((type, index) => {
+                                    defaults[type] =
+                                      basePercent + (index < remainder ? 1 : 0);
+                                  });
+                                }
+                                return defaults as Record<AccountType, number>;
+                              })();
 
                             const result = await calculateProjection({
                               monthlyIncome: scenario.monthlyIncome,
                               savingsRate: scenario.savingsRate,
                               timePeriodMonths: scenario.timePeriodMonths,
-                              growthRates: scenario.growthRates as Record<AccountType, number>,
+                              growthRates: scenario.growthRates as Record<
+                                AccountType,
+                                number
+                              >,
                               savingsAllocation,
                             });
-                            
+
                             setProjectionData(result);
                             setSelectedScenarioId(scenarioId);
                           } catch (error) {
-                            console.error("Error calculating projection:", error);
+                            console.error(
+                              "Error calculating projection:",
+                              error
+                            );
                           } finally {
                             setIsLoading(false);
                           }
@@ -390,7 +435,11 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                   <span className="whitespace-nowrap">View:</span>
                   <select
                     value={projectionViewType}
-                    onChange={(e) => setProjectionViewType(e.target.value as "absolute" | "percentage")}
+                    onChange={(e) =>
+                      setProjectionViewType(
+                        e.target.value as "absolute" | "percentage"
+                      )
+                    }
                     className="px-2 py-1 rounded border bg-background min-w-[150px]"
                   >
                     <option value="absolute">Absolute Values</option>
@@ -411,7 +460,11 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                   <span className="whitespace-nowrap">View by:</span>
                   <select
                     value={allocationViewType}
-                    onChange={(e) => setAllocationViewType(e.target.value as "account-type" | "category")}
+                    onChange={(e) =>
+                      setAllocationViewType(
+                        e.target.value as "account-type" | "category"
+                      )
+                    }
                     className="px-2 py-1 rounded border bg-background min-w-[140px]"
                   >
                     <option value="account-type">Account Type</option>
@@ -422,11 +475,16 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
                   <span className="whitespace-nowrap">Month:</span>
                   <select
                     value={allocationSelectedMonth || ""}
-                    onChange={(e) => setAllocationSelectedMonth(e.target.value || undefined)}
+                    onChange={(e) =>
+                      setAllocationSelectedMonth(e.target.value || undefined)
+                    }
                     className="px-2 py-1 rounded border bg-background min-w-[120px]"
                   >
                     <option value="">Latest</option>
-                    {(allocationViewType === "category" ? chartData.categoryData : chartData.accountTypeData).map((item) => (
+                    {(allocationViewType === "category"
+                      ? chartData.categoryData
+                      : chartData.accountTypeData
+                    ).map((item) => (
                       <option key={item.monthKey} value={item.month}>
                         {item.month}
                       </option>
@@ -437,10 +495,13 @@ export function ChartControls({ initialData, owners, scenarios, accountTypes }: 
             ) : null
           }
         />
-        
+
         {/* Projection Setup Form - only show when projection chart type is selected */}
         {chartType === "projection" && (
-          <Collapsible open={showProjectionForm} onOpenChange={setShowProjectionForm}>
+          <Collapsible
+            open={showProjectionForm}
+            onOpenChange={setShowProjectionForm}
+          >
             <CollapsibleContent className="mt-4">
               <div className="border-t pt-4">
                 <ProjectionCalculator
