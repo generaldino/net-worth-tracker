@@ -1091,8 +1091,8 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={growthRateData} margin={margins}>
-                <CartesianGrid strokeDasharray="3 3" />
+              <BarChart data={growthRateData} margin={margins}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
                   hide={true}
@@ -1107,9 +1107,8 @@ export function ChartDisplay({
                 <ChartTooltip
                   content={<HeaderUpdateTooltip />}
                   cursor={{
-                    stroke: "hsl(var(--foreground))",
-                    strokeWidth: 1,
-                    strokeDasharray: "5 5",
+                    fill: "hsl(var(--foreground))",
+                    fillOpacity: 0.1,
                   }}
                 />
                 {hoveredData && (
@@ -1126,13 +1125,8 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                <Line
-                  type="monotone"
+                <Bar
                   dataKey="Growth Rate"
-                  stroke="hsl(var(--chart-1))"
-                  strokeWidth={2}
-                  dot={{ r: 4, fill: "hsl(var(--chart-1))" }}
-                  activeDot={{ r: 6 }}
                   isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
@@ -1152,8 +1146,19 @@ export function ChartDisplay({
                     }
                   }}
                   style={{ cursor: "pointer" }}
-                />
-              </LineChart>
+                >
+                  {growthRateData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        entry["Growth Rate"] >= 0
+                          ? "hsl(142, 71%, 45%)"
+                          : "hsl(0, 84%, 60%)"
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
         );

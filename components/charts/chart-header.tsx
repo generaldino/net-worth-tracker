@@ -265,29 +265,13 @@ export function ChartHeader({
 
       case "monthly-growth-rate": {
         const growthRate = displayData.metrics["Growth Rate"] as number;
-        const netWorth = displayData.primaryValue || (displayData.metrics["netWorth"] as number);
-        
-        const secondaryMetrics = netWorth !== undefined 
-          ? [{ name: "Net Worth", value: netWorth, absValue: Math.abs(netWorth) }]
-          : [];
 
         return (
-          <div className="space-y-3">
-            <div>
-              <div className="text-xs sm:text-sm text-muted-foreground">GROWTH RATE</div>
-              <div className={`text-2xl sm:text-3xl font-bold ${growthRate >= 0 ? "text-green-600" : "text-red-600"}`}>
-                {formatPercentage(growthRate, 2)}
-              </div>
+          <div>
+            <div className="text-xs sm:text-sm text-muted-foreground">GROWTH RATE</div>
+            <div className={`text-2xl sm:text-3xl font-bold ${growthRate >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {formatPercentage(growthRate, 2)}
             </div>
-            
-            {secondaryMetrics.length > 0 && (
-              <ScrollableMetrics
-                metrics={secondaryMetrics}
-                formatValue={formatValue}
-                getLabel={(name) => name.toUpperCase()}
-                showPercentage={false}
-              />
-            )}
           </div>
         );
       }
