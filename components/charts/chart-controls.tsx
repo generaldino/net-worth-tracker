@@ -123,15 +123,115 @@ export function ChartControls({
     }
   }, [getChartCurrency, uniqueMonths, fetchRates]);
 
+  // Client-side function to filter months by time period
+  const getFilteredMonths = (
+    months: string[],
+    period: TimePeriod
+  ): string[] => {
+    if (months.length === 0) return months;
+
+    // Get the latest month from the data (not current date)
+    // months are sorted ascending (YYYY-MM format), so last is latest
+    const latestMonth = months[months.length - 1];
+    const [latestYear, latestMonthNum] = latestMonth.split("-").map(Number);
+    // latestMonthNum is 1-indexed (1-12), Date constructor expects 0-indexed (0-11)
+
+    switch (period) {
+      case "1M": {
+        // Go back 1 month from latest month
+        const oneMonthAgo = new Date(latestYear, latestMonthNum - 2, 1);
+        return months.filter((month) => new Date(month + "-01") >= oneMonthAgo);
+      }
+      case "3M": {
+        // Go back 3 months from latest month
+        const threeMonthsAgo = new Date(latestYear, latestMonthNum - 4, 1);
+        return months.filter(
+          (month) => new Date(month + "-01") >= threeMonthsAgo
+        );
+      }
+      case "6M": {
+        // Go back 6 months from latest month
+        const sixMonthsAgo = new Date(latestYear, latestMonthNum - 7, 1);
+        return months.filter(
+          (month) => new Date(month + "-01") >= sixMonthsAgo
+        );
+      }
+      case "1Y": {
+        // Go back 12 months from latest month
+        const oneYearAgo = new Date(latestYear, latestMonthNum - 13, 1);
+        return months.filter((month) => new Date(month + "-01") >= oneYearAgo);
+      }
+      case "YTD":
+        // Year to date from the latest month's year
+        return months.filter((month) =>
+          month.startsWith(latestYear.toString())
+        );
+      case "all":
+      default:
+        return months;
+    }
+  };
+
+  // Filter chart data by time period client-side
+  const filteredChartDataByPeriod = useMemo(() => {
+    if (timePeriod === "all") {
+      return rawChartData;
+    }
+
+    // Get all unique monthKeys from the data
+    const allMonths = new Set<string>();
+    rawChartData.netWorthData.forEach((item) => {
+      if (item.monthKey) allMonths.add(item.monthKey);
+    });
+    rawChartData.accountData.forEach((item) => {
+      if (item.monthKey) allMonths.add(item.monthKey);
+    });
+    rawChartData.accountTypeData.forEach((item) => {
+      if (item.monthKey) allMonths.add(item.monthKey);
+    });
+    rawChartData.categoryData.forEach((item) => {
+      if (item.monthKey) allMonths.add(item.monthKey);
+    });
+    rawChartData.sourceData.forEach((item) => {
+      if (item.monthKey) allMonths.add(item.monthKey);
+    });
+
+    const sortedMonths = Array.from(allMonths).sort();
+    const filteredMonths = new Set(getFilteredMonths(sortedMonths, timePeriod));
+
+    // Filter all data arrays by the filtered months
+    return {
+      ...rawChartData,
+      netWorthData: rawChartData.netWorthData.filter((item) =>
+        item.monthKey ? filteredMonths.has(item.monthKey) : true
+      ),
+      accountData: rawChartData.accountData.filter((item) =>
+        item.monthKey ? filteredMonths.has(item.monthKey) : true
+      ),
+      accountTypeData: rawChartData.accountTypeData.filter((item) =>
+        item.monthKey ? filteredMonths.has(item.monthKey) : true
+      ),
+      categoryData: rawChartData.categoryData.filter((item) =>
+        item.monthKey ? filteredMonths.has(item.monthKey) : true
+      ),
+      sourceData: rawChartData.sourceData.filter((item) =>
+        item.monthKey ? filteredMonths.has(item.monthKey) : true
+      ),
+    };
+  }, [rawChartData, timePeriod]);
+
   // Convert chart data client-side using stored rates
   const chartData = useMemo(() => {
     const chartCurrency = getChartCurrency();
     if (chartCurrency === "BASE") {
       // For base currency, convert to GBP
-      return convertChartData(rawChartData, "GBP");
+      return convertChartData(filteredChartDataByPeriod, "GBP");
     }
-    return convertChartData(rawChartData, chartCurrency as Currency);
-  }, [rawChartData, getChartCurrency, convertChartData]);
+    return convertChartData(
+      filteredChartDataByPeriod,
+      chartCurrency as Currency
+    );
+  }, [filteredChartDataByPeriod, getChartCurrency, convertChartData]);
 
   // Update selected month to latest when view type changes or data updates
   useEffect(() => {
@@ -191,9 +291,9 @@ export function ChartControls({
     async function loadChartData() {
       setIsLoading(true);
       try {
-        // Fetch raw data (no currency conversion)
+        // Fetch raw data with "all" time period - time period filtering is done client-side
         const data = await getChartData(
-          timePeriod,
+          "all",
           selectedOwner,
           selectedAccounts,
           selectedTypes,
@@ -208,9 +308,9 @@ export function ChartControls({
       }
     }
 
-    // Check if filters differ from initial state
+    // Check if filters (excluding timePeriod) differ from initial state
+    // Time period filtering is now done client-side, so we don't need to refetch on timePeriod change
     const hasFiltersChanged =
-      timePeriod !== "all" ||
       selectedOwner !== "all" ||
       selectedAccountsString !== initialAccountsString ||
       selectedTypesString !== accountTypesString ||
@@ -230,10 +330,10 @@ export function ChartControls({
       });
       setClickedData(null);
     }
-    // Removed initialData from dependencies to prevent re-renders when parent re-renders
+    // Removed initialData and timePeriod from dependencies to prevent re-renders when parent re-renders
+    // timePeriod is now handled client-side
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    timePeriod,
     selectedOwner,
     selectedAccountsString,
     initialAccountsString,

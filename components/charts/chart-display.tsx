@@ -2145,7 +2145,7 @@ export function ChartDisplay({
           <PeriodSelector
             value={timePeriod}
             onChange={onTimePeriodChange}
-            isLoading={isLoading}
+            isLoading={false}
           />
         </div>
       )}
