@@ -27,7 +27,7 @@ import {
   type HoveredData,
 } from "@/components/charts/chart-header";
 import { PeriodSelector } from "./period-selector";
-import { COLORS, CHART_GREEN, CHART_RED } from "./constants";
+import { COLORS, CHART_GREEN, CHART_RED, getUniqueColor } from "./constants";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
@@ -339,15 +339,6 @@ export function ChartDisplay({
         primaryValue = (savings || 0) + (interest || 0) + (gains || 0);
         break;
       }
-      case "savings-rate": {
-        primaryValue = dataPoint["Savings Rate"] as number;
-        metrics["Savings Rate"] = primaryValue;
-        metrics["Total Income"] = dataPoint["Total Income"] as number;
-        metrics["Savings from Income"] = dataPoint[
-          "Savings from Income"
-        ] as number;
-        break;
-      }
       case "waterfall": {
         primaryValue = dataPoint["Ending Balance"] as number;
         metrics["Starting Balance"] = dataPoint["Starting Balance"] as number;
@@ -507,20 +498,6 @@ export function ChartDisplay({
             "Savings from Income": savings,
             "Interest Earned": interest,
             "Capital Gains": gains,
-          },
-        };
-      }
-      case "savings-rate": {
-        const latest = chartData.sourceData[chartData.sourceData.length - 1];
-        if (!latest) return null;
-        return {
-          date: latest.month,
-          month: latest.month,
-          primaryValue: latest["Savings Rate"] || 0,
-          metrics: {
-            "Savings Rate": latest["Savings Rate"] || 0,
-            "Total Income": latest["Total Income"] || 0,
-            "Savings from Income": latest["Savings from Income"] || 0,
           },
         };
       }
@@ -715,7 +692,7 @@ export function ChartDisplay({
         totalAccountTypesArray.forEach((type, index) => {
           totalChartConfig[type] = {
             label: formatAccountTypeName(type),
-            color: COLORS[index % COLORS.length],
+            color: getUniqueColor(index),
           };
         });
 
@@ -817,15 +794,14 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                <Legend />
                 {totalAccountTypesArray.map((type, index) => (
                   <Area
                     key={type}
                     type="monotone"
                     dataKey={type}
                     stackId="total"
-                    stroke={COLORS[index % COLORS.length]}
-                    fill={COLORS[index % COLORS.length]}
+                    stroke={getUniqueColor(index)}
+                    fill={getUniqueColor(index)}
                     fillOpacity={0.6}
                     isAnimationActive={false}
                     onClick={(data) => {
@@ -1148,7 +1124,7 @@ export function ChartDisplay({
                   label: `${account.name} (${account.type}${
                     account.isISA ? " ISA" : ""
                   })`,
-                  color: COLORS[index % COLORS.length],
+                  color: getUniqueColor(index),
                 },
               }),
               {}
@@ -1214,7 +1190,7 @@ export function ChartDisplay({
                       <Bar
                         key={account.id}
                         dataKey={uniqueName}
-                        fill={COLORS[index % COLORS.length]}
+                        fill={getUniqueColor(index)}
                         maxBarSize={accountBarSize}
                         stackId={stackId}
                         onClick={(data) => handleBarClick(data, data.month)}
@@ -1243,7 +1219,7 @@ export function ChartDisplay({
                 ...config,
                 [source]: {
                   label: source,
-                  color: COLORS[index % COLORS.length],
+                  color: getUniqueColor(index),
                 },
               }),
               {}
@@ -1264,12 +1240,12 @@ export function ChartDisplay({
                     >
                       <stop
                         offset="5%"
-                        stopColor={COLORS[index % COLORS.length]}
+                        stopColor={getUniqueColor(index)}
                         stopOpacity={0.4}
                       />
                       <stop
                         offset="95%"
-                        stopColor={COLORS[index % COLORS.length]}
+                        stopColor={getUniqueColor(index)}
                         stopOpacity={0}
                       />
                     </linearGradient>
@@ -1336,7 +1312,7 @@ export function ChartDisplay({
                         type="monotone"
                         dataKey={source}
                         stackId="1"
-                        stroke={COLORS[index % COLORS.length]}
+                        stroke={getUniqueColor(index)}
                         fill={`url(#${source.replace(/\s+/g, "")}Gradient)`}
                         strokeWidth={2}
                         isAnimationActive={false}
@@ -1357,114 +1333,6 @@ export function ChartDisplay({
                   }
                   return null;
                 })}
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        );
-
-      case "savings-rate":
-        // Calculate average savings rate for reference line
-        const savingsRates = chartData.sourceData
-          .map((d) => d["Savings Rate"])
-          .filter((rate) => typeof rate === "number" && !isNaN(rate));
-        const avgSavingsRate =
-          savingsRates.length > 0
-            ? savingsRates.reduce((sum, rate) => sum + rate, 0) /
-              savingsRates.length
-            : 0;
-
-        return (
-          <ChartContainer
-            config={{
-              "Savings Rate": {
-                label: "Savings Rate",
-                color: CHART_GREEN,
-              },
-            }}
-            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData.sourceData} margin={margins}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" hide={true} />
-                <YAxis
-                  hide={true}
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                  domain={["auto", "auto"]}
-                  allowDataOverflow={true}
-                />
-                <ReferenceLine y={0} stroke="#666" strokeDasharray="2 2" />
-                <ReferenceLine
-                  y={20}
-                  stroke="hsl(var(--chart-2))"
-                  strokeDasharray="3 3"
-                  label={{ value: "20% Target", position: "right" }}
-                />
-                <ReferenceLine
-                  y={avgSavingsRate}
-                  stroke="hsl(var(--chart-3))"
-                  strokeDasharray="2 2"
-                  label={{
-                    value: `Avg: ${avgSavingsRate.toFixed(1)}%`,
-                    position: "right",
-                  }}
-                />
-                <ChartTooltip
-                  content={<HeaderUpdateTooltip />}
-                  cursor={{
-                    stroke: "hsl(var(--foreground))",
-                    strokeWidth: 1,
-                    strokeDasharray: "5 5",
-                  }}
-                />
-                {hoveredData && (
-                  <ReferenceLine
-                    x={hoveredData.month}
-                    stroke="hsl(var(--foreground))"
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    label={{
-                      value: hoveredData.date || hoveredData.month,
-                      position: "top",
-                      offset: 5,
-                      fill: "hsl(var(--foreground))",
-                      fontSize: 12,
-                    }}
-                  />
-                )}
-                {/* Savings Rate as primary metric - simple area chart */}
-                <Area
-                  type="monotone"
-                  dataKey="Savings Rate"
-                  stroke={CHART_GREEN}
-                  fill={CHART_GREEN}
-                  fillOpacity={0.6}
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        "Savings Rate": number;
-                        "Total Income": number;
-                        "Savings from Income": number;
-                      };
-                      handleBarClick(
-                        {
-                          month: payload.month,
-                          "Savings Rate": payload["Savings Rate"],
-                          "Total Income": payload["Total Income"],
-                          "Savings from Income": payload["Savings from Income"],
-                        },
-                        payload.month
-                      );
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
-                />
               </AreaChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -1508,7 +1376,7 @@ export function ChartDisplay({
           .map(([name, value], index) => ({
             name,
             value: Math.abs(value as number),
-            fill: COLORS[index % COLORS.length],
+            fill: getUniqueColor(index),
           }))
           .sort((a, b) => b.value - a.value); // Sort by value descending
 
@@ -1943,7 +1811,7 @@ export function ChartDisplay({
         projectionAccountTypesArray.forEach((type, index) => {
           projectionChartConfig[type] = {
             label: formatAccountTypeName(type),
-            color: COLORS[index % COLORS.length],
+            color: getUniqueColor(index),
           };
         });
 
@@ -2045,15 +1913,14 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                <Legend />
                 {projectionAccountTypesArray.map((type, index) => (
                   <Area
                     key={type}
                     type="monotone"
                     dataKey={type}
                     stackId="projection"
-                    stroke={COLORS[index % COLORS.length]}
-                    fill={COLORS[index % COLORS.length]}
+                    stroke={getUniqueColor(index)}
+                    fill={getUniqueColor(index)}
                     fillOpacity={0.6}
                     isAnimationActive={false}
                   />

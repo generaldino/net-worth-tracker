@@ -3,7 +3,6 @@ export type ChartType =
   | "assets-vs-liabilities"
   | "by-account"
   | "by-wealth-source"
-  | "savings-rate"
   | "monthly-growth-rate"
   | "allocation"
   | "waterfall"

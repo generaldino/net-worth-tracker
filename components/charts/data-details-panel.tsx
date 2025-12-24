@@ -2,7 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import type { ClickedData } from "@/components/charts/types";
-import { COLORS, SOURCE_KEYS } from "@/components/charts/constants";
+import {
+  COLORS,
+  SOURCE_KEYS,
+  getUniqueColor,
+} from "@/components/charts/constants";
 import { useState } from "react";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
@@ -45,7 +49,9 @@ export function DataDetailsPanel({
   return (
     <div className="mt-4 p-3 sm:p-4 bg-muted/30 rounded-lg border">
       <div className="flex justify-between items-start mb-3 gap-2">
-        <h4 className="font-medium text-base sm:text-lg truncate">{month} Details</h4>
+        <h4 className="font-medium text-base sm:text-lg truncate">
+          {month} Details
+        </h4>
         <Button
           variant="ghost"
           size="sm"
@@ -121,7 +127,9 @@ export function DataDetailsPanel({
               }`}
             >
               {typeof data["Growth Rate"] === "number"
-                ? `${data["Growth Rate"] >= 0 ? "+" : ""}${data["Growth Rate"].toFixed(2)}%`
+                ? `${data["Growth Rate"] >= 0 ? "+" : ""}${data[
+                    "Growth Rate"
+                  ].toFixed(2)}%`
                 : "—"}
             </span>
           </div>
@@ -144,26 +152,27 @@ export function DataDetailsPanel({
           {Object.entries(data)
             .filter(
               ([key, value]) =>
-                key !== "month" &&
-                typeof value === "number" &&
-                value > 0
+                key !== "month" && typeof value === "number" && value > 0
             )
             .sort(([, a], [, b]) => (b as number) - (a as number))
             .map(([key, value], index) => {
               const total = Object.entries(data)
                 .filter(
-                  ([k, v]) =>
-                    k !== "month" && typeof v === "number" && v > 0
+                  ([k, v]) => k !== "month" && typeof v === "number" && v > 0
                 )
                 .reduce((sum, [, v]) => sum + (v as number), 0);
-              const percentage = total > 0 ? ((value as number) / total) * 100 : 0;
+              const percentage =
+                total > 0 ? ((value as number) / total) * 100 : 0;
               return (
-                <div key={key} className="flex justify-between items-center gap-2">
+                <div
+                  key={key}
+                  className="flex justify-between items-center gap-2"
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <div
                       className="w-3 h-3 rounded-sm shrink-0"
                       style={{
-                        backgroundColor: COLORS[index % COLORS.length],
+                        backgroundColor: getUniqueColor(index),
                       }}
                     />
                     <span className="truncate text-sm sm:text-base">{key}</span>
@@ -195,17 +204,22 @@ export function DataDetailsPanel({
               !["x", "y", "width", "height", "value"].includes(key)
             ) {
               return (
-                <div key={key} className="flex justify-between items-center gap-2">
+                <div
+                  key={key}
+                  className="flex justify-between items-center gap-2"
+                >
                   <div className="flex items-center gap-2 min-w-0">
                     <div
                       className="w-3 h-3 rounded-sm shrink-0"
                       style={{
-                        backgroundColor: COLORS[index % COLORS.length],
+                        backgroundColor: getUniqueColor(index),
                       }}
                     />
                     <span className="truncate text-sm sm:text-base">{key}</span>
                   </div>
-                  <span className="font-medium text-sm sm:text-base shrink-0">£{formatCurrency(value)}</span>
+                  <span className="font-medium text-sm sm:text-base shrink-0">
+                    £{formatCurrency(value)}
+                  </span>
                 </div>
               );
             }
@@ -259,10 +273,12 @@ export function DataDetailsPanel({
                     <div
                       className="w-3 h-3 rounded-sm shrink-0"
                       style={{
-                        backgroundColor: COLORS[index % COLORS.length],
+                        backgroundColor: getUniqueColor(index),
                       }}
                     />
-                    <span className="truncate text-sm sm:text-base">{source}</span>
+                    <span className="truncate text-sm sm:text-base">
+                      {source}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span
@@ -366,9 +382,15 @@ export function DataDetailsPanel({
           {typeof data["Savings from Income"] === "number" &&
             data["Savings from Income"] !== 0 && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Savings from Income:</span>
+                <span className="text-muted-foreground">
+                  Savings from Income:
+                </span>
                 <span className="font-medium text-green-600">
-                  +{formatCurrencyAmount(data["Savings from Income"], chartCurrency)}
+                  +
+                  {formatCurrencyAmount(
+                    data["Savings from Income"],
+                    chartCurrency
+                  )}
                 </span>
               </div>
             )}
@@ -377,7 +399,8 @@ export function DataDetailsPanel({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Interest Earned:</span>
                 <span className="font-medium text-green-600">
-                  +{formatCurrencyAmount(data["Interest Earned"], chartCurrency)}
+                  +
+                  {formatCurrencyAmount(data["Interest Earned"], chartCurrency)}
                 </span>
               </div>
             )}
@@ -393,7 +416,10 @@ export function DataDetailsPanel({
                   }`}
                 >
                   {(data["Capital Gains"] as number) >= 0 ? "+" : ""}
-                  {formatCurrencyAmount(data["Capital Gains"] as number, chartCurrency)}
+                  {formatCurrencyAmount(
+                    data["Capital Gains"] as number,
+                    chartCurrency
+                  )}
                 </span>
               </div>
             )}
@@ -415,18 +441,21 @@ export function DataDetailsPanel({
             </div>
           </div>
           {(() => {
-            const breakdown = (data.breakdown as unknown as Record<
-              string,
-              Array<{
-                accountId: string;
-                name: string;
-                type: string;
-                amount: number;
-                currency: string;
-                owner: string;
-              }>
-            >) || {};
-            const hasBreakdown = Object.values(breakdown).some((arr) => arr.length > 0);
+            const breakdown =
+              (data.breakdown as unknown as Record<
+                string,
+                Array<{
+                  accountId: string;
+                  name: string;
+                  type: string;
+                  amount: number;
+                  currency: string;
+                  owner: string;
+                }>
+              >) || {};
+            const hasBreakdown = Object.values(breakdown).some(
+              (arr) => arr.length > 0
+            );
             if (hasBreakdown) {
               return (
                 <div className="border-t pt-2 mt-2">
@@ -473,98 +502,6 @@ export function DataDetailsPanel({
             }
             return null;
           })()}
-        </div>
-      )}
-
-      {chartType === "savings-rate" && (
-        <div className="space-y-2">
-          <div className="text-sm text-muted-foreground mb-2">
-            Savings Rate Details:
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Income:</span>
-              <span className="font-medium">
-                £
-                {(() => {
-                  const workIncome = data["Total Income"] || 0;
-                  return formatCurrency(
-                    typeof workIncome === "number" ? workIncome : Number(workIncome) || 0
-                  );
-                })()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Savings:</span>
-              <span className="font-medium text-green-600">
-                £
-                {(() => {
-                  const breakdown =
-                    (data.breakdown as unknown as Record<
-                      string,
-                      AccountBreakdown[]
-                    >) || {};
-                  const savings =
-                    breakdown["Savings from Income"]?.reduce(
-                      (sum, acc) => sum + acc.amount,
-                      0
-                    ) || 0;
-                  return formatCurrency(Math.abs(savings));
-                })()}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Savings Rate:</span>
-              <span className="font-medium text-green-600">
-                {(() => {
-                  const workIncome = Number(data["Total Income"]) || 0;
-                  const savings = Number(data["Savings from Income"]) || 0;
-                  return workIncome > 0
-                    ? isMasked
-                      ? "•••"
-                      : `${Number(
-                          ((Math.abs(savings) / workIncome) * 100).toFixed(1)
-                        )}%`
-                    : "0%";
-                })()}
-              </span>
-            </div>
-          </div>
-          <div className="border-t pt-2 mt-2">
-            <div className="text-sm text-muted-foreground mb-2">
-              Account Breakdown:
-            </div>
-            <ul className="space-y-1">
-              {(() => {
-                const breakdown =
-                  (data.breakdown as unknown as Record<
-                    string,
-                    AccountBreakdown[]
-                  >) || {};
-                return (
-                  breakdown["Savings from Income"]?.map((acc) => (
-                    <li
-                      key={acc.accountId}
-                      className="flex justify-between text-sm"
-                    >
-                      <span className="text-muted-foreground">
-                        {acc.name} ({acc.owner}){" "}
-                        <span className="text-xs">({acc.type})</span>
-                      </span>
-                      <span
-                        className={
-                          acc.amount >= 0 ? "text-green-600" : "text-red-600"
-                        }
-                      >
-                        {acc.amount >= 0 ? "+" : "-"}£
-                        {formatCurrency(Math.abs(acc.amount))}
-                      </span>
-                    </li>
-                  )) || []
-                );
-              })()}
-            </ul>
-          </div>
         </div>
       )}
     </div>

@@ -79,7 +79,11 @@ export function useChartCurrencyConverter() {
 
       // Convert each account balance and preserve the isLiability flag
       const convertedAccountBalances = item.accountBalances.map((acc) => {
-        const converted = convertValue(acc.balance, acc.currency as Currency, item.monthKey);
+        const converted = convertValue(
+          acc.balance,
+          acc.currency as Currency,
+          item.monthKey
+        );
         return {
           accountId: acc.accountId,
           balance: converted,
@@ -103,11 +107,11 @@ export function useChartCurrencyConverter() {
     // Convert account data
     const convertedAccountData = data.accountData.map((item) => {
       const converted: typeof item = { ...item };
-      
+
       // Convert each account value
       Object.keys(item).forEach((key) => {
         if (key === "month" || key === "monthKey") return;
-        
+
         if (key.endsWith("_currency")) {
           // Remove currency metadata keys
           delete converted[key];
@@ -119,11 +123,9 @@ export function useChartCurrencyConverter() {
         const value = item[key] as number;
 
         if (typeof value === "number") {
-          converted[key] = convertValue(
-            Math.abs(value),
-            currency as Currency,
-            item.monthKey
-          ) * (value < 0 ? -1 : 1);
+          converted[key] =
+            convertValue(Math.abs(value), currency as Currency, item.monthKey) *
+            (value < 0 ? -1 : 1);
         }
       });
 
@@ -133,9 +135,13 @@ export function useChartCurrencyConverter() {
     // Convert account type data
     const convertedAccountTypeData = data.accountTypeData.map((item) => {
       const converted: typeof item = { ...item };
-      
+
       Object.keys(item).forEach((key) => {
-        if (key === "month" || key === "monthKey" || key.endsWith("_currencies")) {
+        if (
+          key === "month" ||
+          key === "monthKey" ||
+          key.endsWith("_currencies")
+        ) {
           if (key.endsWith("_currencies")) {
             delete converted[key];
           }
@@ -144,7 +150,7 @@ export function useChartCurrencyConverter() {
 
         const currenciesKey = `${key}_currencies`;
         const currenciesJson = item[currenciesKey] as string;
-        
+
         if (currenciesJson) {
           try {
             const currencies = JSON.parse(currenciesJson) as Array<{
@@ -152,12 +158,16 @@ export function useChartCurrencyConverter() {
               balance: number;
               isLiability: boolean;
             }>;
-            
+
             const convertedTotal = currencies.reduce((sum, curr) => {
-              const converted = convertValue(curr.balance, curr.currency, item.monthKey);
+              const converted = convertValue(
+                curr.balance,
+                curr.currency,
+                item.monthKey
+              );
               return sum + (curr.isLiability ? -converted : converted);
             }, 0);
-            
+
             converted[key] = convertedTotal;
           } catch {
             // Fallback if parsing fails
@@ -171,9 +181,13 @@ export function useChartCurrencyConverter() {
     // Convert category data (same logic as account type)
     const convertedCategoryData = data.categoryData.map((item) => {
       const converted: typeof item = { ...item };
-      
+
       Object.keys(item).forEach((key) => {
-        if (key === "month" || key === "monthKey" || key.endsWith("_currencies")) {
+        if (
+          key === "month" ||
+          key === "monthKey" ||
+          key.endsWith("_currencies")
+        ) {
           if (key.endsWith("_currencies")) {
             delete converted[key];
           }
@@ -182,7 +196,7 @@ export function useChartCurrencyConverter() {
 
         const currenciesKey = `${key}_currencies`;
         const currenciesJson = item[currenciesKey] as string;
-        
+
         if (currenciesJson) {
           try {
             const currencies = JSON.parse(currenciesJson) as Array<{
@@ -190,12 +204,16 @@ export function useChartCurrencyConverter() {
               balance: number;
               isLiability: boolean;
             }>;
-            
+
             const convertedTotal = currencies.reduce((sum, curr) => {
-              const converted = convertValue(curr.balance, curr.currency, item.monthKey);
+              const converted = convertValue(
+                curr.balance,
+                curr.currency,
+                item.monthKey
+              );
               return sum + (curr.isLiability ? -converted : converted);
             }, 0);
-            
+
             converted[key] = convertedTotal;
           } catch {
             // Fallback if parsing fails
@@ -209,50 +227,69 @@ export function useChartCurrencyConverter() {
     // Convert source data
     const convertedSourceData = data.sourceData.map((item) => {
       const converted = { ...item };
-      
+
       // Convert breakdown amounts
       if (item.breakdown) {
         const convertedBreakdown: typeof item.breakdown = {
-          "Savings from Income": item.breakdown["Savings from Income"].map((acc) => ({
-            ...acc,
-            amount: convertValue(acc.amount, acc.currency as Currency, item.monthKey),
-          })),
+          "Savings from Income": item.breakdown["Savings from Income"].map(
+            (acc) => ({
+              ...acc,
+              amount: convertValue(
+                acc.amount,
+                acc.currency as Currency,
+                item.monthKey
+              ),
+            })
+          ),
           "Interest Earned": item.breakdown["Interest Earned"].map((acc) => ({
             ...acc,
-            amount: convertValue(acc.amount, acc.currency as Currency, item.monthKey),
+            amount: convertValue(
+              acc.amount,
+              acc.currency as Currency,
+              item.monthKey
+            ),
           })),
           "Capital Gains": item.breakdown["Capital Gains"].map((acc) => ({
             ...acc,
-            amount: convertValue(acc.amount, acc.currency as Currency, item.monthKey),
+            amount: convertValue(
+              acc.amount,
+              acc.currency as Currency,
+              item.monthKey
+            ),
           })),
         };
 
         // Recalculate totals from converted breakdowns
-        converted["Savings from Income"] = convertedBreakdown["Savings from Income"].reduce(
-          (sum, acc) => sum + acc.amount,
-          0
-        );
-        converted["Interest Earned"] = convertedBreakdown["Interest Earned"].reduce(
-          (sum, acc) => sum + acc.amount,
-          0
-        );
+        converted["Interest Earned"] = convertedBreakdown[
+          "Interest Earned"
+        ].reduce((sum, acc) => sum + acc.amount, 0);
         converted["Capital Gains"] = convertedBreakdown["Capital Gains"].reduce(
           (sum, acc) => sum + acc.amount,
           0
         );
+        // Note: Don't recalculate "Savings from Income" from breakdown because breakdown
+        // contains workIncome amounts, not actual savings. Convert the original calculated value.
+        converted["Savings from Income"] =
+          displayCurrency === "GBP"
+            ? item["Savings from Income"] || 0
+            : convertValue(
+                item["Savings from Income"] || 0,
+                "GBP",
+                item.monthKey
+              );
         // Convert Total Income (work income) from GBP (base currency) to display currency
         // The original Total Income is a sum across accounts and is stored in GBP
         converted["Total Income"] =
           displayCurrency === "GBP"
             ? item["Total Income"] || 0
             : convertValue(item["Total Income"] || 0, "GBP", item.monthKey);
-        
+
         // Recalculate savings rate
         converted["Savings Rate"] =
           converted["Total Income"] > 0
             ? Number(
                 (
-                  (Math.abs(converted["Savings from Income"]) /
+                  (converted["Savings from Income"] /
                     converted["Total Income"]) *
                   100
                 ).toFixed(1)
@@ -277,4 +314,3 @@ export function useChartCurrencyConverter() {
 
   return { convertChartData };
 }
-

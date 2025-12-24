@@ -577,7 +577,7 @@ export async function getChartData(
     // Filter monthly entries to only include entries for filtered accounts (performance optimization)
     // This prevents querying all entries from all users
     const filteredAccountIds = filteredAccounts.map((account) => account.id);
-    
+
     // Get monthly entries only for filtered accounts
     const entries =
       filteredAccountIds.length > 0
@@ -830,10 +830,10 @@ export async function getChartData(
 
     // Calculate growth by source over time (raw values, no conversion)
     const sourceData = filteredMonths.map((month) => {
-      let savingsFromIncome = 0;
       let interestEarned = 0;
       let capitalGains = 0;
       let totalWorkIncome = 0;
+      let totalAccountGrowth = 0;
 
       // Per-account breakdowns (with currency info)
       const savingsAccounts: Array<{
@@ -861,6 +861,49 @@ export async function getChartData(
         owner: string;
       }> = [];
 
+      // Calculate current month's net worth
+      const currentNetWorth = monthlyData[month]
+        .filter((entry) =>
+          filteredAccounts.some((account) => account.id === entry.accountId)
+        )
+        .reduce((sum, entry) => {
+          const account = filteredAccounts.find(
+            (acc) => acc.id === entry.accountId
+          );
+          // Credit cards and loans are liabilities - subtract from net worth
+          if (account?.type === "Credit_Card" || account?.type === "Loan") {
+            return sum - entry.endingBalance;
+          }
+          // All other accounts are assets - add to net worth
+          return sum + entry.endingBalance;
+        }, 0);
+
+      // Calculate previous month's net worth (must have previous month in ALL data, not just filtered)
+      // We need the actual previous month from the sorted months array, not just filteredMonths
+      const monthIndexInAllMonths = months.indexOf(month);
+      let previousNetWorth = 0;
+      if (monthIndexInAllMonths > 0) {
+        const previousMonth = months[monthIndexInAllMonths - 1];
+        previousNetWorth = monthlyData[previousMonth]
+          .filter((entry) =>
+            filteredAccounts.some((account) => account.id === entry.accountId)
+          )
+          .reduce((sum, entry) => {
+            const account = filteredAccounts.find(
+              (acc) => acc.id === entry.accountId
+            );
+            if (account?.type === "Credit_Card" || account?.type === "Loan") {
+              return sum - entry.endingBalance;
+            }
+            return sum + entry.endingBalance;
+          }, 0);
+      }
+
+      // Calculate net worth change (only if we have a previous month)
+      const netWorthChange =
+        monthIndexInAllMonths > 0 ? currentNetWorth - previousNetWorth : 0;
+
+      // Sum account growth for all accounts
       monthlyData[month].forEach((entry) => {
         const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (!account) return;
@@ -868,22 +911,23 @@ export async function getChartData(
         const accountCurrency = (account.currency || "GBP") as Currency;
 
         // Add work income to total (raw)
-        totalWorkIncome += Number(entry.workIncome || 0);
+        const workIncome = Number(entry.workIncome || 0);
+        totalWorkIncome += workIncome;
 
-        // Calculate savings from income (cash flow)
-        // cashFlow = cashIn - cashOut + workIncome represents net cash added to the account
-        // This is the savings amount for this account in this month
-        if (entry.cashFlow !== 0) {
-          savingsFromIncome += entry.cashFlow;
+        // Track accounts that received work income for breakdown
+        if (workIncome > 0) {
           savingsAccounts.push({
             accountId: account.id,
             name: account.name,
             type: account.type,
-            amount: entry.cashFlow,
+            amount: workIncome, // Show work income in breakdown
             currency: accountCurrency,
             owner: account.owner || "Unknown",
           });
         }
+
+        // Sum all account growth (for calculating savings from income)
+        totalAccountGrowth += entry.accountGrowth;
 
         // Calculate interest earned (if applicable)
         if (account.type === "Savings" && entry.accountGrowth > 0) {
@@ -916,6 +960,11 @@ export async function getChartData(
         }
       });
 
+      // Calculate savings from income: Net Worth Change - Account Growth
+      // This represents the net cash added from work income (after spending)
+      // Transfers cancel out when calculating net worth change, so this is accurate
+      const savingsFromIncome = netWorthChange - totalAccountGrowth;
+
       return {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
           month: "short",
@@ -928,11 +977,7 @@ export async function getChartData(
         "Total Income": totalWorkIncome,
         "Savings Rate":
           totalWorkIncome > 0
-            ? Number(
-                ((Math.abs(savingsFromIncome) / totalWorkIncome) * 100).toFixed(
-                  1
-                )
-              )
+            ? Number(((savingsFromIncome / totalWorkIncome) * 100).toFixed(1))
             : 0,
         breakdown: {
           "Savings from Income": savingsAccounts,
@@ -975,7 +1020,7 @@ function getFilteredMonths(
   timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "all"
 ): string[] {
   if (months.length === 0) return months;
-  
+
   // Get the latest month from the data (not current date)
   // months are sorted ascending (YYYY-MM format), so last is latest
   const latestMonth = months[months.length - 1];
@@ -991,7 +1036,9 @@ function getFilteredMonths(
     case "3M": {
       // Go back 3 months from latest month
       const threeMonthsAgo = new Date(latestYear, latestMonthNum - 4, 1);
-      return months.filter((month) => new Date(month + "-01") >= threeMonthsAgo);
+      return months.filter(
+        (month) => new Date(month + "-01") >= threeMonthsAgo
+      );
     }
     case "6M": {
       // Go back 6 months from latest month
@@ -1849,7 +1896,8 @@ export async function calculateProjection(data: {
   } catch (error) {
     console.error("Error calculating projection:", error);
     // Return error information instead of throwing to avoid Next.js serialization issues
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
     // Return a response with error flag instead of throwing
     return {
       currentNetWorth: 0,
