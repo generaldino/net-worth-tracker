@@ -1646,8 +1646,16 @@ export function ChartDisplay({
           );
         };
 
+        // Calculate responsive sizes based on screen width
+        const isMobile = width && width < 640;
+        const isTablet = width && width >= 640 && width < 1024;
+        const outerRadius = isMobile ? 90 : isTablet ? 120 : 140;
+        const innerRadius = isMobile ? 45 : isTablet ? 60 : 70;
+        const cxPosition = isMobile ? "45%" : isTablet ? "38%" : "35%";
+        const chartHeight = isMobile ? "280px" : isTablet ? "360px" : "450px";
+
         return (
-          <div className="space-y-4">
+          <div className="w-full">
             <ChartContainer
               config={allocationData.reduce(
                 (config, item) => ({
@@ -1659,18 +1667,19 @@ export function ChartDisplay({
                 }),
                 {} as Record<string, { label: string; color: string }>
               )}
-              className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
+              className="w-full"
+              style={{ height: chartHeight }}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={allocationData}
-                    cx="50%"
+                    cx={cxPosition}
                     cy="50%"
                     labelLine={false}
                     label={renderCustomizedLabel}
-                    outerRadius={width && width < 640 ? 80 : 100}
-                    innerRadius={width && width < 640 ? 40 : 50}
+                    outerRadius={outerRadius}
+                    innerRadius={innerRadius}
                     fill="#8884d8"
                     dataKey="value"
                     isAnimationActive={false}
@@ -1690,8 +1699,11 @@ export function ChartDisplay({
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
                   <Legend
-                    verticalAlign="bottom"
-                    height={36}
+                    verticalAlign="middle"
+                    align={isMobile ? "right" : "right"}
+                    layout="vertical"
+                    wrapperStyle={isMobile ? { paddingLeft: "10px" } : {}}
+                    iconSize={isMobile ? 12 : 14}
                     formatter={(value, entry) => {
                       const entryValue = (entry.payload as { value?: number })
                         ?.value;

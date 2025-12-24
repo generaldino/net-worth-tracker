@@ -20,7 +20,7 @@ export function Navbar() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
@@ -32,23 +32,23 @@ export function Navbar() {
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Show navbar when at top
       if (currentScrollY < 10) {
         setIsVisible(true);
-      } 
+      }
       // Hide on scroll down, show on scroll up
       else if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
       } else if (currentScrollY < lastScrollY) {
         setIsVisible(true);
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", checkMobile);
@@ -56,12 +56,12 @@ export function Navbar() {
   }, [lastScrollY, isMobile]);
 
   return (
-    <nav 
+    <nav
       className={`fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
         isMobile && !isVisible ? "-translate-y-full" : "translate-y-0"
       }`}
     >
-      <div className="container mx-auto px-4 sm:px-6">
+      <div className="container px-4 sm:px-6">
         <div className="flex items-center justify-between gap-4 py-3 min-h-[56px]">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <div className="font-semibold text-base sm:text-lg shrink-0">
