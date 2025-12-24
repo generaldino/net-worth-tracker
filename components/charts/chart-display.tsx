@@ -170,16 +170,17 @@ export function ChartDisplay({
     return width < 640 ? 9 : width < 1024 ? 10 : 11;
   };
 
-  // Get responsive margins (reduced bottom margin since no x-axis, increased top for date labels)
+  // Get responsive margins (reduced bottom margin since no x-axis, increased top for date labels, increased left/right for horizontal label space)
   const getMargins = () => {
-    if (!width) return { top: 50, right: 20, left: 20, bottom: 10 };
+    if (!width) return { top: 50, right: 40, left: 40, bottom: 10 };
 
     if (width < 640) {
-      return { top: 45, right: 10, left: 15, bottom: 10 };
+      // Mobile: more space needed for longer date labels
+      return { top: 45, right: 35, left: 35, bottom: 10 };
     } else if (width < 1024) {
-      return { top: 50, right: 15, left: 20, bottom: 10 };
+      return { top: 50, right: 40, left: 40, bottom: 10 };
     } else {
-      return { top: 50, right: 20, left: 25, bottom: 10 };
+      return { top: 50, right: 45, left: 45, bottom: 10 };
     }
   };
 
