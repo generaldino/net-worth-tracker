@@ -80,21 +80,24 @@ export function ChartHeader({
   // Early return after all hooks - but still render headerControls even if no data
   if (!displayData) {
     // Still render header controls even when there's no data (e.g., for scenario selection)
-    if (headerControls) {
-      return (
-        <div className="mb-4 w-full">
-          <div 
-            className="w-full mt-3 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
+    return (
+      <div className="mb-4 w-full">
+        {/* Primary metrics - empty space to maintain consistent layout */}
+        <div className="w-full min-h-[60px]"></div>
+        
+        {/* Header Controls - inline and scrollable with fixed min-height to prevent layout shifts */}
+        <div 
+          className="w-full mt-3 min-h-[40px] overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          {headerControls && (
             <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
               {headerControls}
             </div>
-          </div>
+          )}
         </div>
-      );
-    }
-    return null;
+      </div>
+    );
   }
 
   const formatValue = (value: number | undefined): string => {
@@ -125,10 +128,9 @@ export function ChartHeader({
     isPercentage?: boolean;
     showPercentage?: boolean;
   }) => {
-    if (metrics.length === 0) return null;
-
+    // Always render container to maintain consistent layout, even when empty
     return (
-      <div className="w-full">
+      <div className="w-full min-h-[120px]">
         <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
         <div 
           className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
@@ -139,36 +141,40 @@ export function ChartHeader({
           }}
         >
           <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
-            {metrics.map((item) => {
-              const percentage = isPercentage
-                ? item.absValue.toFixed(1)
-                : primaryValue && primaryValue !== 0
-                  ? ((item.value / Math.abs(primaryValue)) * 100).toFixed(1)
-                  : "0.0";
-              
-              const colorClass = getColor ? getColor(item.name, item.value) : "";
-              
-              return (
-                <div
-                  key={item.name}
-                  className={`flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none ${colorClass}`}
-                >
-                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
-                    {getLabel(item.name)}
-                  </div>
-                  <div className="text-sm sm:text-base font-semibold">
-                    {isPercentage
-                      ? `${percentage}%`
-                      : formatValueFn(item.value)}
-                  </div>
-                  {!isPercentage && showPercentage && (
-                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                      {percentage}%
+            {metrics.length > 0 ? (
+              metrics.map((item) => {
+                const percentage = isPercentage
+                  ? item.absValue.toFixed(1)
+                  : primaryValue && primaryValue !== 0
+                    ? ((item.value / Math.abs(primaryValue)) * 100).toFixed(1)
+                    : "0.0";
+                
+                const colorClass = getColor ? getColor(item.name, item.value) : "";
+                
+                return (
+                  <div
+                    key={item.name}
+                    className={`flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none min-h-[70px] flex flex-col justify-between ${colorClass}`}
+                  >
+                    <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                      {getLabel(item.name)}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                    <div className="text-sm sm:text-base font-semibold">
+                      {isPercentage
+                        ? `${percentage}%`
+                        : formatValueFn(item.value)}
+                    </div>
+                    {/* Always reserve space for percentage line to maintain consistent height */}
+                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 min-h-[14px]">
+                      {!isPercentage && showPercentage ? `${percentage}%` : "\u00A0"}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              // Placeholder to maintain space when no metrics
+              <div className="min-h-[70px]"></div>
+            )}
           </div>
         </div>
       </div>
@@ -190,20 +196,20 @@ export function ChartHeader({
               <div className="text-2xl sm:text-3xl font-bold">{formatValue(netWorth)}</div>
             </div>
             
-            {/* Account Type Breakdown - Horizontal Scrollable */}
-            {accountTypesForTotal.length > 0 && (
-              <div className="w-full">
-                <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
-                <div 
-                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
-                  style={{ 
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'thin',
-                    msOverflowStyle: '-ms-autohiding-scrollbar'
-                  }}
-                >
-                  <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
-                    {accountTypesForTotal.map((item) => {
+            {/* Account Type Breakdown - Horizontal Scrollable - Always render to maintain layout */}
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
+              <div 
+                className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
+                style={{ 
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'thin',
+                  msOverflowStyle: '-ms-autohiding-scrollbar'
+                }}
+              >
+                <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
+                  {accountTypesForTotal.length > 0 ? (
+                    accountTypesForTotal.map((item) => {
                       // When in percentage view, item.value is already a percentage (0-100)
                       // When in absolute view, calculate percentage from absolute value
                       const percentage = isPercentage
@@ -215,7 +221,7 @@ export function ChartHeader({
                       return (
                         <div
                           key={item.name}
-                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none"
+                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none min-h-[70px] flex flex-col justify-between"
                         >
                           <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
                             {formatAccountTypeName(item.name)}
@@ -225,18 +231,20 @@ export function ChartHeader({
                               ? `${percentage}%`
                               : formatValue(item.value)}
                           </div>
-                          {!isPercentage && (
-                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                              {percentage}%
-                            </div>
-                          )}
+                          {/* Always reserve space for percentage line to maintain consistent height */}
+                          <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 min-h-[14px]">
+                            {!isPercentage ? `${percentage}%` : "\u00A0"}
+                          </div>
                         </div>
                       );
-                    })}
-                  </div>
+                    })
+                  ) : (
+                    // Placeholder to maintain space when no account types
+                    <div className="min-h-[70px]"></div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         );
       }
@@ -264,16 +272,15 @@ export function ChartHeader({
               </div>
             </div>
             
-            {secondaryMetrics.length > 0 && (
-              <ScrollableMetrics
-                metrics={secondaryMetrics}
-                primaryValue={netWorth}
-                formatValue={formatValue}
-                getLabel={(name) => name.toUpperCase()}
-                getColor={(name) => name === "Assets" ? "text-green-600" : "text-red-600"}
-                showPercentage={false}
-              />
-            )}
+            {/* Always render to maintain consistent layout */}
+            <ScrollableMetrics
+              metrics={secondaryMetrics}
+              primaryValue={netWorth}
+              formatValue={formatValue}
+              getLabel={(name) => name.toUpperCase()}
+              getColor={(name) => name === "Assets" ? "text-green-600" : "text-red-600"}
+              showPercentage={false}
+            />
           </div>
         );
       }
@@ -282,11 +289,21 @@ export function ChartHeader({
         const growthRate = displayData.metrics["Growth Rate"] as number;
 
         return (
-          <div>
-            <div className="text-xs sm:text-sm text-muted-foreground">GROWTH RATE</div>
-            <div className={`text-2xl sm:text-3xl font-bold ${growthRate >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {formatPercentage(growthRate, 2)}
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">GROWTH RATE</div>
+              <div className={`text-2xl sm:text-3xl font-bold ${growthRate >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {formatPercentage(growthRate, 2)}
+              </div>
             </div>
+            
+            {/* Always render to maintain consistent layout */}
+            <ScrollableMetrics
+              metrics={[]}
+              formatValue={formatValue}
+              getLabel={(name) => name.toUpperCase()}
+              showPercentage={false}
+            />
           </div>
         );
       }
@@ -328,16 +345,15 @@ export function ChartHeader({
               </div>
             </div>
             
-            {secondaryMetrics.length > 0 && (
-              <ScrollableMetrics
-                metrics={secondaryMetrics}
-                primaryValue={totalGrowth}
-                formatValue={formatValue}
-                getLabel={(name) => name.toUpperCase()}
-                getColor={(name, value) => name === "Capital Gains" && value < 0 ? "text-red-600" : "text-green-600"}
-                showPercentage={true}
-              />
-            )}
+            {/* Always render to maintain consistent layout */}
+            <ScrollableMetrics
+              metrics={secondaryMetrics}
+              primaryValue={totalGrowth}
+              formatValue={formatValue}
+              getLabel={(name) => name.toUpperCase()}
+              getColor={(name, value) => name === "Capital Gains" && value < 0 ? "text-red-600" : "text-green-600"}
+              showPercentage={true}
+            />
           </div>
         );
       }
@@ -365,15 +381,14 @@ export function ChartHeader({
               </div>
             </div>
             
-            {secondaryMetrics.length > 0 && (
-              <ScrollableMetrics
-                metrics={secondaryMetrics}
-                formatValue={formatValue}
-                getLabel={(name) => name.toUpperCase()}
-                getColor={(name) => name === "Total Savings" ? "text-green-600" : ""}
-                showPercentage={false}
-              />
-            )}
+            {/* Always render to maintain consistent layout */}
+            <ScrollableMetrics
+              metrics={secondaryMetrics}
+              formatValue={formatValue}
+              getLabel={(name) => name.toUpperCase()}
+              getColor={(name) => name === "Total Savings" ? "text-green-600" : ""}
+              showPercentage={false}
+            />
           </div>
         );
       }
@@ -381,9 +396,19 @@ export function ChartHeader({
       case "allocation": {
         const total = displayData.primaryValue;
         return (
-          <div>
-            <div className="text-xs sm:text-sm text-muted-foreground">TOTAL VALUE</div>
-            <div className="text-2xl sm:text-3xl font-bold">{formatValue(total)}</div>
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">TOTAL VALUE</div>
+              <div className="text-2xl sm:text-3xl font-bold">{formatValue(total)}</div>
+            </div>
+            
+            {/* Always render to maintain consistent layout */}
+            <ScrollableMetrics
+              metrics={[]}
+              formatValue={formatValue}
+              getLabel={(name) => name.toUpperCase()}
+              showPercentage={false}
+            />
           </div>
         );
       }
@@ -423,21 +448,20 @@ export function ChartHeader({
               </div>
             </div>
             
-            {secondaryMetrics.length > 0 && (
-              <ScrollableMetrics
-                metrics={secondaryMetrics}
-                primaryValue={endingBalance}
-                formatValue={formatValue}
-                getLabel={(name) => name.toUpperCase()}
-                getColor={(name, value) => {
-                  if (name === "Net Change" || name === "Capital Gains") {
-                    return value >= 0 ? "text-green-600" : "text-red-600";
-                  }
-                  return name === "Savings from Income" || name === "Interest Earned" ? "text-green-600" : "";
-                }}
-                showPercentage={false}
-              />
-            )}
+            {/* Always render to maintain consistent layout */}
+            <ScrollableMetrics
+              metrics={secondaryMetrics}
+              primaryValue={endingBalance}
+              formatValue={formatValue}
+              getLabel={(name) => name.toUpperCase()}
+              getColor={(name, value) => {
+                if (name === "Net Change" || name === "Capital Gains") {
+                  return value >= 0 ? "text-green-600" : "text-red-600";
+                }
+                return name === "Savings from Income" || name === "Interest Earned" ? "text-green-600" : "";
+              }}
+              showPercentage={false}
+            />
           </div>
         );
       }
@@ -453,20 +477,20 @@ export function ChartHeader({
               <div className="text-2xl sm:text-3xl font-bold">{formatValue(netWorth)}</div>
             </div>
             
-            {/* Account Type Breakdown - Horizontal Scrollable */}
-            {accountTypesForProjection.length > 0 && (
-              <div className="w-full">
-                <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
-                <div 
-                  className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
-                  style={{ 
-                    WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'thin',
-                    msOverflowStyle: '-ms-autohiding-scrollbar'
-                  }}
-                >
-                  <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
-                    {accountTypesForProjection.map((item) => {
+            {/* Account Type Breakdown - Horizontal Scrollable - Always render to maintain layout */}
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN BY TYPE</div>
+              <div 
+                className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
+                style={{ 
+                  WebkitOverflowScrolling: 'touch',
+                  scrollbarWidth: 'thin',
+                  msOverflowStyle: '-ms-autohiding-scrollbar'
+                }}
+              >
+                <div className="flex gap-3 pb-1" style={{ width: 'max-content', minWidth: '100%' }}>
+                  {accountTypesForProjection.length > 0 ? (
+                    accountTypesForProjection.map((item) => {
                       // When in percentage view, item.value is already a percentage (0-100)
                       // When in absolute view, calculate percentage from absolute value
                       const percentage = isPercentage
@@ -478,7 +502,7 @@ export function ChartHeader({
                       return (
                         <div
                           key={item.name}
-                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none"
+                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none min-h-[70px] flex flex-col justify-between"
                         >
                           <div className="text-[10px] sm:text-xs text-muted-foreground mb-1">
                             {formatAccountTypeName(item.name)}
@@ -488,18 +512,20 @@ export function ChartHeader({
                               ? `${percentage}%`
                               : formatValue(item.value)}
                           </div>
-                          {!isPercentage && (
-                            <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                              {percentage}%
-                            </div>
-                          )}
+                          {/* Always reserve space for percentage line to maintain consistent height */}
+                          <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 min-h-[14px]">
+                            {!isPercentage ? `${percentage}%` : "\u00A0"}
+                          </div>
                         </div>
                       );
-                    })}
-                  </div>
+                    })
+                  ) : (
+                    // Placeholder to maintain space when no account types
+                    <div className="min-h-[70px]"></div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         );
       }
@@ -514,17 +540,17 @@ export function ChartHeader({
       {/* Primary metrics */}
       <div className="w-full">{renderMetrics()}</div>
       
-      {/* Header Controls - inline and scrollable */}
-      {headerControls && (
-        <div 
-          className="w-full mt-3 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
+      {/* Header Controls - inline and scrollable with fixed min-height to prevent layout shifts */}
+      <div 
+        className="w-full mt-3 min-h-[40px] overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {headerControls && (
           <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
             {headerControls}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
