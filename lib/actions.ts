@@ -203,7 +203,8 @@ export async function getMonthlyData() {
         endingBalance: number;
         cashIn: number;
         cashOut: number;
-        workIncome: number;
+        income: number;
+        expenditure: number;
         cashFlow: number;
         accountGrowth: number;
       }>
@@ -216,10 +217,11 @@ export async function getMonthlyData() {
         monthlyData[month] = [];
       }
 
+      // cashFlow = cashIn - cashOut
+      // Note: cashIn now includes income, cashOut now includes expenditure
       const cashFlow =
         Number(entry.cashIn) -
-        Number(entry.cashOut) +
-        Number(entry.workIncome || 0);
+        Number(entry.cashOut);
       monthlyData[month].push({
         accountId: entry.accountId,
         monthKey: month,
@@ -227,7 +229,8 @@ export async function getMonthlyData() {
         endingBalance: Number(entry.endingBalance),
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
-        workIncome: Number(entry.workIncome || 0),
+        income: Number(entry.income || 0),
+        expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
       });
@@ -396,7 +399,8 @@ export async function addMonthlyEntry(
     endingBalance: number;
     cashIn: number;
     cashOut: number;
-    workIncome: number;
+    income: number;
+    expenditure: number;
   }
 ) {
   try {
@@ -426,7 +430,8 @@ export async function addMonthlyEntry(
       endingBalance: entry.endingBalance.toString(),
       cashIn: entry.cashIn.toString(),
       cashOut: entry.cashOut.toString(),
-      workIncome: entry.workIncome.toString(),
+      income: (entry.income || 0).toString(),
+      expenditure: (entry.expenditure || 0).toString(),
     };
 
     await db.insert(monthlyEntries).values(newEntry);
@@ -463,7 +468,8 @@ export async function updateMonthlyEntry(
     endingBalance: number;
     cashIn: number;
     cashOut: number;
-    workIncome: number;
+    income: number;
+    expenditure: number;
   }
 ) {
   try {
@@ -493,7 +499,8 @@ export async function updateMonthlyEntry(
         endingBalance: entry.endingBalance.toString(),
         cashIn: entry.cashIn.toString(),
         cashOut: entry.cashOut.toString(),
-        workIncome: (entry.workIncome || 0).toString(),
+        income: (entry.income || 0).toString(),
+        expenditure: (entry.expenditure || 0).toString(),
         updatedAt: new Date(),
       })
       .where(
@@ -598,7 +605,8 @@ export async function getChartData(
         endingBalance: number;
         cashIn: number;
         cashOut: number;
-        workIncome: number;
+        income: number;
+        expenditure: number;
         cashFlow: number;
         accountGrowth: number;
       }>
@@ -611,10 +619,10 @@ export async function getChartData(
         monthlyData[month] = [];
       }
 
+      // Note: cashIn now includes income, cashOut now includes expenditure
       const cashFlow =
         Number(entry.cashIn) -
-        Number(entry.cashOut) +
-        Number(entry.workIncome || 0);
+        Number(entry.cashOut);
       monthlyData[month].push({
         accountId: entry.accountId,
         monthKey: month,
@@ -622,7 +630,8 @@ export async function getChartData(
         endingBalance: Number(entry.endingBalance),
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
-        workIncome: Number(entry.workIncome || 0),
+        income: Number(entry.income || 0),
+        expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
       });
@@ -910,17 +919,17 @@ export async function getChartData(
 
         const accountCurrency = (account.currency || "GBP") as Currency;
 
-        // Add work income to total (raw)
-        const workIncome = Number(entry.workIncome || 0);
-        totalWorkIncome += workIncome;
+        // Add income to total (raw)
+        const income = Number(entry.income || 0);
+        totalWorkIncome += income;
 
-        // Track accounts that received work income for breakdown
-        if (workIncome > 0) {
+        // Track accounts that received income for breakdown
+        if (income > 0) {
           savingsAccounts.push({
             accountId: account.id,
             name: account.name,
             type: account.type,
-            amount: workIncome, // Show work income in breakdown
+            amount: income, // Show income in breakdown
             currency: accountCurrency,
             owner: account.owner || "Unknown",
           });
@@ -1088,10 +1097,10 @@ export async function getAccountHistory(accountId: string) {
 
     // Transform the entries to include calculated fields
     const history = entries.map((entry, index) => {
+      // Note: cashIn now includes income, cashOut now includes expenditure
       const cashFlow =
         Number(entry.cashIn) -
-        Number(entry.cashOut) +
-        Number(entry.workIncome || 0);
+        Number(entry.cashOut);
       let accountGrowth = 0;
 
       // Calculate accountGrowth by comparing with previous month's entry
@@ -1110,7 +1119,8 @@ export async function getAccountHistory(accountId: string) {
         endingBalance: Number(entry.endingBalance),
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
-        workIncome: Number(entry.workIncome || 0),
+        income: Number(entry.income || 0),
+        expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth,
       };
@@ -1322,7 +1332,8 @@ export async function exportToCSV(): Promise<string> {
       "Ending Balance",
       "Cash In",
       "Cash Out",
-      "Work Income",
+      "Income",
+      "Expenditure",
       "Cash Flow",
       "Account Growth",
       "Entry Created At",
@@ -1341,10 +1352,10 @@ export async function exportToCSV(): Promise<string> {
       if (!account) return; // Skip if account not found
 
       // Calculate cash flow
+      // Note: cashIn now includes income, cashOut now includes expenditure
       const cashFlow =
         Number(entry.cashIn) -
-        Number(entry.cashOut) +
-        Number(entry.workIncome || 0);
+        Number(entry.cashOut);
 
       // Calculate account growth by comparing with previous month's entry
       let accountGrowth = 0;
@@ -1374,7 +1385,8 @@ export async function exportToCSV(): Promise<string> {
         Number(entry.endingBalance).toFixed(2),
         Number(entry.cashIn).toFixed(2),
         Number(entry.cashOut).toFixed(2),
-        Number(entry.workIncome || 0).toFixed(2),
+        Number(entry.income || 0).toFixed(2),
+        Number(entry.expenditure || 0).toFixed(2),
         cashFlow.toFixed(2),
         accountGrowth.toFixed(2),
         entry.createdAt ? new Date(entry.createdAt).toISOString() : "",
