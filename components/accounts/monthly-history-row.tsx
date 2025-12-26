@@ -18,7 +18,8 @@ interface MonthlyHistoryRowProps {
     endingBalance: string;
     cashIn: string;
     cashOut: string;
-    workIncome: string;
+    income: string;
+    expenditure: string;
   };
   onValueChange: (field: string, value: string) => void;
   onSave: () => void;
@@ -38,7 +39,7 @@ export function MonthlyHistoryRow({
   isMobile = false,
 }: MonthlyHistoryRowProps) {
   const { isMasked } = useMasking();
-  
+
   // Convert values using historical rates for the entry's month
   const { convertedAmount: convertedBalance } = useCurrencyConversion(
     entry.endingBalance,
@@ -46,8 +47,14 @@ export function MonthlyHistoryRow({
     displayCurrency,
     entry.month
   );
-  const { convertedAmount: convertedWorkIncome } = useCurrencyConversion(
-    entry.workIncome || 0,
+  const { convertedAmount: convertedIncome } = useCurrencyConversion(
+    entry.income || 0,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedExpenditure } = useCurrencyConversion(
+    entry.expenditure || 0,
     accountCurrency,
     displayCurrency,
     entry.month
@@ -107,32 +114,45 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                {isMasked ? (
-                  "••••••"
-                ) : (
-                  formatCurrencyAmount(convertedBalance, displayCurrency)
-                )}
+                {isMasked
+                  ? "••••••"
+                  : formatCurrencyAmount(convertedBalance, displayCurrency)}
+              </div>
+            )}
+          </div>
+          <div>
+            <span className="text-muted-foreground block mb-1">Income:</span>
+            {isEditing ? (
+              <Input
+                type="number"
+                value={editingValues.income}
+                onChange={(e) => onValueChange("income", e.target.value)}
+                className="h-8"
+              />
+            ) : (
+              <div className="font-medium">
+                {isMasked
+                  ? "••••••"
+                  : formatCurrencyAmount(convertedIncome, displayCurrency)}
               </div>
             )}
           </div>
           <div>
             <span className="text-muted-foreground block mb-1">
-              Work Income:
+              Expenditure:
             </span>
             {isEditing ? (
               <Input
                 type="number"
-                value={editingValues.workIncome}
-                onChange={(e) => onValueChange("workIncome", e.target.value)}
+                value={editingValues.expenditure}
+                onChange={(e) => onValueChange("expenditure", e.target.value)}
                 className="h-8"
               />
             ) : (
               <div className="font-medium">
-                {isMasked ? (
-                  "••••••"
-                ) : (
-                  formatCurrencyAmount(convertedWorkIncome, displayCurrency)
-                )}
+                {isMasked
+                  ? "••••••"
+                  : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
               </div>
             )}
           </div>
@@ -166,11 +186,9 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                {isMasked ? (
-                  "••••••"
-                ) : (
-                  formatCurrencyAmount(convertedCashIn, displayCurrency)
-                )}
+                {isMasked
+                  ? "••••••"
+                  : formatCurrencyAmount(convertedCashIn, displayCurrency)}
               </div>
             )}
           </div>
@@ -185,11 +203,9 @@ export function MonthlyHistoryRow({
               />
             ) : (
               <div className="font-medium">
-                {isMasked ? (
-                  "••••••"
-                ) : (
-                  formatCurrencyAmount(convertedCashOut, displayCurrency)
-                )}
+                {isMasked
+                  ? "••••••"
+                  : formatCurrencyAmount(convertedCashOut, displayCurrency)}
               </div>
             )}
           </div>
@@ -209,24 +225,38 @@ export function MonthlyHistoryRow({
             onChange={(e) => onValueChange("endingBalance", e.target.value)}
             className="w-[120px]"
           />
+        ) : isMasked ? (
+          "••••••"
         ) : (
-          isMasked
-            ? "••••••"
-            : formatCurrencyAmount(convertedBalance, displayCurrency)
+          formatCurrencyAmount(convertedBalance, displayCurrency)
         )}
       </td>
       <td>
         {isEditing ? (
           <Input
             type="number"
-            value={editingValues.workIncome}
-            onChange={(e) => onValueChange("workIncome", e.target.value)}
+            value={editingValues.income}
+            onChange={(e) => onValueChange("income", e.target.value)}
             className="w-[100px]"
           />
+        ) : isMasked ? (
+          "••••••"
         ) : (
-          isMasked
-            ? "••••••"
-            : formatCurrencyAmount(convertedWorkIncome, displayCurrency)
+          formatCurrencyAmount(convertedIncome, displayCurrency)
+        )}
+      </td>
+      <td>
+        {isEditing ? (
+          <Input
+            type="number"
+            value={editingValues.expenditure}
+            onChange={(e) => onValueChange("expenditure", e.target.value)}
+            className="w-[100px]"
+          />
+        ) : isMasked ? (
+          "••••••"
+        ) : (
+          formatCurrencyAmount(convertedExpenditure, displayCurrency)
         )}
       </td>
       <td>
@@ -237,10 +267,10 @@ export function MonthlyHistoryRow({
             onChange={(e) => onValueChange("cashIn", e.target.value)}
             className="w-[100px]"
           />
+        ) : isMasked ? (
+          "••••••"
         ) : (
-          isMasked
-            ? "••••••"
-            : formatCurrencyAmount(convertedCashIn, displayCurrency)
+          formatCurrencyAmount(convertedCashIn, displayCurrency)
         )}
       </td>
       <td>
@@ -251,10 +281,10 @@ export function MonthlyHistoryRow({
             onChange={(e) => onValueChange("cashOut", e.target.value)}
             className="w-[100px]"
           />
+        ) : isMasked ? (
+          "••••••"
         ) : (
-          isMasked
-            ? "••••••"
-            : formatCurrencyAmount(convertedCashOut, displayCurrency)
+          formatCurrencyAmount(convertedCashOut, displayCurrency)
         )}
       </td>
       <td className={entry.cashFlow >= 0 ? "text-green-600" : "text-red-600"}>

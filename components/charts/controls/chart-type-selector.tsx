@@ -34,6 +34,7 @@ export function ChartTypeSelector({
         <SelectItem value="monthly-growth-rate">Monthly Growth Rate</SelectItem>
         <SelectItem value="allocation">Allocation</SelectItem>
         <SelectItem value="waterfall">Waterfall (Net Worth Changes)</SelectItem>
+        <SelectItem value="savings-rate">Savings Rate</SelectItem>
         <SelectItem value="projection">Projection</SelectItem>
       </SelectContent>
     </Select>

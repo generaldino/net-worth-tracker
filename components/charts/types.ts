@@ -6,6 +6,7 @@ export type ChartType =
   | "monthly-growth-rate"
   | "allocation"
   | "waterfall"
+  | "savings-rate"
   | "projection";
 
 export interface Account {
@@ -23,6 +24,7 @@ export interface SourceData {
   "Interest Earned": number;
   "Capital Gains": number;
   "Total Income"?: number;
+  "Total Expenditure"?: number;
   "Savings Rate": number;
   breakdown?: {
     "Savings from Income": Array<{

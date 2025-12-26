@@ -125,7 +125,8 @@ export function AccountsTable({
           endingBalance: string;
           cashIn: string;
           cashOut: string;
-          workIncome: string;
+          income: string;
+          expenditure: string;
         }
       >
     >
@@ -214,8 +215,12 @@ export function AccountsTable({
       return;
     }
 
-    const oldIndex = sortedAccounts.findIndex((account) => account.id === active.id);
-    const newIndex = sortedAccounts.findIndex((account) => account.id === over.id);
+    const oldIndex = sortedAccounts.findIndex(
+      (account) => account.id === active.id
+    );
+    const newIndex = sortedAccounts.findIndex(
+      (account) => account.id === over.id
+    );
 
     if (oldIndex === -1 || newIndex === -1) {
       return;
@@ -307,7 +312,8 @@ export function AccountsTable({
         endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
         cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
         cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
-        workIncome: Number.parseFloat(editedEntry.workIncome) || 0,
+        income: Number.parseFloat(editedEntry.income) || 0,
+        expenditure: Number.parseFloat(editedEntry.expenditure) || 0,
       };
 
       await onUpdateMonthlyEntry(accountId, month, updatedEntry);
@@ -328,11 +334,11 @@ export function AccountsTable({
       <div className="flex flex-col gap-4">
         {/* Filters Section */}
         <div className="flex flex-col gap-4">
-          <div 
+          <div
             className="flex gap-2 overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
-            style={{ WebkitOverflowScrolling: 'touch' }}
+            style={{ WebkitOverflowScrolling: "touch" }}
           >
-            <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
+            <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
               <div className="flex-shrink-0 min-w-[200px]">
                 <AccountSelector
                   accounts={accounts}
@@ -425,7 +431,7 @@ export function AccountsTable({
                   selectedTimePeriod={selectedTimePeriod}
                   displayCurrency={
                     displayCurrency === "BASE"
-                      ? (account.currency || "GBP")
+                      ? account.currency || "GBP"
                       : displayCurrency
                   }
                   onValueChange={handleValueChange}
@@ -439,7 +445,8 @@ export function AccountsTable({
                           endingBalance: entry.endingBalance.toString(),
                           cashIn: entry.cashIn.toString(),
                           cashOut: entry.cashOut.toString(),
-                          workIncome: (entry.workIncome || 0).toString(),
+                          income: (entry.income || 0).toString(),
+                          expenditure: (entry.expenditure || 0).toString(),
                         },
                       },
                     }));
@@ -471,7 +478,7 @@ export function AccountsTable({
               selectedTimePeriod={selectedTimePeriod}
               displayCurrency={
                 displayCurrency === "BASE"
-                  ? (account.currency || "GBP")
+                  ? account.currency || "GBP"
                   : displayCurrency
               }
               onValueChange={handleValueChange}
@@ -485,7 +492,8 @@ export function AccountsTable({
                       endingBalance: entry.endingBalance.toString(),
                       cashIn: entry.cashIn.toString(),
                       cashOut: entry.cashOut.toString(),
-                      workIncome: (entry.workIncome || 0).toString(),
+                      income: (entry.income || 0).toString(),
+                      expenditure: (entry.expenditure || 0).toString(),
                     },
                   },
                 }));

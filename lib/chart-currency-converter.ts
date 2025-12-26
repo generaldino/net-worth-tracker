@@ -267,8 +267,7 @@ export function useChartCurrencyConverter() {
           (sum, acc) => sum + acc.amount,
           0
         );
-        // Note: Don't recalculate "Savings from Income" from breakdown because breakdown
-        // contains workIncome amounts, not actual savings. Convert the original calculated value.
+        // Convert Savings from Income (Income - Expenditure) from GBP (base currency) to display currency
         converted["Savings from Income"] =
           displayCurrency === "GBP"
             ? item["Savings from Income"] || 0
@@ -277,14 +276,20 @@ export function useChartCurrencyConverter() {
                 "GBP",
                 item.monthKey
               );
-        // Convert Total Income (work income) from GBP (base currency) to display currency
+        // Convert Total Income from GBP (base currency) to display currency
         // The original Total Income is a sum across accounts and is stored in GBP
         converted["Total Income"] =
           displayCurrency === "GBP"
             ? item["Total Income"] || 0
             : convertValue(item["Total Income"] || 0, "GBP", item.monthKey);
+        
+        // Convert Total Expenditure from GBP (base currency) to display currency
+        converted["Total Expenditure"] =
+          displayCurrency === "GBP"
+            ? item["Total Expenditure"] || 0
+            : convertValue(item["Total Expenditure"] || 0, "GBP", item.monthKey);
 
-        // Recalculate savings rate
+        // Recalculate savings rate using converted values
         converted["Savings Rate"] =
           converted["Total Income"] > 0
             ? Number(

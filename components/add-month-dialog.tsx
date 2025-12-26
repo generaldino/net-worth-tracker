@@ -30,7 +30,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [endingBalance, setEndingBalance] = useState("");
   const [cashIn, setCashIn] = useState("");
   const [cashOut, setCashOut] = useState("");
-  const [workIncome, setWorkIncome] = useState("");
+  const [income, setIncome] = useState("");
+  const [expenditure, setExpenditure] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
 
@@ -59,7 +60,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         endingBalance: Number.parseFloat(endingBalance) || 0,
         cashIn: Number.parseFloat(cashIn) || 0,
         cashOut: Number.parseFloat(cashOut) || 0,
-        workIncome: Number.parseFloat(workIncome) || 0,
+        income: Number.parseFloat(income) || 0,
+        expenditure: Number.parseFloat(expenditure) || 0,
       });
 
       if (result.success) {
@@ -70,7 +72,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           endingBalance: Number.parseFloat(endingBalance) || 0,
           cashIn: Number.parseFloat(cashIn) || 0,
           cashOut: Number.parseFloat(cashOut) || 0,
-          workIncome: Number.parseFloat(workIncome) || 0,
+          income: Number.parseFloat(income) || 0,
+          expenditure: Number.parseFloat(expenditure) || 0,
           cashFlow:
             (Number.parseFloat(cashIn) || 0) -
             (Number.parseFloat(cashOut) || 0),
@@ -84,7 +87,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         setEndingBalance("");
         setCashIn("");
         setCashOut("");
-        setWorkIncome("");
+        setIncome("");
+        setExpenditure("");
         setOpen(false);
 
         toast({
@@ -160,12 +164,22 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="work-income">Work Income</Label>
+            <Label htmlFor="income">Income</Label>
             <Input
-              id="work-income"
+              id="income"
               type="number"
-              value={workIncome}
-              onChange={(e) => setWorkIncome(e.target.value)}
+              value={income}
+              onChange={(e) => setIncome(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="expenditure">Expenditure</Label>
+            <Input
+              id="expenditure"
+              type="number"
+              value={expenditure}
+              onChange={(e) => setExpenditure(e.target.value)}
               placeholder="0"
             />
           </div>

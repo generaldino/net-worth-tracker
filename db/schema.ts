@@ -29,12 +29,7 @@ export const accountCategoryEnum = pgEnum("account_category", [
   "Investments",
 ]);
 
-export const currencyEnum = pgEnum("currency", [
-  "GBP",
-  "EUR",
-  "USD",
-  "AED",
-]);
+export const currencyEnum = pgEnum("currency", ["GBP", "EUR", "USD", "AED"]);
 
 // Tables
 export const users = pgTable("users", {
@@ -74,7 +69,8 @@ export const monthlyEntries = pgTable("monthly_entries", {
   endingBalance: numeric("ending_balance").notNull(),
   cashIn: numeric("cash_in").notNull(),
   cashOut: numeric("cash_out").notNull(),
-  workIncome: numeric("work_income").notNull().default("0"),
+  income: numeric("income").notNull().default("0"),
+  expenditure: numeric("expenditure").notNull().default("0"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

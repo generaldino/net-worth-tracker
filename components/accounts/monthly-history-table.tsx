@@ -21,7 +21,8 @@ interface MonthlyHistoryTableProps {
         endingBalance: string;
         cashIn: string;
         cashOut: string;
-        workIncome: string;
+        income: string;
+        expenditure: string;
       }
     >
   >;
@@ -67,7 +68,8 @@ export function MonthlyHistoryTable({
           endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
           cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
           cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
-          workIncome: Number.parseFloat(editedEntry.workIncome) || 0,
+          income: Number.parseFloat(editedEntry.income) || 0,
+          expenditure: Number.parseFloat(editedEntry.expenditure) || 0,
         });
 
         if (result.success) {
@@ -115,7 +117,8 @@ export function MonthlyHistoryTable({
                       endingBalance: entry.endingBalance.toString(),
                       cashIn: entry.cashIn.toString(),
                       cashOut: entry.cashOut.toString(),
-                      workIncome: (entry.workIncome || 0).toString(),
+                      income: (entry.income || 0).toString(),
+                      expenditure: (entry.expenditure || 0).toString(),
                     }
               }
               onValueChange={(field, value) =>
@@ -136,7 +139,8 @@ export function MonthlyHistoryTable({
             <TableRow>
               <TableHead className="w-[120px]">Month</TableHead>
               <TableHead className="w-[140px]">Balance</TableHead>
-              <TableHead className="w-[120px]">Work Income</TableHead>
+              <TableHead className="w-[120px]">Income</TableHead>
+              <TableHead className="w-[120px]">Expenditure</TableHead>
               <TableHead className="w-[120px]">Cash In</TableHead>
               <TableHead className="w-[120px]">Cash Out</TableHead>
               <TableHead className="w-[120px]">Cash Flow</TableHead>
@@ -163,7 +167,8 @@ export function MonthlyHistoryTable({
                           endingBalance: entry.endingBalance.toString(),
                           cashIn: entry.cashIn.toString(),
                           cashOut: entry.cashOut.toString(),
-                          workIncome: (entry.workIncome || 0).toString(),
+                          income: (entry.income || 0).toString(),
+                          expenditure: (entry.expenditure || 0).toString(),
                         }
                   }
                   onValueChange={(field, value) =>

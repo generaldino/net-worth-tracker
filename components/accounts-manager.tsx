@@ -104,7 +104,8 @@ export async function AccountsManager() {
                       endingBalance: entry.endingBalance,
                       cashIn: entry.cashIn,
                       cashOut: entry.cashOut,
-                      workIncome: entry.workIncome || 0,
+                      income: entry.income || 0,
+                      expenditure: entry.expenditure || 0,
                     });
                   }}
                   onAddNewMonth={async (accountId, month, entry) => {
@@ -114,7 +115,8 @@ export async function AccountsManager() {
                       endingBalance: entry.endingBalance,
                       cashIn: entry.cashIn,
                       cashOut: entry.cashOut,
-                      workIncome: entry.workIncome || 0,
+                      income: entry.income || 0,
+                      expenditure: entry.expenditure || 0,
                     });
                   }}
                 />

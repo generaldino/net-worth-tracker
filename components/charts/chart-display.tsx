@@ -232,6 +232,20 @@ export function ChartDisplay({
           chartType,
         });
       }
+    } else if (chartType === "savings-rate") {
+      // For savings-rate, find the source data
+      const monthData = chartData.sourceData.find((d) => d.month === month);
+      if (monthData) {
+        setClickedData({
+          month,
+          data: {
+            ...monthData,
+            month: monthData.month,
+            monthKey: monthData.monthKey,
+          },
+          chartType,
+        });
+      }
     } else if (chartType === "assets-vs-liabilities") {
       // For assets vs liabilities, find the processed data
       const assetsVsLiabilitiesData = chartData.netWorthData.map((item) => {
@@ -348,6 +362,18 @@ export function ChartDisplay({
         metrics["Interest Earned"] = dataPoint["Interest Earned"] as number;
         metrics["Capital Gains"] = dataPoint["Capital Gains"] as number;
         metrics["Ending Balance"] = primaryValue;
+        break;
+      }
+      case "savings-rate": {
+        const savingsRate = dataPoint["Savings Rate"] as number;
+        const totalIncome = dataPoint["Total Income"] as number;
+        const totalExpenditure = dataPoint["Total Expenditure"] as number;
+        const savingsFromIncome = dataPoint["Savings from Income"] as number;
+        metrics["Savings Rate"] = savingsRate || 0;
+        metrics["Total Income"] = totalIncome || 0;
+        metrics["Total Expenditure"] = totalExpenditure || 0;
+        metrics["Savings from Income"] = savingsFromIncome || 0;
+        primaryValue = savingsRate || 0;
         break;
       }
       case "projection": {
@@ -548,6 +574,21 @@ export function ChartDisplay({
             "Interest Earned": latestSource["Interest Earned"] || 0,
             "Capital Gains": latestSource["Capital Gains"] || 0,
             "Ending Balance": latestNetWorth.netWorth,
+          },
+        };
+      }
+      case "savings-rate": {
+        const latest = chartData.sourceData[chartData.sourceData.length - 1];
+        if (!latest) return null;
+        return {
+          date: latest.month,
+          month: latest.month,
+          primaryValue: latest["Savings Rate"] || 0,
+          metrics: {
+            "Savings Rate": latest["Savings Rate"] || 0,
+            "Total Income": latest["Total Income"] || 0,
+            "Total Expenditure": latest["Total Expenditure"] || 0,
+            "Savings from Income": latest["Savings from Income"] || 0,
           },
         };
       }
@@ -1721,6 +1762,283 @@ export function ChartDisplay({
                   style={{ cursor: "pointer" }}
                 />
               </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        );
+
+      case "savings-rate":
+        // Create chart data with Savings Rate, Total Income, Total Expenditure, and Savings from Income
+        // Filter out any invalid data points
+        const savingsRateData = chartData.sourceData
+          .filter((item) => item && item.month && item.monthKey)
+          .map((item) => ({
+            month: item.month,
+            monthKey: item.monthKey,
+            "Savings Rate":
+              typeof item["Savings Rate"] === "number"
+                ? item["Savings Rate"]
+                : 0,
+            "Total Income":
+              typeof item["Total Income"] === "number"
+                ? item["Total Income"]
+                : 0,
+            "Total Expenditure":
+              typeof item["Total Expenditure"] === "number"
+                ? item["Total Expenditure"]
+                : 0,
+            "Savings from Income":
+              typeof item["Savings from Income"] === "number"
+                ? item["Savings from Income"]
+                : 0,
+          }));
+
+        if (!savingsRateData || savingsRateData.length === 0) {
+          return (
+            <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center">
+              <p className="text-muted-foreground mb-2">
+                No savings rate data available
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Add income and expenditure data to see your savings rate
+              </p>
+            </div>
+          );
+        }
+
+        return (
+          <ChartContainer
+            config={{
+              "Savings Rate": {
+                label: "Savings Rate (%)",
+                color: CHART_GREEN,
+              },
+              "Total Income": {
+                label: "Total Income",
+                color: COLORS[0],
+              },
+              "Total Expenditure": {
+                label: "Total Expenditure",
+                color: CHART_RED,
+              },
+              "Savings from Income": {
+                label: "Savings from Income",
+                color: COLORS[1],
+              },
+            }}
+            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={savingsRateData} margin={margins}>
+                <defs>
+                  <linearGradient
+                    id="savingsRateGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop
+                      offset="5%"
+                      stopColor={CHART_GREEN}
+                      stopOpacity={0.4}
+                    />
+                    <stop
+                      offset="95%"
+                      stopColor={CHART_GREEN}
+                      stopOpacity={0}
+                    />
+                  </linearGradient>
+                  <linearGradient
+                    id="incomeGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={COLORS[0]} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient
+                    id="expenditureGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={CHART_RED} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={CHART_RED} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient
+                    id="savingsGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={COLORS[1]} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={COLORS[1]} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="month"
+                  fontSize={fontSize}
+                  angle={width && width < 640 ? -60 : -45}
+                  textAnchor="end"
+                  height={margins.bottom + 10}
+                  interval={width && width < 640 ? "preserveStartEnd" : 0}
+                  tick={{ fontSize }}
+                />
+                <YAxis
+                  yAxisId="left"
+                  hide={true}
+                  tickFormatter={(value) =>
+                    isMasked
+                      ? "•••"
+                      : formatCurrencyAmount(value / 1000, chartCurrency, {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        }) + "K"
+                  }
+                  fontSize={fontSize}
+                  width={width && width < 640 ? 50 : 60}
+                  tick={{ fontSize }}
+                  domain={["auto", "auto"]}
+                  allowDataOverflow={true}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  hide={true}
+                  tickFormatter={(value) =>
+                    isMasked ? "•••" : `${Math.round(value)}%`
+                  }
+                  fontSize={fontSize}
+                  width={width && width < 640 ? 50 : 60}
+                  tick={{ fontSize }}
+                  domain={[0, 100]}
+                  allowDataOverflow={true}
+                />
+                <ChartTooltip
+                  content={<HeaderUpdateTooltip />}
+                  cursor={{
+                    stroke: "hsl(var(--foreground))",
+                    strokeWidth: 1,
+                    strokeDasharray: "5 5",
+                  }}
+                />
+                {hoveredData && (
+                  <ReferenceLine
+                    x={hoveredData.month}
+                    stroke="hsl(var(--foreground))"
+                    strokeWidth={1}
+                    strokeDasharray="5 5"
+                    label={{
+                      value: hoveredData.date || hoveredData.month,
+                      position: "top",
+                      offset: 5,
+                      fill: "hsl(var(--foreground))",
+                      fontSize: 10,
+                    }}
+                  />
+                )}
+                {/* Total Income */}
+                <Area
+                  type="monotone"
+                  dataKey="Total Income"
+                  yAxisId="left"
+                  stroke={COLORS[0]}
+                  strokeWidth={2}
+                  fill="url(#incomeGradient)"
+                  stackId="income"
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        monthKey: string;
+                      };
+                      setClickedData({
+                        month: payload.month,
+                        data: payload,
+                        chartType: "savings-rate",
+                      });
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+                {/* Total Expenditure */}
+                <Area
+                  type="monotone"
+                  dataKey="Total Expenditure"
+                  yAxisId="left"
+                  stroke={CHART_RED}
+                  strokeWidth={2}
+                  fill="url(#expenditureGradient)"
+                  stackId="expenditure"
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        monthKey: string;
+                      };
+                      setClickedData({
+                        month: payload.month,
+                        data: payload,
+                        chartType: "savings-rate",
+                      });
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+                {/* Savings from Income */}
+                <Area
+                  type="monotone"
+                  dataKey="Savings from Income"
+                  yAxisId="left"
+                  stroke={COLORS[1]}
+                  strokeWidth={2}
+                  fill="url(#savingsGradient)"
+                  stackId="savings"
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        monthKey: string;
+                      };
+                      setClickedData({
+                        month: payload.month,
+                        data: payload,
+                        chartType: "savings-rate",
+                      });
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+                {/* Savings Rate Line */}
+                <Line
+                  type="monotone"
+                  dataKey="Savings Rate"
+                  yAxisId="right"
+                  stroke={CHART_GREEN}
+                  strokeWidth={3}
+                  dot={{ fill: CHART_GREEN, r: 4 }}
+                  activeDot={{ r: 6 }}
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        monthKey: string;
+                      };
+                      setClickedData({
+                        month: payload.month,
+                        data: payload,
+                        chartType: "savings-rate",
+                      });
+                    }
+                  }}
+                  style={{ cursor: "pointer" }}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </ChartContainer>
         );

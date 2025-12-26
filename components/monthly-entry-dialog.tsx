@@ -34,7 +34,9 @@ export function MonthlyEntryDialog({
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<MonthlyEntry[]>([]);
   const [month, setMonth] = useState(selectedMonth);
-  const [currentValues, setCurrentValues] = useState<Record<string, number>>({});
+  const [currentValues, setCurrentValues] = useState<Record<string, number>>(
+    {}
+  );
 
   useEffect(() => {
     // Initialize entries with existing data or default values
@@ -50,7 +52,7 @@ export function MonthlyEntryDialog({
         values.map(({ accountId, value }) => [accountId, value])
       );
       setCurrentValues(valuesMap);
-      
+
       // Then initialize entries with the fetched values
       const initialEntries = await Promise.all(
         accounts.map(async (account) => {
@@ -62,7 +64,8 @@ export function MonthlyEntryDialog({
             : valuesMap[account.id] || 0;
           const cashIn = existingEntry ? existingEntry.cashIn : 0;
           const cashOut = existingEntry ? existingEntry.cashOut : 0;
-          const workIncome = existingEntry ? existingEntry.workIncome : 0;
+          const income = existingEntry ? existingEntry.income : 0;
+          const expenditure = existingEntry ? existingEntry.expenditure : 0;
           return {
             accountId: account.id,
             monthKey: month,
@@ -70,7 +73,8 @@ export function MonthlyEntryDialog({
             endingBalance,
             cashIn,
             cashOut,
-            workIncome,
+            income,
+            expenditure,
             cashFlow: cashIn - cashOut,
             accountGrowth: 0,
           };
@@ -78,7 +82,7 @@ export function MonthlyEntryDialog({
       );
       setEntries(initialEntries);
     };
-    
+
     if (open) {
       initializeEntries();
     }
@@ -107,7 +111,8 @@ export function MonthlyEntryDialog({
       endingBalance: entry.endingBalance,
       cashIn: entry.cashIn,
       cashOut: entry.cashOut,
-      workIncome: entry.workIncome,
+      income: entry.income,
+      expenditure: entry.expenditure,
       cashFlow: entry.cashIn - entry.cashOut,
       accountGrowth: 0, // This will be calculated on the server
     }));
@@ -132,7 +137,9 @@ export function MonthlyEntryDialog({
           <DialogTitle>Monthly Account Values</DialogTitle>
           <DialogDescription>
             Enter the ending balance and cash flows for each account for the
-            selected month.
+            selected month. Cash In/Out should include all money movements
+            (including income/expenditure). Then specify how much of Cash In was
+            income and how much of Cash Out was expenditure.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -163,15 +170,20 @@ export function MonthlyEntryDialog({
                     <div>
                       <h4 className="font-medium">{account.name}</h4>
                       <span className="text-xs text-muted-foreground">
-                        Currency: {account.currency || "GBP"} {getCurrencySymbol(account.currency || "GBP")}
+                        Currency: {account.currency || "GBP"}{" "}
+                        {getCurrencySymbol(account.currency || "GBP")}
                       </span>
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      Current: {formatCurrencyAmount(currentValue, account.currency || "GBP")}
+                      Current:{" "}
+                      {formatCurrencyAmount(
+                        currentValue,
+                        account.currency || "GBP"
+                      )}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-sm">Ending Balance</Label>
                       <Input
@@ -188,14 +200,19 @@ export function MonthlyEntryDialog({
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-sm">Work Income</Label>
+                      <Label className="text-sm">
+                        Income{" "}
+                        <span className="text-xs text-muted-foreground">
+                          (part of Cash In)
+                        </span>
+                      </Label>
                       <Input
                         type="number"
-                        value={entry?.workIncome || 0}
+                        value={entry?.income || 0}
                         onChange={(e) =>
                           handleEntryChange(
                             account.id.toString(),
-                            "workIncome",
+                            "income",
                             e.target.value
                           )
                         }
@@ -203,7 +220,32 @@ export function MonthlyEntryDialog({
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-sm">Cash In</Label>
+                      <Label className="text-sm">
+                        Expenditure{" "}
+                        <span className="text-xs text-muted-foreground">
+                          (part of Cash Out)
+                        </span>
+                      </Label>
+                      <Input
+                        type="number"
+                        value={entry?.expenditure || 0}
+                        onChange={(e) =>
+                          handleEntryChange(
+                            account.id.toString(),
+                            "expenditure",
+                            e.target.value
+                          )
+                        }
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm">
+                        Cash In{" "}
+                        <span className="text-xs text-muted-foreground">
+                          (total, including income)
+                        </span>
+                      </Label>
                       <Input
                         type="number"
                         value={entry?.cashIn || 0}
@@ -218,7 +260,12 @@ export function MonthlyEntryDialog({
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-sm">Cash Out</Label>
+                      <Label className="text-sm">
+                        Cash Out{" "}
+                        <span className="text-xs text-muted-foreground">
+                          (total, including expenditure)
+                        </span>
+                      </Label>
                       <Input
                         type="number"
                         value={entry?.cashOut || 0}

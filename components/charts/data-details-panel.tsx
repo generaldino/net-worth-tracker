@@ -500,6 +500,86 @@ export function DataDetailsPanel({
           })()}
         </div>
       )}
+
+      {chartType === "savings-rate" && (
+        <div className="space-y-2">
+          <div className="text-sm text-muted-foreground mb-2">
+            Savings & Income Breakdown:
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Savings Rate:</span>
+            <span
+              className={`font-medium ${
+                typeof data["Savings Rate"] === "number" &&
+                data["Savings Rate"] >= 0
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              {typeof data["Savings Rate"] === "number"
+                ? `${data["Savings Rate"] >= 0 ? "+" : ""}${Math.round(
+                    data["Savings Rate"]
+                  )}%`
+                : "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Total Income:</span>
+            <span className="font-medium text-green-600">
+              {typeof data["Total Income"] === "number"
+                ? formatCurrencyAmount(data["Total Income"], chartCurrency)
+                : "—"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Total Expenditure:</span>
+            <span className="font-medium text-red-600">
+              {typeof data["Total Expenditure"] === "number"
+                ? formatCurrencyAmount(data["Total Expenditure"], chartCurrency)
+                : "—"}
+            </span>
+          </div>
+          {typeof data["Savings from Income"] === "number" &&
+            data["Savings from Income"] !== 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">
+                  Savings from Income:
+                </span>
+                <span className="font-medium text-green-600">
+                  +
+                  {formatCurrencyAmount(
+                    data["Savings from Income"],
+                    chartCurrency
+                  )}
+                </span>
+              </div>
+            )}
+          <div className="border-t pt-2 mt-2">
+            <div className="flex justify-between font-medium">
+              <span>Net Savings:</span>
+              {(() => {
+                const income =
+                  typeof data["Total Income"] === "number"
+                    ? data["Total Income"]
+                    : 0;
+                const expenditure =
+                  typeof data["Total Expenditure"] === "number"
+                    ? data["Total Expenditure"]
+                    : 0;
+                const netSavings = income - expenditure;
+                return (
+                  <span
+                    className={netSavings >= 0 ? "text-green-600" : "text-red-600"}
+                  >
+                    {netSavings >= 0 ? "+" : "-"}
+                    {formatCurrencyAmount(Math.abs(netSavings), chartCurrency)}
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

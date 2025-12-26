@@ -181,6 +181,12 @@ export function ChartHeader({
         if (metricName === "Capital Gains") return COLORS[2];
         if (metricName === "Net Change") return "hsl(var(--chart-1))";
         return "";
+      case "savings-rate":
+        if (metricName === "Savings Rate") return CHART_GREEN;
+        if (metricName === "Total Income") return COLORS[0];
+        if (metricName === "Total Expenditure") return CHART_RED;
+        if (metricName === "Savings from Income") return COLORS[1];
+        return "";
       case "total":
       case "projection":
         // For account types, colors are assigned based on alphabetical order in the chart
@@ -718,6 +724,78 @@ export function ChartHeader({
               }}
               getColorSwatch={(name, index) => {
                 // For charts with fixed metric lists, pass all metric names
+                const allMetricNames = secondaryMetrics.map((m) => m.name);
+                return getMetricColor(chartType, name, index, allMetricNames);
+              }}
+              showPercentage={false}
+            />
+          </div>
+        );
+      }
+
+      case "savings-rate": {
+        const savingsRate = displayData.metrics["Savings Rate"] as number;
+        const totalIncome = displayData.metrics["Total Income"] as number;
+        const totalExpenditure = displayData.metrics["Total Expenditure"] as number;
+        const savingsFromIncome = displayData.metrics["Savings from Income"] as number;
+
+        const secondaryMetrics: Array<{
+          name: string;
+          value: number;
+          absValue: number;
+        }> = [];
+        
+        if (totalIncome !== undefined) {
+          secondaryMetrics.push({
+            name: "Total Income",
+            value: totalIncome,
+            absValue: Math.abs(totalIncome),
+          });
+        }
+        if (totalExpenditure !== undefined) {
+          secondaryMetrics.push({
+            name: "Total Expenditure",
+            value: totalExpenditure,
+            absValue: Math.abs(totalExpenditure),
+          });
+        }
+        if (savingsFromIncome !== undefined) {
+          secondaryMetrics.push({
+            name: "Savings from Income",
+            value: savingsFromIncome,
+            absValue: Math.abs(savingsFromIncome),
+          });
+        }
+
+        return (
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                SAVINGS RATE
+              </div>
+              <div
+                className={`text-2xl sm:text-3xl font-bold ${
+                  savingsRate >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {savingsRate !== undefined && !isNaN(savingsRate)
+                  ? `${savingsRate >= 0 ? "+" : ""}${Math.round(savingsRate)}%`
+                  : "—"}
+              </div>
+            </div>
+
+            <ScrollableMetrics
+              metrics={secondaryMetrics}
+              primaryValue={savingsRate}
+              formatValue={formatValue}
+              getLabel={(name) => name.toUpperCase()}
+              getColor={(name, value) => {
+                if (name === "Total Expenditure") {
+                  return "text-red-600";
+                }
+                return value < 0 ? "text-red-600" : "text-green-600";
+              }}
+              getColorSwatch={(name, index) => {
                 const allMetricNames = secondaryMetrics.map((m) => m.name);
                 return getMetricColor(chartType, name, index, allMetricNames);
               }}
