@@ -169,12 +169,12 @@ export function FinancialMetricsNavbar() {
   const savingsYTDConverted = useMemo(() => {
     if (!financialMetrics) return 0;
     return incomeYTDConverted - expenditureYTDConverted;
-  }, [incomeYTDConverted, expenditureYTDConverted]);
+  }, [financialMetrics, incomeYTDConverted, expenditureYTDConverted]);
 
   const savingsAllTimeConverted = useMemo(() => {
     if (!financialMetrics) return 0;
     return incomeAllTimeConverted - expenditureAllTimeConverted;
-  }, [incomeAllTimeConverted, expenditureAllTimeConverted]);
+  }, [financialMetrics, incomeAllTimeConverted, expenditureAllTimeConverted]);
 
   // Prepare metrics array - use server values directly
   const metrics: MetricData[] = useMemo(() => {
