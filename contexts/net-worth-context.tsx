@@ -12,15 +12,45 @@ interface NetWorthBreakdown {
   monthKey: string;
 }
 
+interface FinancialMetrics {
+  netWorthYTD: number;
+  netWorthAllTime: number;
+  netWorthPercentageYTD: number | null;
+  netWorthPercentageAllTime: number | null;
+  incomeYTD: number;
+  incomeAllTime: number;
+  incomePercentageYTD: number | null;
+  incomePercentageAllTime: number | null;
+  expenditureYTD: number;
+  expenditureAllTime: number;
+  expenditurePercentageYTD: number | null;
+  expenditurePercentageAllTime: number | null;
+  savingsYTD: number;
+  savingsAllTime: number;
+  savingsPercentageYTD: number | null;
+  savingsPercentageAllTime: number | null;
+  savingsRateYTD: number | null;
+  savingsRateAllTime: number | null;
+  spendingRateYTD: number | null;
+  spendingRateAllTime: number | null;
+  incomeBreakdownYTD: Array<{ currency: string; amount: number }>;
+  incomeBreakdownAllTime: Array<{ currency: string; amount: number }>;
+  expenditureBreakdownYTD: Array<{ currency: string; amount: number }>;
+  expenditureBreakdownAllTime: Array<{ currency: string; amount: number }>;
+  latestMonth: string | null;
+}
+
 interface NetWorthContextType {
   netWorth: number | null;
   netWorthBreakdown: NetWorthBreakdown | null;
   percentageIncrease: number | null;
+  financialMetrics: FinancialMetrics | null;
   setNetWorthData: (
     netWorth: number,
     breakdown: NetWorthBreakdown,
     percentageIncrease: number | null
   ) => void;
+  setFinancialMetrics: (metrics: FinancialMetrics) => void;
 }
 
 const NetWorthContext = createContext<NetWorthContextType | undefined>(
@@ -34,6 +64,8 @@ export function NetWorthProvider({ children }: { children: ReactNode }) {
   const [percentageIncrease, setPercentageIncrease] = useState<number | null>(
     null
   );
+  const [financialMetrics, setFinancialMetrics] =
+    useState<FinancialMetrics | null>(null);
 
   const setNetWorthData = (
     netWorth: number,
@@ -51,7 +83,9 @@ export function NetWorthProvider({ children }: { children: ReactNode }) {
         netWorth,
         netWorthBreakdown,
         percentageIncrease,
+        financialMetrics,
         setNetWorthData,
+        setFinancialMetrics,
       }}
     >
       {children}
@@ -66,4 +100,3 @@ export function useNetWorth() {
   }
   return context;
 }
-

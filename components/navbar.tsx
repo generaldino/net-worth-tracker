@@ -7,12 +7,12 @@ import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useNetWorth } from "@/contexts/net-worth-context";
-import { NetWorthDisplay } from "@/components/net-worth-display";
+import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 
 export function Navbar() {
   const router = useRouter();
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
-  const { netWorth, netWorthBreakdown, percentageIncrease } = useNetWorth();
+  const { netWorth, netWorthBreakdown, financialMetrics } = useNetWorth();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -72,14 +72,10 @@ export function Navbar() {
             >
               💰 Wealth Tracker
             </button>
-            {netWorth !== null && netWorthBreakdown && (
+            {netWorth !== null && netWorthBreakdown && financialMetrics && (
               <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
                 <div className="border-l h-8" />
-                <NetWorthDisplay
-                  netWorth={netWorth}
-                  netWorthBreakdown={netWorthBreakdown}
-                  percentageIncrease={percentageIncrease}
-                />
+                <FinancialMetricsNavbar />
               </div>
             )}
           </div>
@@ -92,14 +88,10 @@ export function Navbar() {
             <ProfileDropdown />
           </div>
         </div>
-        {/* Mobile net worth display */}
-        {netWorth !== null && netWorthBreakdown && (
+        {/* Mobile financial metrics display */}
+        {netWorth !== null && netWorthBreakdown && financialMetrics && (
           <div className="md:hidden pb-3 border-t pt-3 mt-2">
-            <NetWorthDisplay
-              netWorth={netWorth}
-              netWorthBreakdown={netWorthBreakdown}
-              percentageIncrease={percentageIncrease}
-            />
+            <FinancialMetricsNavbar />
           </div>
         )}
       </div>

@@ -8,20 +8,29 @@ import {
   getAccountHistory,
   getNetWorthBreakdown,
   getFirstEntryNetWorth,
+  getFinancialMetrics,
 } from "@/lib/actions";
 import { AddAccountButton } from "@/components/add-account-dialog";
 import { ExportCSVButton } from "@/components/export-csv-button";
 import { NetWorthDataSetter } from "@/components/net-worth-data-setter";
+import { FinancialMetricsSetter } from "@/components/financial-metrics-setter";
 
 export async function AccountsManager() {
-  const [netWorth, netWorthBreakdown, accounts, monthlyData, firstEntryData] =
-    await Promise.all([
-      calculateNetWorth(),
-      getNetWorthBreakdown(),
-      getAccounts(true), // Always fetch all accounts, including closed ones
-      getMonthlyData(),
-      getFirstEntryNetWorth(),
-    ]);
+  const [
+    netWorth,
+    netWorthBreakdown,
+    accounts,
+    monthlyData,
+    firstEntryData,
+    financialMetrics,
+  ] = await Promise.all([
+    calculateNetWorth(),
+    getNetWorthBreakdown(),
+    getAccounts(true), // Always fetch all accounts, including closed ones
+    getMonthlyData(),
+    getFirstEntryNetWorth(),
+    getFinancialMetrics(),
+  ]);
 
   // Calculate percentage increase from first entry
   const percentageIncrease =
@@ -65,7 +74,8 @@ export async function AccountsManager() {
         netWorthBreakdown={netWorthBreakdown}
         percentageIncrease={percentageIncrease}
       />
-      <div className="min-h-screen bg-background overflow-x-hidden pt-32 md:pt-16">
+      <FinancialMetricsSetter metrics={financialMetrics} />
+      <div className="min-h-screen bg-background overflow-x-hidden pt-40 md:pt-20">
         <div className="w-full py-4 px-4 sm:px-6">
           <div className="space-y-4 sm:space-y-6">
             <ChartSection />

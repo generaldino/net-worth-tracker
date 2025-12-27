@@ -200,6 +200,499 @@ export async function getFirstEntryNetWorth() {
   }
 }
 
+export async function getFinancialMetrics() {
+  try {
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return {
+        netWorthYTD: 0,
+        netWorthAllTime: 0,
+        netWorthPercentageYTD: null,
+        netWorthPercentageAllTime: null,
+        incomeYTD: 0,
+        incomeAllTime: 0,
+        incomePercentageYTD: null,
+        incomePercentageAllTime: null,
+        expenditureYTD: 0,
+        expenditureAllTime: 0,
+        expenditurePercentageYTD: null,
+        expenditurePercentageAllTime: null,
+        savingsYTD: 0,
+        savingsAllTime: 0,
+        savingsPercentageYTD: null,
+        savingsPercentageAllTime: null,
+        savingsRateYTD: null,
+        savingsRateAllTime: null,
+        spendingRateYTD: null,
+        spendingRateAllTime: null,
+        incomeBreakdownYTD: [],
+        incomeBreakdownAllTime: [],
+        expenditureBreakdownYTD: [],
+        expenditureBreakdownAllTime: [],
+        latestMonth: null,
+      };
+    }
+
+    // Get accounts for accessible users
+    const allAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(inArray(accountsTable.userId, accessibleUserIds));
+
+    const accessibleAccountIds = allAccounts.map((acc) => acc.id);
+
+    if (accessibleAccountIds.length === 0) {
+      return {
+        netWorthYTD: 0,
+        netWorthAllTime: 0,
+        netWorthPercentageYTD: null,
+        netWorthPercentageAllTime: null,
+        incomeYTD: 0,
+        incomeAllTime: 0,
+        incomePercentageYTD: null,
+        incomePercentageAllTime: null,
+        expenditureYTD: 0,
+        expenditureAllTime: 0,
+        expenditurePercentageYTD: null,
+        expenditurePercentageAllTime: null,
+        savingsYTD: 0,
+        savingsAllTime: 0,
+        savingsPercentageYTD: null,
+        savingsPercentageAllTime: null,
+        savingsRateYTD: null,
+        savingsRateAllTime: null,
+        spendingRateYTD: null,
+        spendingRateAllTime: null,
+        incomeBreakdownYTD: [],
+        incomeBreakdownAllTime: [],
+        expenditureBreakdownYTD: [],
+        expenditureBreakdownAllTime: [],
+        latestMonth: null,
+      };
+    }
+
+    // Get all monthly entries with account info
+    const entries = await db
+      .select({
+        month: monthlyEntries.month,
+        accountId: monthlyEntries.accountId,
+        income: monthlyEntries.income,
+        expenditure: monthlyEntries.expenditure,
+        endingBalance: monthlyEntries.endingBalance,
+        accountType: accountsTable.type,
+        accountCurrency: accountsTable.currency,
+      })
+      .from(monthlyEntries)
+      .innerJoin(accountsTable, eq(monthlyEntries.accountId, accountsTable.id))
+      .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
+      .orderBy(desc(monthlyEntries.month));
+
+    if (entries.length === 0) {
+      return {
+        netWorthYTD: 0,
+        netWorthAllTime: 0,
+        netWorthPercentageYTD: null,
+        netWorthPercentageAllTime: null,
+        incomeYTD: 0,
+        incomeAllTime: 0,
+        incomePercentageYTD: null,
+        incomePercentageAllTime: null,
+        expenditureYTD: 0,
+        expenditureAllTime: 0,
+        expenditurePercentageYTD: null,
+        expenditurePercentageAllTime: null,
+        savingsYTD: 0,
+        savingsAllTime: 0,
+        savingsPercentageYTD: null,
+        savingsPercentageAllTime: null,
+        savingsRateYTD: null,
+        savingsRateAllTime: null,
+        spendingRateYTD: null,
+        spendingRateAllTime: null,
+        incomeBreakdownYTD: [],
+        incomeBreakdownAllTime: [],
+        expenditureBreakdownYTD: [],
+        expenditureBreakdownAllTime: [],
+        latestMonth: null,
+      };
+    }
+
+    // Get latest month for YTD calculation
+    const latestMonth = entries[0].month;
+    const currentYear = latestMonth.substring(0, 4); // YYYY-MM format
+
+    // Track income and expenditure by currency
+    const incomeBreakdownYTD: Array<{ currency: Currency; amount: number }> =
+      [];
+    const incomeBreakdownAllTime: Array<{
+      currency: Currency;
+      amount: number;
+    }> = [];
+    const expenditureBreakdownYTD: Array<{
+      currency: Currency;
+      amount: number;
+    }> = [];
+    const expenditureBreakdownAllTime: Array<{
+      currency: Currency;
+      amount: number;
+    }> = [];
+
+    const incomeByCurrencyYTD = new Map<Currency, number>();
+    const incomeByCurrencyAllTime = new Map<Currency, number>();
+    const expenditureByCurrencyYTD = new Map<Currency, number>();
+    const expenditureByCurrencyAllTime = new Map<Currency, number>();
+
+    // Get latest month entries for net worth calculation
+    const latestMonthEntries = entries.filter(
+      (entry) => entry.month === latestMonth
+    );
+
+    entries.forEach((entry) => {
+      const currency = (entry.accountCurrency || "GBP") as Currency;
+      const income = Number(entry.income || 0);
+      const expenditure = Number(entry.expenditure || 0);
+      const isYTDMonth = entry.month.startsWith(currentYear);
+
+      // Income from Current accounts only
+      if (entry.accountType === "Current") {
+        if (isYTDMonth) {
+          const current = incomeByCurrencyYTD.get(currency) || 0;
+          incomeByCurrencyYTD.set(currency, current + income);
+        }
+        const current = incomeByCurrencyAllTime.get(currency) || 0;
+        incomeByCurrencyAllTime.set(currency, current + income);
+      }
+
+      // Expenditure from Current and Credit_Card accounts
+      if (
+        entry.accountType === "Current" ||
+        entry.accountType === "Credit_Card"
+      ) {
+        if (isYTDMonth) {
+          const current = expenditureByCurrencyYTD.get(currency) || 0;
+          expenditureByCurrencyYTD.set(currency, current + expenditure);
+        }
+        const current = expenditureByCurrencyAllTime.get(currency) || 0;
+        expenditureByCurrencyAllTime.set(currency, current + expenditure);
+      }
+    });
+
+    // Convert maps to arrays
+    incomeByCurrencyYTD.forEach((amount, currency) => {
+      incomeBreakdownYTD.push({ currency, amount });
+    });
+    incomeByCurrencyAllTime.forEach((amount, currency) => {
+      incomeBreakdownAllTime.push({ currency, amount });
+    });
+    expenditureByCurrencyYTD.forEach((amount, currency) => {
+      expenditureBreakdownYTD.push({ currency, amount });
+    });
+    expenditureByCurrencyAllTime.forEach((amount, currency) => {
+      expenditureBreakdownAllTime.push({ currency, amount });
+    });
+
+    // Calculate totals (will be converted on client side)
+    const incomeYTD = Array.from(incomeByCurrencyYTD.values()).reduce(
+      (sum, val) => sum + val,
+      0
+    );
+    const incomeAllTime = Array.from(incomeByCurrencyAllTime.values()).reduce(
+      (sum, val) => sum + val,
+      0
+    );
+    const expenditureYTD = Array.from(expenditureByCurrencyYTD.values()).reduce(
+      (sum, val) => sum + val,
+      0
+    );
+    const expenditureAllTime = Array.from(
+      expenditureByCurrencyAllTime.values()
+    ).reduce((sum, val) => sum + val, 0);
+
+    const savingsYTD = incomeYTD - expenditureYTD;
+    const savingsAllTime = incomeAllTime - expenditureAllTime;
+
+    // Calculate Savings Rate and Spending Rate (more meaningful than percentage changes)
+    // Savings Rate = (Saved / Earned) × 100
+    // Spending Rate = (Spent / Earned) × 100
+    let savingsRateYTD: number | null = null;
+    let savingsRateAllTime: number | null = null;
+    let spendingRateYTD: number | null = null;
+    let spendingRateAllTime: number | null = null;
+
+    if (incomeYTD !== 0) {
+      savingsRateYTD = (savingsYTD / incomeYTD) * 100;
+      spendingRateYTD = (expenditureYTD / incomeYTD) * 100;
+    }
+
+    if (incomeAllTime !== 0) {
+      savingsRateAllTime = (savingsAllTime / incomeAllTime) * 100;
+      spendingRateAllTime = (expenditureAllTime / incomeAllTime) * 100;
+    }
+
+    // Calculate YTD and All Time percentage changes (not YoY) - keeping for Net Worth
+    let incomePercentageYTD: number | null = null;
+    let expenditurePercentageYTD: number | null = null;
+    let savingsPercentageYTD: number | null = null;
+    let incomePercentageAllTime: number | null = null;
+    let expenditurePercentageAllTime: number | null = null;
+    let savingsPercentageAllTime: number | null = null;
+
+    // Calculate YTD changes: Compare Jan 2025 to current month (Oct 2025)
+    if (latestMonth.startsWith(currentYear)) {
+      const ytdStartMonth = `${currentYear}-01`;
+      const januaryIncomeByCurrency = new Map<Currency, number>();
+      const januaryExpenditureByCurrency = new Map<Currency, number>();
+
+      entries.forEach((entry) => {
+        if (entry.month === ytdStartMonth) {
+          const currency = (entry.accountCurrency || "GBP") as Currency;
+          const income = Number(entry.income || 0);
+          const expenditure = Number(entry.expenditure || 0);
+
+          if (entry.accountType === "Current") {
+            const current = januaryIncomeByCurrency.get(currency) || 0;
+            januaryIncomeByCurrency.set(currency, current + income);
+          }
+
+          if (
+            entry.accountType === "Current" ||
+            entry.accountType === "Credit_Card"
+          ) {
+            const current = januaryExpenditureByCurrency.get(currency) || 0;
+            januaryExpenditureByCurrency.set(currency, current + expenditure);
+          }
+        }
+      });
+
+      const januaryIncome = Array.from(januaryIncomeByCurrency.values()).reduce(
+        (sum, val) => sum + val,
+        0
+      );
+      const januaryExpenditure = Array.from(
+        januaryExpenditureByCurrency.values()
+      ).reduce((sum, val) => sum + val, 0);
+      const januarySavings = januaryIncome - januaryExpenditure;
+
+      // Calculate YTD percentages: (Current - January) / January * 100
+      if (januaryIncome !== 0) {
+        incomePercentageYTD =
+          ((incomeYTD - januaryIncome) / Math.abs(januaryIncome)) * 100;
+      }
+      if (januaryExpenditure !== 0) {
+        expenditurePercentageYTD =
+          ((expenditureYTD - januaryExpenditure) /
+            Math.abs(januaryExpenditure)) *
+          100;
+      }
+      if (januarySavings !== 0) {
+        savingsPercentageYTD =
+          ((savingsYTD - januarySavings) / Math.abs(januarySavings)) * 100;
+      }
+    }
+
+    // Calculate current net worth for latest month
+    const currentNetWorth = allAccounts.reduce((total, account) => {
+      const entry = latestMonthEntries.find((e) => e.accountId === account.id);
+      const balance = Number(entry?.endingBalance || 0);
+
+      if (account.type === "Credit_Card" || account.type === "Loan") {
+        return total - balance;
+      }
+      return total + balance;
+    }, 0);
+
+    // Get all entries ordered for All Time calculations (for both income/expenditure and net worth)
+    const allEntriesOrdered = await db
+      .select({
+        month: monthlyEntries.month,
+        accountId: monthlyEntries.accountId,
+        income: monthlyEntries.income,
+        expenditure: monthlyEntries.expenditure,
+        endingBalance: monthlyEntries.endingBalance,
+        accountType: accountsTable.type,
+        accountCurrency: accountsTable.currency,
+      })
+      .from(monthlyEntries)
+      .innerJoin(accountsTable, eq(monthlyEntries.accountId, accountsTable.id))
+      .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
+      .orderBy(asc(monthlyEntries.month));
+
+    // Calculate All Time changes: Compare first entry to current
+    if (allEntriesOrdered.length > 0) {
+      const firstMonth = allEntriesOrdered[0].month;
+      const firstMonthIncomeByCurrency = new Map<Currency, number>();
+      const firstMonthExpenditureByCurrency = new Map<Currency, number>();
+
+      allEntriesOrdered.forEach((entry) => {
+        if (entry.month === firstMonth) {
+          const currency = (entry.accountCurrency || "GBP") as Currency;
+          const income = Number(entry.income || 0);
+          const expenditure = Number(entry.expenditure || 0);
+
+          if (entry.accountType === "Current") {
+            const current = firstMonthIncomeByCurrency.get(currency) || 0;
+            firstMonthIncomeByCurrency.set(currency, current + income);
+          }
+
+          if (
+            entry.accountType === "Current" ||
+            entry.accountType === "Credit_Card"
+          ) {
+            const current = firstMonthExpenditureByCurrency.get(currency) || 0;
+            firstMonthExpenditureByCurrency.set(
+              currency,
+              current + expenditure
+            );
+          }
+        }
+      });
+
+      const firstMonthIncome = Array.from(
+        firstMonthIncomeByCurrency.values()
+      ).reduce((sum, val) => sum + val, 0);
+      const firstMonthExpenditure = Array.from(
+        firstMonthExpenditureByCurrency.values()
+      ).reduce((sum, val) => sum + val, 0);
+      const firstMonthSavings = firstMonthIncome - firstMonthExpenditure;
+
+      // Calculate All Time percentages: (Current - First) / First * 100
+      if (firstMonthIncome !== 0) {
+        incomePercentageAllTime =
+          ((incomeAllTime - firstMonthIncome) / Math.abs(firstMonthIncome)) *
+          100;
+      }
+      if (firstMonthExpenditure !== 0) {
+        expenditurePercentageAllTime =
+          ((expenditureAllTime - firstMonthExpenditure) /
+            Math.abs(firstMonthExpenditure)) *
+          100;
+      }
+      if (firstMonthSavings !== 0) {
+        savingsPercentageAllTime =
+          ((savingsAllTime - firstMonthSavings) / Math.abs(firstMonthSavings)) *
+          100;
+      }
+    }
+
+    // Calculate net worth percentages
+    let netWorthPercentageYTD: number | null = null;
+    let netWorthPercentageAllTime: number | null = null;
+    let netWorthAllTime = currentNetWorth; // Default to current if no first entry
+
+    if (allEntriesOrdered.length > 0) {
+      // Get first entry month for all-time comparison
+      const firstMonth = allEntriesOrdered[0].month;
+      const firstMonthEntries = allEntriesOrdered.filter(
+        (entry) => entry.month === firstMonth
+      );
+
+      if (firstMonthEntries.length > 0 && firstMonth !== latestMonth) {
+        const firstNetWorth = allAccounts.reduce((total, account) => {
+          const entry = firstMonthEntries.find(
+            (e) => e.accountId === account.id
+          );
+          const balance = Number(entry?.endingBalance || 0);
+
+          if (account.type === "Credit_Card" || account.type === "Loan") {
+            return total - balance;
+          }
+          return total + balance;
+        }, 0);
+
+        netWorthAllTime = firstNetWorth;
+
+        // Calculate All Time percentage: (Current - First) / First * 100
+        if (firstNetWorth !== 0) {
+          netWorthPercentageAllTime =
+            ((currentNetWorth - firstNetWorth) / Math.abs(firstNetWorth)) * 100;
+        }
+      }
+
+      // Calculate YTD percentage if we have data for current year
+      if (latestMonth.startsWith(currentYear)) {
+        const ytdStartMonth = `${currentYear}-01`;
+        const januaryEntries = allEntriesOrdered.filter(
+          (entry) => entry.month === ytdStartMonth
+        );
+
+        if (januaryEntries.length > 0) {
+          const januaryNetWorth = allAccounts.reduce((total, account) => {
+            const entry = januaryEntries.find(
+              (e) => e.accountId === account.id
+            );
+            const balance = Number(entry?.endingBalance || 0);
+
+            if (account.type === "Credit_Card" || account.type === "Loan") {
+              return total - balance;
+            }
+            return total + balance;
+          }, 0);
+
+          if (januaryNetWorth !== 0) {
+            netWorthPercentageYTD =
+              ((currentNetWorth - januaryNetWorth) /
+                Math.abs(januaryNetWorth)) *
+              100;
+          }
+        }
+      }
+    }
+
+    return {
+      netWorthYTD: currentNetWorth,
+      netWorthAllTime,
+      netWorthPercentageYTD,
+      netWorthPercentageAllTime,
+      incomeYTD,
+      incomeAllTime,
+      incomePercentageYTD,
+      incomePercentageAllTime,
+      expenditureYTD,
+      expenditureAllTime,
+      expenditurePercentageYTD,
+      expenditurePercentageAllTime,
+      savingsYTD,
+      savingsAllTime,
+      savingsPercentageYTD,
+      savingsPercentageAllTime,
+      savingsRateYTD,
+      savingsRateAllTime,
+      spendingRateYTD,
+      spendingRateAllTime,
+      incomeBreakdownYTD,
+      incomeBreakdownAllTime,
+      expenditureBreakdownYTD,
+      expenditureBreakdownAllTime,
+      latestMonth,
+    };
+  } catch (error) {
+    console.error("Error getting financial metrics:", error);
+    return {
+      netWorthYTD: 0,
+      netWorthAllTime: 0,
+      netWorthPercentageYTD: null,
+      netWorthPercentageAllTime: null,
+      incomeYTD: 0,
+      incomeAllTime: 0,
+      incomePercentageYTD: null,
+      incomePercentageAllTime: null,
+      expenditureYTD: 0,
+      expenditureAllTime: 0,
+      expenditurePercentageYTD: null,
+      expenditurePercentageAllTime: null,
+      savingsYTD: 0,
+      savingsAllTime: 0,
+      savingsPercentageYTD: null,
+      savingsPercentageAllTime: null,
+      incomeBreakdownYTD: [],
+      incomeBreakdownAllTime: [],
+      expenditureBreakdownYTD: [],
+      expenditureBreakdownAllTime: [],
+      latestMonth: null,
+    };
+  }
+}
+
 export async function getAccounts(includeClosed: boolean = false) {
   try {
     const accessibleUserIds = await getAccessibleUserIds();
