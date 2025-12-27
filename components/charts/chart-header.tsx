@@ -7,6 +7,7 @@ import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 import { useMemo } from "react";
 import { COLORS, CHART_GREEN, CHART_RED, getUniqueColor } from "./constants";
+import { NetWorthCards } from "@/components/sample-card";
 
 // Helper to format account type names (matches chart-display.tsx)
 function formatAccountTypeName(type: string): string {
@@ -209,98 +210,6 @@ export function ChartHeader({
     }
   };
 
-  // Helper component for scrollable secondary metrics
-  const ScrollableMetrics = ({
-    metrics,
-    primaryValue,
-    formatValue: formatValueFn,
-    getLabel,
-    getColor,
-    getColorSwatch,
-    isPercentage = false,
-    showPercentage = false,
-  }: {
-    metrics: Array<{ name: string; value: number; absValue: number }>;
-    primaryValue?: number;
-    formatValue: (value: number) => string;
-    getLabel: (name: string) => string;
-    getColor?: (name: string, value: number) => string;
-    getColorSwatch?: (name: string, index: number) => string;
-    isPercentage?: boolean;
-    showPercentage?: boolean;
-  }) => {
-    // Always render container to maintain consistent layout, even when empty
-    return (
-      <div className="w-full min-h-[120px]">
-        <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
-        <div
-          className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
-          style={{
-            WebkitOverflowScrolling: "touch",
-            scrollbarWidth: "thin",
-            msOverflowStyle: "-ms-autohiding-scrollbar",
-          }}
-        >
-          <div
-            className="flex gap-3 pb-1"
-            style={{ width: "max-content", minWidth: "100%" }}
-          >
-            {metrics.length > 0 ? (
-              metrics.map((item, index) => {
-                const percentage = isPercentage
-                  ? item.absValue.toFixed(1)
-                  : primaryValue && primaryValue !== 0
-                  ? ((item.value / Math.abs(primaryValue)) * 100).toFixed(1)
-                  : "0.0";
-
-                const colorClass = getColor
-                  ? getColor(item.name, item.value)
-                  : "";
-
-                const colorSwatch = getColorSwatch
-                  ? getColorSwatch(item.name, index)
-                  : "";
-
-                return (
-                  <div
-                    key={item.name}
-                    className={`flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none min-h-[70px] flex flex-col justify-between ${colorClass}`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {colorSwatch && (
-                        <div
-                          className="w-3 h-3 rounded-sm flex-shrink-0"
-                          style={{ backgroundColor: colorSwatch }}
-                        />
-                      )}
-                      <div className="text-[10px] sm:text-xs text-muted-foreground">
-                        {getLabel(item.name)}
-                      </div>
-                    </div>
-                    <div className="text-sm sm:text-base font-semibold">
-                      {isPercentage
-                        ? <span className="font-mono tabular-nums">{percentage}%</span>
-                        : formatValueFn(item.value)}
-                    </div>
-                    {/* Always reserve space for percentage line to maintain consistent height */}
-                    <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 min-h-[14px]">
-                      {!isPercentage && showPercentage
-                        ? <span className="font-mono tabular-nums">{percentage}%</span>
-                        : "\u00A0"}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              // Placeholder to maintain space when no metrics
-              <div className="min-h-[70px]"></div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderMetrics = () => {
     if (!displayData.metrics) return null;
 
@@ -331,82 +240,27 @@ export function ChartHeader({
               <div className="text-xs text-muted-foreground mb-2">
                 BREAKDOWN BY TYPE
               </div>
-              <div
-                className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
-                style={{
-                  WebkitOverflowScrolling: "touch",
-                  scrollbarWidth: "thin",
-                  msOverflowStyle: "-ms-autohiding-scrollbar",
-                }}
-              >
-                <div
-                  className="flex gap-3 pb-1"
-                  style={{ width: "max-content", minWidth: "100%" }}
-                >
-                  {accountTypesForTotal.length > 0 ? (
-                    accountTypesForTotal.map((item, index) => {
-                      // When in percentage view, item.value is already a percentage (0-100)
-                      // When in absolute view, calculate percentage from absolute value
-                      const percentage = isPercentage
-                        ? item.absValue.toFixed(1)
-                        : netWorth !== 0
-                        ? ((item.value / Math.abs(netWorth)) * 100).toFixed(1)
-                        : "0.0";
-
-                      // Negative values always in red
-                      const valueColorClass =
-                        item.value < 0 ? "text-red-600" : "";
-
-                      // Get all account type names from metrics for color calculation
-                      // This ensures colors match the chart which uses alphabetical sorting of all account types
-                      const allAccountTypeNames = displayData.metrics
-                        ? Object.keys(displayData.metrics).filter(
-                            (key) => key !== "Net Worth"
-                          )
-                        : accountTypesForTotal.map((acc) => acc.name);
-                      const colorSwatch = getMetricColor(
-                        chartType,
-                        item.name,
-                        index,
-                        allAccountTypeNames
-                      );
-
-                      return (
-                        <div
-                          key={item.name}
-                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none min-h-[70px] flex flex-col justify-between"
-                        >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            {colorSwatch && (
-                              <div
-                                className="w-3 h-3 rounded-sm flex-shrink-0"
-                                style={{ backgroundColor: colorSwatch }}
-                              />
-                            )}
-                            <div className="text-[10px] sm:text-xs text-muted-foreground">
-                              {formatAccountTypeName(item.name)}
-                            </div>
-                          </div>
-                          <div
-                            className={`text-sm sm:text-base font-semibold ${valueColorClass}`}
-                          >
-                            {isPercentage
-                              ? `${percentage}%`
-                              : formatValue(item.value)}
-                          </div>
-                          {/* Always reserve space for percentage line to maintain consistent height */}
-                          <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 min-h-[14px]">
-                            {!isPercentage ? `${percentage}%` : "\u00A0"}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    // Placeholder to maintain space when no account types
-                    <div className="min-h-[70px]"></div>
-                  )}
-                </div>
-              </div>
+              {accountTypesForTotal.length > 0 ? (
+                <NetWorthCards
+                  netWorth={netWorth}
+                  assets={accountTypesForTotal}
+                  chartCurrency={chartCurrency}
+                  getColor={(name, index, allNames) =>
+                    getMetricColor(chartType, name, index, allNames)
+                  }
+                  allAccountTypeNames={
+                    displayData.metrics
+                      ? Object.keys(displayData.metrics).filter(
+                          (key) => key !== "Net Worth"
+                        )
+                      : accountTypesForTotal.map((acc) => acc.name)
+                  }
+                  isPercentageView={isPercentage}
+                />
+              ) : (
+                // Placeholder to maintain space when no account types
+                <div className="min-h-[70px]"></div>
+              )}
             </div>
           </div>
         );
@@ -457,25 +311,23 @@ export function ChartHeader({
             </div>
 
             {/* Always render to maintain consistent layout */}
-            <ScrollableMetrics
-              metrics={secondaryMetrics}
-              primaryValue={netWorth}
-              formatValue={formatValue}
-              getLabel={(name) => name.toUpperCase()}
-              getColor={(name, value) => {
-                // Liabilities are always red, Assets are green unless negative
-                if (name === "Liabilities") return "text-red-600";
-                if (name === "Assets")
-                  return value < 0 ? "text-red-600" : "text-green-600";
-                return value < 0 ? "text-red-600" : "";
-              }}
-              getColorSwatch={(name, index) => {
-                // For charts with fixed metric lists, pass all metric names
-                const allMetricNames = secondaryMetrics.map((m) => m.name);
-                return getMetricColor(chartType, name, index, allMetricNames);
-              }}
-              showPercentage={false}
-            />
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              {secondaryMetrics.length > 0 ? (
+                <NetWorthCards
+                  netWorth={netWorth}
+                  assets={secondaryMetrics}
+                  chartCurrency={chartCurrency}
+                  getColor={(name, index, allNames) =>
+                    getMetricColor(chartType, name, index, allNames)
+                  }
+                  allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
+                  isPercentageView={false}
+                />
+              ) : (
+                <div className="min-h-[70px]"></div>
+              )}
+            </div>
           </div>
         );
       }
@@ -499,12 +351,10 @@ export function ChartHeader({
             </div>
 
             {/* Always render to maintain consistent layout */}
-            <ScrollableMetrics
-              metrics={[]}
-              formatValue={formatValue}
-              getLabel={(name) => name.toUpperCase()}
-              showPercentage={false}
-            />
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="min-h-[70px]"></div>
+            </div>
           </div>
         );
       }
@@ -584,22 +434,23 @@ export function ChartHeader({
             </div>
 
             {/* Always render to maintain consistent layout */}
-            <ScrollableMetrics
-              metrics={secondaryMetrics}
-              primaryValue={totalGrowth}
-              formatValue={formatValue}
-              getLabel={(name) => name.toUpperCase()}
-              getColor={(name, value) => {
-                // All negative values in red, positive in green
-                return value < 0 ? "text-red-600" : "text-green-600";
-              }}
-              getColorSwatch={(name, index) => {
-                // For charts with fixed metric lists, pass all metric names
-                const allMetricNames = secondaryMetrics.map((m) => m.name);
-                return getMetricColor(chartType, name, index, allMetricNames);
-              }}
-              showPercentage={true}
-            />
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              {secondaryMetrics.length > 0 ? (
+                <NetWorthCards
+                  netWorth={totalGrowth}
+                  assets={secondaryMetrics}
+                  chartCurrency={chartCurrency}
+                  getColor={(name, index, allNames) =>
+                    getMetricColor(chartType, name, index, allNames)
+                  }
+                  allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
+                  isPercentageView={false}
+                />
+              ) : (
+                <div className="min-h-[70px]"></div>
+              )}
+            </div>
           </div>
         );
       }
@@ -622,12 +473,10 @@ export function ChartHeader({
             </div>
 
             {/* Always render to maintain consistent layout */}
-            <ScrollableMetrics
-              metrics={[]}
-              formatValue={formatValue}
-              getLabel={(name) => name.toUpperCase()}
-              showPercentage={false}
-            />
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="min-h-[70px]"></div>
+            </div>
           </div>
         );
       }
@@ -703,32 +552,23 @@ export function ChartHeader({
             </div>
 
             {/* Always render to maintain consistent layout */}
-            <ScrollableMetrics
-              metrics={secondaryMetrics}
-              primaryValue={endingBalance}
-              formatValue={formatValue}
-              getLabel={(name) => name.toUpperCase()}
-              getColor={(name, value) => {
-                // All negative values always in red
-                if (value < 0) return "text-red-600";
-                // Positive values: green for income/gains, default for others
-                if (
-                  name === "Savings from Income" ||
-                  name === "Interest Earned" ||
-                  name === "Net Change" ||
-                  name === "Capital Gains"
-                ) {
-                  return "text-green-600";
-                }
-                return "";
-              }}
-              getColorSwatch={(name, index) => {
-                // For charts with fixed metric lists, pass all metric names
-                const allMetricNames = secondaryMetrics.map((m) => m.name);
-                return getMetricColor(chartType, name, index, allMetricNames);
-              }}
-              showPercentage={false}
-            />
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              {secondaryMetrics.length > 0 ? (
+                <NetWorthCards
+                  netWorth={endingBalance}
+                  assets={secondaryMetrics}
+                  chartCurrency={chartCurrency}
+                  getColor={(name, index, allNames) =>
+                    getMetricColor(chartType, name, index, allNames)
+                  }
+                  allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
+                  isPercentageView={false}
+                />
+              ) : (
+                <div className="min-h-[70px]"></div>
+              )}
+            </div>
           </div>
         );
       }
@@ -784,23 +624,26 @@ export function ChartHeader({
               </div>
             </div>
 
-            <ScrollableMetrics
-              metrics={secondaryMetrics}
-              primaryValue={savingsRate}
-              formatValue={formatValue}
-              getLabel={(name) => name.toUpperCase()}
-              getColor={(name, value) => {
-                if (name === "Total Expenditure") {
-                  return "text-red-600";
-                }
-                return value < 0 ? "text-red-600" : "text-green-600";
-              }}
-              getColorSwatch={(name, index) => {
-                const allMetricNames = secondaryMetrics.map((m) => m.name);
-                return getMetricColor(chartType, name, index, allMetricNames);
-              }}
-              showPercentage={false}
-            />
+            <div className="w-full min-h-[120px]">
+              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              {secondaryMetrics.length > 0 ? (
+                <NetWorthCards
+                  netWorth={
+                    secondaryMetrics.find((m) => m.name === "Total Income")
+                      ?.value || 0
+                  }
+                  assets={secondaryMetrics}
+                  chartCurrency={chartCurrency}
+                  getColor={(name, index, allNames) =>
+                    getMetricColor(chartType, name, index, allNames)
+                  }
+                  allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
+                  isPercentageView={false}
+                />
+              ) : (
+                <div className="min-h-[70px]"></div>
+              )}
+            </div>
           </div>
         );
       }
@@ -831,82 +674,27 @@ export function ChartHeader({
               <div className="text-xs text-muted-foreground mb-2">
                 BREAKDOWN BY TYPE
               </div>
-              <div
-                className="w-full overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth"
-                style={{
-                  WebkitOverflowScrolling: "touch",
-                  scrollbarWidth: "thin",
-                  msOverflowStyle: "-ms-autohiding-scrollbar",
-                }}
-              >
-                <div
-                  className="flex gap-3 pb-1"
-                  style={{ width: "max-content", minWidth: "100%" }}
-                >
-                  {accountTypesForProjection.length > 0 ? (
-                    accountTypesForProjection.map((item, index) => {
-                      // When in percentage view, item.value is already a percentage (0-100)
-                      // When in absolute view, calculate percentage from absolute value
-                      const percentage = isPercentage
-                        ? item.absValue.toFixed(1)
-                        : netWorth !== 0
-                        ? ((item.value / Math.abs(netWorth)) * 100).toFixed(1)
-                        : "0.0";
-
-                      // Negative values always in red
-                      const valueColorClass =
-                        item.value < 0 ? "text-red-600" : "";
-
-                      // Get all account type names from metrics for color calculation
-                      // This ensures colors match the chart which uses alphabetical sorting of all account types
-                      const allAccountTypeNames = displayData.metrics
-                        ? Object.keys(displayData.metrics).filter(
-                            (key) => key !== "Net Worth"
-                          )
-                        : accountTypesForProjection.map((acc) => acc.name);
-                      const colorSwatch = getMetricColor(
-                        chartType,
-                        item.name,
-                        index,
-                        allAccountTypeNames
-                      );
-
-                      return (
-                        <div
-                          key={item.name}
-                          className="flex-shrink-0 bg-muted/30 rounded-lg p-2.5 sm:p-3 border min-w-[110px] sm:min-w-[140px] select-none min-h-[70px] flex flex-col justify-between"
-                        >
-                          <div className="flex items-center gap-1.5 mb-1">
-                            {colorSwatch && (
-                              <div
-                                className="w-3 h-3 rounded-sm flex-shrink-0"
-                                style={{ backgroundColor: colorSwatch }}
-                              />
-                            )}
-                            <div className="text-[10px] sm:text-xs text-muted-foreground">
-                              {formatAccountTypeName(item.name)}
-                            </div>
-                          </div>
-                          <div
-                            className={`text-sm sm:text-base font-semibold ${valueColorClass}`}
-                          >
-                            {isPercentage
-                              ? `${percentage}%`
-                              : formatValue(item.value)}
-                          </div>
-                          {/* Always reserve space for percentage line to maintain consistent height */}
-                          <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 min-h-[14px]">
-                            {!isPercentage ? `${percentage}%` : "\u00A0"}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    // Placeholder to maintain space when no account types
-                    <div className="min-h-[70px]"></div>
-                  )}
-                </div>
-              </div>
+              {accountTypesForProjection.length > 0 ? (
+                <NetWorthCards
+                  netWorth={netWorth}
+                  assets={accountTypesForProjection}
+                  chartCurrency={chartCurrency}
+                  getColor={(name, index, allNames) =>
+                    getMetricColor(chartType, name, index, allNames)
+                  }
+                  allAccountTypeNames={
+                    displayData.metrics
+                      ? Object.keys(displayData.metrics).filter(
+                          (key) => key !== "Net Worth"
+                        )
+                      : accountTypesForProjection.map((acc) => acc.name)
+                  }
+                  isPercentageView={isPercentage}
+                />
+              ) : (
+                // Placeholder to maintain space when no account types
+                <div className="min-h-[70px]"></div>
+              )}
             </div>
           </div>
         );
