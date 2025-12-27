@@ -24,6 +24,8 @@ interface MonthlyHistoryRowProps {
     cashIn: string;
     cashOut: string;
     income: string;
+    internalTransfersOut: string;
+    debtPayments: string;
     expenditure: string;
   };
   onValueChange: (field: string, value: string) => void;
@@ -62,6 +64,18 @@ export function MonthlyHistoryRow({
   );
   const { convertedAmount: convertedExpenditure } = useCurrencyConversion(
     entry.expenditure || 0,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedInternalTransfersOut } = useCurrencyConversion(
+    entry.internalTransfersOut || 0,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedDebtPayments } = useCurrencyConversion(
+    entry.debtPayments || 0,
     accountCurrency,
     displayCurrency,
     entry.month
@@ -176,7 +190,69 @@ export function MonthlyHistoryRow({
               </div>
               <div>
                 <div className="flex items-center gap-1 mb-1">
-                  <span className="text-muted-foreground">Expenditure:</span>
+                  <span className="text-muted-foreground">Internal Transfers Out:</span>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "internalTransfersOut"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editingValues.internalTransfersOut}
+                    onChange={(e) => onValueChange("internalTransfersOut", e.target.value)}
+                    className="h-8"
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {isMasked
+                      ? "••••••"
+                      : formatCurrencyAmount(convertedInternalTransfersOut, displayCurrency)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-muted-foreground">Debt Payments:</span>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "debtPayments"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editingValues.debtPayments}
+                    onChange={(e) => onValueChange("debtPayments", e.target.value)}
+                    className="h-8"
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {isMasked
+                      ? "••••••"
+                      : formatCurrencyAmount(convertedDebtPayments, displayCurrency)}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-muted-foreground">Expenditure (Computed):</span>
                   {(() => {
                     const explanation = getFieldExplanation(
                       accountType,
@@ -190,20 +266,11 @@ export function MonthlyHistoryRow({
                     ) : null;
                   })()}
                 </div>
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    value={editingValues.expenditure}
-                    onChange={(e) => onValueChange("expenditure", e.target.value)}
-                    className="h-8"
-                  />
-                ) : (
-                  <div className="font-medium">
-                    {isMasked
-                      ? "••••••"
-                      : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
-                  </div>
-                )}
+                <div className="font-medium bg-muted px-2 py-1 rounded">
+                  {isMasked
+                    ? "••••••"
+                    : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
+                </div>
               </div>
             </>
           )}
@@ -338,11 +405,32 @@ export function MonthlyHistoryRow({
             {isEditing ? (
               <Input
                 type="number"
-                value={editingValues.expenditure}
-                onChange={(e) => onValueChange("expenditure", e.target.value)}
+                value={editingValues.internalTransfersOut}
+                onChange={(e) => onValueChange("internalTransfersOut", e.target.value)}
                 className="w-[100px]"
               />
             ) : isMasked ? (
+              "••••••"
+            ) : (
+              formatCurrencyAmount(convertedInternalTransfersOut, displayCurrency)
+            )}
+          </td>
+          <td>
+            {isEditing ? (
+              <Input
+                type="number"
+                value={editingValues.debtPayments}
+                onChange={(e) => onValueChange("debtPayments", e.target.value)}
+                className="w-[100px]"
+              />
+            ) : isMasked ? (
+              "••••••"
+            ) : (
+              formatCurrencyAmount(convertedDebtPayments, displayCurrency)
+            )}
+          </td>
+          <td className="bg-muted/50">
+            {isMasked ? (
               "••••••"
             ) : (
               formatCurrencyAmount(convertedExpenditure, displayCurrency)

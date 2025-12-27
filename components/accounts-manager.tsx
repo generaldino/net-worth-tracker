@@ -105,7 +105,8 @@ export async function AccountsManager() {
                       cashIn: entry.cashIn,
                       cashOut: entry.cashOut,
                       income: entry.income || 0,
-                      expenditure: entry.expenditure || 0,
+                      internalTransfersOut: entry.internalTransfersOut || 0,
+                      debtPayments: entry.debtPayments || 0,
                     });
                   }}
                   onAddNewMonth={async (accountId, month, entry) => {
@@ -116,7 +117,8 @@ export async function AccountsManager() {
                       cashIn: entry.cashIn,
                       cashOut: entry.cashOut,
                       income: entry.income || 0,
-                      expenditure: entry.expenditure || 0,
+                      internalTransfersOut: entry.internalTransfersOut || 0,
+                      debtPayments: entry.debtPayments || 0,
                     });
                   }}
                 />

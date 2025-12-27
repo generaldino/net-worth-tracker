@@ -473,7 +473,8 @@ export async function addMonthlyEntry(
     cashIn: number;
     cashOut: number;
     income: number;
-    expenditure: number;
+    internalTransfersOut?: number;
+    debtPayments?: number;
   }
 ) {
   try {
@@ -496,6 +497,11 @@ export async function addMonthlyEntry(
       };
     }
 
+    // Compute expenditure: cashOut - internalTransfersOut - debtPayments
+    const internalTransfersOut = entry.internalTransfersOut || 0;
+    const debtPayments = entry.debtPayments || 0;
+    const expenditure = entry.cashOut - internalTransfersOut - debtPayments;
+
     // Insert the new entry
     const newEntry = {
       accountId,
@@ -504,7 +510,9 @@ export async function addMonthlyEntry(
       cashIn: entry.cashIn.toString(),
       cashOut: entry.cashOut.toString(),
       income: (entry.income || 0).toString(),
-      expenditure: (entry.expenditure || 0).toString(),
+      internalTransfersOut: internalTransfersOut.toString(),
+      debtPayments: debtPayments.toString(),
+      expenditure: Math.max(0, expenditure).toString(), // Ensure non-negative
     };
 
     await db.insert(monthlyEntries).values(newEntry);
@@ -542,7 +550,8 @@ export async function updateMonthlyEntry(
     cashIn: number;
     cashOut: number;
     income: number;
-    expenditure: number;
+    internalTransfersOut?: number;
+    debtPayments?: number;
   }
 ) {
   try {
@@ -565,6 +574,11 @@ export async function updateMonthlyEntry(
       };
     }
 
+    // Compute expenditure: cashOut - internalTransfersOut - debtPayments
+    const internalTransfersOut = entry.internalTransfersOut || 0;
+    const debtPayments = entry.debtPayments || 0;
+    const expenditure = entry.cashOut - internalTransfersOut - debtPayments;
+
     // Update the entry
     await db
       .update(monthlyEntries)
@@ -573,7 +587,9 @@ export async function updateMonthlyEntry(
         cashIn: entry.cashIn.toString(),
         cashOut: entry.cashOut.toString(),
         income: (entry.income || 0).toString(),
-        expenditure: (entry.expenditure || 0).toString(),
+        internalTransfersOut: internalTransfersOut.toString(),
+        debtPayments: debtPayments.toString(),
+        expenditure: Math.max(0, expenditure).toString(), // Ensure non-negative
         updatedAt: new Date(),
       })
       .where(
@@ -1015,10 +1031,12 @@ export async function getChartData(
           totalExpenditure += expenditure;
         }
 
-        // Add Credit Card Cash Out to total expenditure (spending on cards is expenditure)
+        // Add Credit Card expenditure to total expenditure (spending on cards is expenditure)
+        // For credit cards, expenditure = cashOut - internalTransfersOut - debtPayments
+        // (though credit cards typically won't have internal transfers or debt payments)
         if (account.type === "Credit_Card") {
-          const cashOut = Number(entry.cashOut || 0);
-          totalExpenditure += cashOut;
+          const expenditure = Number(entry.expenditure || 0);
+          totalExpenditure += expenditure;
         }
 
         // Sum all account growth (for calculating savings from income)

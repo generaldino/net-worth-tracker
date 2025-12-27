@@ -34,7 +34,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [cashIn, setCashIn] = useState("");
   const [cashOut, setCashOut] = useState("");
   const [income, setIncome] = useState("");
-  const [expenditure, setExpenditure] = useState("");
+  const [internalTransfersOut, setInternalTransfersOut] = useState("");
+  const [debtPayments, setDebtPayments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
 
@@ -59,16 +60,24 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
     setIsSubmitting(true);
 
     try {
+      const cashOutValue = Number.parseFloat(cashOut) || 0;
+      const internalTransfersOutValue = shouldShowIncomeExpenditure(account.type)
+        ? Number.parseFloat(internalTransfersOut) || 0
+        : 0;
+      const debtPaymentsValue = shouldShowIncomeExpenditure(account.type)
+        ? Number.parseFloat(debtPayments) || 0
+        : 0;
+      const expenditureValue = Math.max(0, cashOutValue - internalTransfersOutValue - debtPaymentsValue);
+
       const result = await addMonthlyEntry(account.id, month, {
         endingBalance: Number.parseFloat(endingBalance) || 0,
         cashIn: Number.parseFloat(cashIn) || 0,
-        cashOut: Number.parseFloat(cashOut) || 0,
+        cashOut: cashOutValue,
         income: shouldShowIncomeExpenditure(account.type)
           ? Number.parseFloat(income) || 0
           : 0,
-        expenditure: shouldShowIncomeExpenditure(account.type)
-          ? Number.parseFloat(expenditure) || 0
-          : 0,
+        internalTransfersOut: internalTransfersOutValue,
+        debtPayments: debtPaymentsValue,
       });
 
       if (result.success) {
@@ -78,16 +87,15 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           month,
           endingBalance: Number.parseFloat(endingBalance) || 0,
           cashIn: Number.parseFloat(cashIn) || 0,
-          cashOut: Number.parseFloat(cashOut) || 0,
+          cashOut: cashOutValue,
           income: shouldShowIncomeExpenditure(account.type)
             ? Number.parseFloat(income) || 0
             : 0,
-          expenditure: shouldShowIncomeExpenditure(account.type)
-            ? Number.parseFloat(expenditure) || 0
-            : 0,
+          expenditure: expenditureValue,
+          internalTransfersOut: internalTransfersOutValue,
+          debtPayments: debtPaymentsValue,
           cashFlow:
-            (Number.parseFloat(cashIn) || 0) -
-            (Number.parseFloat(cashOut) || 0),
+            (Number.parseFloat(cashIn) || 0) - cashOutValue,
           accountGrowth: 0, // This will be calculated by the server
         };
 
@@ -99,7 +107,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         setCashIn("");
         setCashOut("");
         setIncome("");
-        setExpenditure("");
+        setInternalTransfersOut("");
+        setDebtPayments("");
         setOpen(false);
 
         toast({
@@ -218,7 +227,55 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor="expenditure">Expenditure</Label>
+                  <Label htmlFor="internal-transfers-out">Internal Transfers Out</Label>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      account.type,
+                      "internalTransfersOut"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                <Input
+                  id="internal-transfers-out"
+                  type="number"
+                  value={internalTransfersOut}
+                  onChange={(e) => setInternalTransfersOut(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="debt-payments">Debt Payments</Label>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      account.type,
+                      "debtPayments"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                <Input
+                  id="debt-payments"
+                  type="number"
+                  value={debtPayments}
+                  onChange={(e) => setDebtPayments(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="expenditure">Expenditure (Computed)</Label>
                   {(() => {
                     const explanation = getFieldExplanation(
                       account.type,
@@ -235,8 +292,14 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
                 <Input
                   id="expenditure"
                   type="number"
-                  value={expenditure}
-                  onChange={(e) => setExpenditure(e.target.value)}
+                  value={Math.max(
+                    0,
+                    (Number.parseFloat(cashOut) || 0) -
+                      (Number.parseFloat(internalTransfersOut) || 0) -
+                      (Number.parseFloat(debtPayments) || 0)
+                  )}
+                  disabled
+                  className="bg-muted"
                   placeholder="0"
                 />
               </div>

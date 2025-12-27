@@ -38,6 +38,8 @@ interface AccountRowProps {
         cashIn: string;
         cashOut: string;
         income: string;
+        internalTransfersOut: string;
+        debtPayments: string;
         expenditure: string;
       }
     >

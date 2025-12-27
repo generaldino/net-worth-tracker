@@ -51,9 +51,19 @@ export const fieldExplanations: FieldExplanations = {
         "The portion of Cash In that represents earned income (salary, wages, etc.). This should be part of your total Cash In amount.",
     },
     expenditure: {
-      title: "Expenditure",
+      title: "Expenditure (Computed)",
       description:
-        "The portion of Cash Out that represents spending on goods and services directly from this account (excluding transfers to savings, investments, credit card payments, or loan payments). Credit card payments and loan payments should NOT be included here as they are just paying down liabilities, not new spending. This should be part of your total Cash Out amount.",
+        "Automatically calculated as: Cash Out - Internal Transfers Out - Debt Payments. This represents spending on goods and services directly from this account (excluding transfers to savings, investments, credit card payments, or loan payments).",
+    },
+    internalTransfersOut: {
+      title: "Internal Transfers Out",
+      description:
+        "Money transferred out of this account to other accounts you own (e.g., transfers to savings accounts, investment accounts, or other current accounts). This is NOT expenditure - it's just moving money between your own accounts.",
+    },
+    debtPayments: {
+      title: "Debt Payments",
+      description:
+        "Payments made to pay down liabilities such as credit card payments and loan payments. This is NOT expenditure - these payments are just reducing your debt, not new spending. The actual spending happened when you used the credit card or took out the loan.",
     },
   },
   Savings: {
@@ -87,17 +97,22 @@ export const fieldExplanations: FieldExplanations = {
     endingBalance: {
       title: "Ending Balance",
       description:
-        "The total amount you owe on the credit card at the end of the month (your outstanding balance).",
+        "The total amount you owe on the credit card at the end of the month (your outstanding balance). This equals: Previous Balance + Debits (new spending) - Payments and Credits.",
     },
     cashIn: {
-      title: "Cash In",
+      title: "Cash In (Payments and Credits)",
       description:
-        "Total payments made to the credit card during the month to pay down the balance.",
+        "Total payments made to the credit card during the month to pay down the balance. This is the 'Payments and Credits' line from your credit card statement. Money going IN to reduce what you owe.",
     },
     cashOut: {
-      title: "Cash Out",
+      title: "Cash Out (Debits/New Spending)",
       description:
-        "Total spending (debits) on the credit card during the month. This includes all purchases, fees, and charges made on the card.",
+        "Total new spending (debits) on the credit card during the month. This is the 'Debits' or 'Purchases' line from your credit card statement. This includes all purchases, fees, and charges made on the card. This amount is automatically counted as expenditure.",
+    },
+    expenditure: {
+      title: "Expenditure (Computed)",
+      description:
+        "For credit cards, expenditure equals Cash Out (new spending). This represents all purchases and charges made on the card during the month. Note: Payments made to the card (Cash In) are NOT expenditure - they're just paying down debt.",
     },
     cashFlow: {
       title: "Cash Flow",

@@ -68,7 +68,12 @@ export function MonthlyEntryDialog({
           const cashIn = existingEntry ? existingEntry.cashIn : 0;
           const cashOut = existingEntry ? existingEntry.cashOut : 0;
           const income = existingEntry ? existingEntry.income : 0;
-          const expenditure = existingEntry ? existingEntry.expenditure : 0;
+          const internalTransfersOut = existingEntry?.internalTransfersOut || 0;
+          const debtPayments = existingEntry?.debtPayments || 0;
+          // Compute expenditure from stored value or calculate it
+          const expenditure = existingEntry 
+            ? existingEntry.expenditure 
+            : Math.max(0, cashOut - internalTransfersOut - debtPayments);
           return {
             accountId: account.id,
             monthKey: month,
@@ -78,6 +83,8 @@ export function MonthlyEntryDialog({
             cashOut,
             income,
             expenditure,
+            internalTransfersOut,
+            debtPayments,
             cashFlow: cashIn - cashOut,
             accountGrowth: 0,
           };
@@ -112,6 +119,12 @@ export function MonthlyEntryDialog({
       const showIncomeExpenditure = account
         ? shouldShowIncomeExpenditure(account.type)
         : false;
+      const internalTransfersOut = entry.internalTransfersOut || 0;
+      const debtPayments = entry.debtPayments || 0;
+      // Expenditure is computed: cashOut - internalTransfersOut - debtPayments
+      const expenditure = showIncomeExpenditure 
+        ? Math.max(0, entry.cashOut - internalTransfersOut - debtPayments)
+        : 0;
       return {
         accountId: entry.accountId,
         monthKey: entry.month,
@@ -120,7 +133,9 @@ export function MonthlyEntryDialog({
         cashIn: entry.cashIn,
         cashOut: entry.cashOut,
         income: showIncomeExpenditure ? entry.income : 0,
-        expenditure: showIncomeExpenditure ? entry.expenditure : 0,
+        expenditure,
+        internalTransfersOut: showIncomeExpenditure ? internalTransfersOut : 0,
+        debtPayments: showIncomeExpenditure ? debtPayments : 0,
         cashFlow: entry.cashIn - entry.cashOut,
         accountGrowth: 0, // This will be calculated on the server
       };
@@ -254,7 +269,65 @@ export function MonthlyEntryDialog({
                         </div>
                         <div className="space-y-1">
                           <div className="flex items-center gap-1">
-                            <Label className="text-sm">Expenditure</Label>
+                            <Label className="text-sm">Internal Transfers Out</Label>
+                            {(() => {
+                              const explanation = getFieldExplanation(
+                                account.type,
+                                "internalTransfersOut"
+                              );
+                              return explanation ? (
+                                <InfoButton
+                                  title={explanation.title}
+                                  description={explanation.description}
+                                />
+                              ) : null;
+                            })()}
+                          </div>
+                          <Input
+                            type="number"
+                            value={entry?.internalTransfersOut || 0}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                account.id.toString(),
+                                "internalTransfersOut",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-sm">Debt Payments</Label>
+                            {(() => {
+                              const explanation = getFieldExplanation(
+                                account.type,
+                                "debtPayments"
+                              );
+                              return explanation ? (
+                                <InfoButton
+                                  title={explanation.title}
+                                  description={explanation.description}
+                                />
+                              ) : null;
+                            })()}
+                          </div>
+                          <Input
+                            type="number"
+                            value={entry?.debtPayments || 0}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                account.id.toString(),
+                                "debtPayments",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-sm">Expenditure (Computed)</Label>
                             {(() => {
                               const explanation = getFieldExplanation(
                                 account.type,
@@ -270,14 +343,16 @@ export function MonthlyEntryDialog({
                           </div>
                           <Input
                             type="number"
-                            value={entry?.expenditure || 0}
-                            onChange={(e) =>
-                              handleEntryChange(
-                                account.id.toString(),
-                                "expenditure",
-                                e.target.value
+                            value={
+                              Math.max(
+                                0,
+                                (entry?.cashOut || 0) -
+                                  (entry?.internalTransfersOut || 0) -
+                                  (entry?.debtPayments || 0)
                               )
                             }
+                            disabled
+                            className="bg-muted"
                             placeholder="0"
                           />
                         </div>

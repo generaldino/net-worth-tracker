@@ -52,7 +52,9 @@ export type MonthlyEntry = {
   cashIn: number;
   cashOut: number;
   income: number;
-  expenditure: number;
+  expenditure: number; // Computed: cashOut - internalTransfersOut - debtPayments
+  internalTransfersOut?: number;
+  debtPayments?: number;
   cashFlow: number;
   accountGrowth: number;
 };
