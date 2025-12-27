@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState } from "react";
@@ -71,6 +71,13 @@ export function ProfileDropdown({
             {email && <p className="text-sm text-muted-foreground">{email}</p>}
           </div>
         </div>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onClick={() => router.push("/sharing")}
+        >
+          <Users className="mr-2 h-4 w-4" />
+          Share Dashboard
+        </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer text-destructive focus:text-destructive"
           onClick={handleSignOut}

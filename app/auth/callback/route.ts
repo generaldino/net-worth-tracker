@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 // The client you created from the Server-Side Auth instructions
 import { createClient } from "@/utils/supabase/server";
 import { syncUserToDB } from "@/app/actions";
+import { checkAndAcceptPendingInvitations } from "@/app/actions/sharing";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -15,6 +16,8 @@ export async function GET(request: Request) {
     if (!error) {
       // Successfully authenticated, now sync user to database
       await syncUserToDB();
+      // Check if user has any pending invitations and accept them
+      await checkAndAcceptPendingInvitations();
 
       const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
       const isLocalEnv = process.env.NODE_ENV === "development";

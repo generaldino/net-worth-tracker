@@ -102,6 +102,30 @@ export const projectionScenarios = pgTable("projection_scenarios", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const dashboardShares = pgTable("dashboard_shares", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  sharedWithUserId: uuid("shared_with_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const dashboardInvitations = pgTable("dashboard_invitations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  inviteeEmail: text("invitee_email").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, expired
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  acceptedAt: timestamp("accepted_at"),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -113,6 +137,10 @@ export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type NewExchangeRate = typeof exchangeRates.$inferInsert;
 export type ProjectionScenario = typeof projectionScenarios.$inferSelect;
 export type NewProjectionScenario = typeof projectionScenarios.$inferInsert;
+export type DashboardShare = typeof dashboardShares.$inferSelect;
+export type NewDashboardShare = typeof dashboardShares.$inferInsert;
+export type DashboardInvitation = typeof dashboardInvitations.$inferSelect;
+export type NewDashboardInvitation = typeof dashboardInvitations.$inferInsert;
 
 // Indexes
 export const monthlyEntriesMonthIdx = monthlyEntries.month;

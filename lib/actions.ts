@@ -10,19 +10,36 @@ import { desc, asc, eq, and, inArray } from "drizzle-orm";
 import type { Account, MonthlyEntry } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth-helpers";
+import { getAccessibleUserIds } from "@/app/actions/sharing";
 import type { Currency } from "@/lib/fx-rates";
 import type { AccountType } from "@/lib/types";
 import { fetchAndSaveExchangeRatesForMonth } from "@/lib/fx-rates-server";
 
 export async function calculateNetWorth() {
   try {
-    // Get all accounts
-    const allAccounts = await db.select().from(accountsTable);
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return 0;
+    }
 
-    // Get the latest monthly entries for each account
+    // Get accounts for accessible users
+    const allAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(inArray(accountsTable.userId, accessibleUserIds));
+
+    // Get accessible account IDs
+    const accessibleAccountIds = allAccounts.map((acc) => acc.id);
+
+    if (accessibleAccountIds.length === 0) {
+      return 0;
+    }
+
+    // Get the latest monthly entries for accessible accounts
     const latestEntries = await db
       .select()
       .from(monthlyEntries)
+      .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
       .orderBy(desc(monthlyEntries.month));
 
     // Calculate total net worth from the latest entries
@@ -51,13 +68,35 @@ export async function calculateNetWorth() {
 
 export async function getNetWorthBreakdown() {
   try {
-    // Get all accounts
-    const allAccounts = await db.select().from(accountsTable);
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return {
+        accountBalances: [],
+        monthKey: new Date().toISOString().substring(0, 7),
+      };
+    }
 
-    // Get the latest monthly entries for each account
+    // Get accounts for accessible users
+    const allAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(inArray(accountsTable.userId, accessibleUserIds));
+
+    // Get accessible account IDs
+    const accessibleAccountIds = allAccounts.map((acc) => acc.id);
+
+    if (accessibleAccountIds.length === 0) {
+      return {
+        accountBalances: [],
+        monthKey: new Date().toISOString().substring(0, 7),
+      };
+    }
+
+    // Get the latest monthly entries for accessible accounts
     const latestEntries = await db
       .select()
       .from(monthlyEntries)
+      .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
       .orderBy(desc(monthlyEntries.month));
 
     // Get the latest month for rate conversion
@@ -94,13 +133,29 @@ export async function getNetWorthBreakdown() {
 
 export async function getFirstEntryNetWorth() {
   try {
-    // Get all accounts
-    const allAccounts = await db.select().from(accountsTable);
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return null;
+    }
 
-    // Get all monthly entries ordered by month
+    // Get accounts for accessible users
+    const allAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(inArray(accountsTable.userId, accessibleUserIds));
+
+    // Get accessible account IDs
+    const accessibleAccountIds = allAccounts.map((acc) => acc.id);
+
+    if (accessibleAccountIds.length === 0) {
+      return null;
+    }
+
+    // Get all monthly entries for accessible accounts ordered by month
     const allEntries = await db
       .select()
       .from(monthlyEntries)
+      .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
       .orderBy(asc(monthlyEntries.month));
 
     if (allEntries.length === 0) {
@@ -147,16 +202,16 @@ export async function getFirstEntryNetWorth() {
 
 export async function getAccounts(includeClosed: boolean = false) {
   try {
-    const userId = await getUserId();
-    if (!userId) {
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
       return [];
     }
 
     // Build where condition
     const whereCondition = includeClosed
-      ? eq(accountsTable.userId, userId)
+      ? inArray(accountsTable.userId, accessibleUserIds)
       : and(
-          eq(accountsTable.userId, userId),
+          inArray(accountsTable.userId, accessibleUserIds),
           eq(accountsTable.isClosed, false)
         );
 
@@ -187,10 +242,28 @@ export async function getAccounts(includeClosed: boolean = false) {
 
 export async function getMonthlyData() {
   try {
-    // Get all monthly entries ordered by month (desc) and accountId
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return {};
+    }
+
+    // Get accounts for accessible users
+    const accessibleAccounts = await db
+      .select({ id: accountsTable.id })
+      .from(accountsTable)
+      .where(inArray(accountsTable.userId, accessibleUserIds));
+
+    const accessibleAccountIds = accessibleAccounts.map((acc) => acc.id);
+
+    if (accessibleAccountIds.length === 0) {
+      return {};
+    }
+
+    // Get monthly entries only for accessible accounts
     const entries = await db
       .select()
       .from(monthlyEntries)
+      .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
       .orderBy(desc(monthlyEntries.month), monthlyEntries.accountId);
 
     // Transform the data into the required format
@@ -535,9 +608,9 @@ export async function getChartData(
   try {
     type Currency = "GBP" | "EUR" | "USD" | "AED";
 
-    // Get userId to filter data - this is critical for performance and security
-    const userId = await getUserId();
-    if (!userId) {
+    // Get accessible user IDs to filter data - this is critical for performance and security
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
       return {
         netWorthData: [],
         accountData: [],
@@ -548,11 +621,11 @@ export async function getChartData(
       };
     }
 
-    // Get accounts filtered by userId first (performance optimization)
+    // Get accounts filtered by accessible user IDs first (performance optimization)
     const accounts = await db
       .select()
       .from(accountsTable)
-      .where(eq(accountsTable.userId, userId));
+      .where(inArray(accountsTable.userId, accessibleUserIds));
 
     // Filter accounts by owner if specified
     let filteredAccounts =
@@ -1560,15 +1633,15 @@ export async function createProjectionScenario(data: {
 
 export async function getProjectionScenarios() {
   try {
-    const userId = await getUserId();
-    if (!userId) {
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
       return [];
     }
 
     const scenarios = await db
       .select()
       .from(projectionScenarios)
-      .where(eq(projectionScenarios.userId, userId))
+      .where(inArray(projectionScenarios.userId, accessibleUserIds))
       .orderBy(desc(projectionScenarios.createdAt));
 
     return scenarios.map((scenario) => ({
@@ -1670,8 +1743,22 @@ export async function calculateProjection(data: {
   savingsAllocation?: Record<AccountType, number>;
 }) {
   try {
-    // Get all accounts (excluding closed and liabilities)
-    const allAccounts = await db.select().from(accountsTable);
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return {
+        currentNetWorth: 0,
+        finalNetWorth: 0,
+        totalGrowth: 0,
+        growthPercentage: 0,
+        projectionData: [],
+      };
+    }
+
+    // Get accounts for accessible users (excluding closed and liabilities)
+    const allAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(inArray(accountsTable.userId, accessibleUserIds));
     const activeAccounts = allAccounts.filter(
       (account) =>
         !account.isClosed &&
@@ -1679,10 +1766,24 @@ export async function calculateProjection(data: {
         account.type !== "Loan"
     );
 
-    // Get the latest monthly entries for each account
+    // Get accessible account IDs
+    const accessibleAccountIds = activeAccounts.map((acc) => acc.id);
+
+    if (accessibleAccountIds.length === 0) {
+      return {
+        currentNetWorth: 0,
+        finalNetWorth: 0,
+        totalGrowth: 0,
+        growthPercentage: 0,
+        projectionData: [],
+      };
+    }
+
+    // Get the latest monthly entries for accessible accounts
     const latestEntries = await db
       .select()
       .from(monthlyEntries)
+      .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
       .orderBy(desc(monthlyEntries.month));
 
     // Get current balances for each account
