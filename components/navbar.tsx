@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ProfileDropdown } from "@/components/auth/profile-dropdown";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
@@ -9,6 +10,7 @@ import { useNetWorth } from "@/contexts/net-worth-context";
 import { NetWorthDisplay } from "@/components/net-worth-display";
 
 export function Navbar() {
+  const router = useRouter();
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const { netWorth, netWorthBreakdown, percentageIncrease } = useNetWorth();
   const [isVisible, setIsVisible] = useState(true);
@@ -64,9 +66,12 @@ export function Navbar() {
       <div className="w-full px-4 sm:px-6">
         <div className="flex items-center justify-between gap-4 py-3 min-h-[56px] w-full">
           <div className="flex items-center gap-4 flex-1 min-w-0">
-            <div className="font-semibold text-base sm:text-lg shrink-0">
+            <button
+              onClick={() => router.push("/")}
+              className="font-semibold text-base sm:text-lg shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+            >
               💰 Wealth Tracker
-            </div>
+            </button>
             {netWorth !== null && netWorthBreakdown && (
               <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
                 <div className="border-l h-8" />
