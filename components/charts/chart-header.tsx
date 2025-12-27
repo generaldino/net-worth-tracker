@@ -9,11 +9,6 @@ import { useMemo } from "react";
 import { COLORS, CHART_GREEN, CHART_RED, getUniqueColor } from "./constants";
 import { NetWorthCards } from "@/components/sample-card";
 
-// Helper to format account type names (matches chart-display.tsx)
-function formatAccountTypeName(type: string): string {
-  return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-}
-
 // Account type ordering hierarchy for consistent sorting
 const ACCOUNT_TYPE_ORDER: Record<string, number> = {
   // Cash accounts (priority 0-9)
@@ -318,7 +313,9 @@ export function ChartHeader({
 
             {/* Always render to maintain consistent layout */}
             <div className="w-full min-h-[120px]">
-              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="text-xs text-muted-foreground mb-2">
+                BREAKDOWN
+              </div>
               {secondaryMetrics.length > 0 ? (
                 <NetWorthCards
                   netWorth={netWorth}
@@ -360,7 +357,9 @@ export function ChartHeader({
 
             {/* Always render to maintain consistent layout */}
             <div className="w-full min-h-[120px]">
-              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="text-xs text-muted-foreground mb-2">
+                BREAKDOWN
+              </div>
               <div className="min-h-[70px]"></div>
             </div>
           </div>
@@ -443,7 +442,9 @@ export function ChartHeader({
 
             {/* Always render to maintain consistent layout */}
             <div className="w-full min-h-[120px]">
-              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="text-xs text-muted-foreground mb-2">
+                BREAKDOWN
+              </div>
               {secondaryMetrics.length > 0 ? (
                 <NetWorthCards
                   netWorth={totalGrowth}
@@ -484,7 +485,9 @@ export function ChartHeader({
 
             {/* Always render to maintain consistent layout */}
             <div className="w-full min-h-[120px]">
-              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="text-xs text-muted-foreground mb-2">
+                BREAKDOWN
+              </div>
               <div className="min-h-[70px]"></div>
             </div>
           </div>
@@ -563,7 +566,9 @@ export function ChartHeader({
 
             {/* Always render to maintain consistent layout */}
             <div className="w-full min-h-[120px]">
-              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="text-xs text-muted-foreground mb-2">
+                BREAKDOWN
+              </div>
               {secondaryMetrics.length > 0 ? (
                 <NetWorthCards
                   netWorth={endingBalance}
@@ -588,15 +593,19 @@ export function ChartHeader({
       case "savings-rate": {
         const savingsRate = displayData.metrics["Savings Rate"] as number;
         const totalIncome = displayData.metrics["Total Income"] as number;
-        const totalExpenditure = displayData.metrics["Total Expenditure"] as number;
-        const savingsFromIncome = displayData.metrics["Savings from Income"] as number;
+        const totalExpenditure = displayData.metrics[
+          "Total Expenditure"
+        ] as number;
+        const savingsFromIncome = displayData.metrics[
+          "Savings from Income"
+        ] as number;
 
         const secondaryMetrics: Array<{
           name: string;
           value: number;
           absValue: number;
         }> = [];
-        
+
         if (totalIncome !== undefined) {
           secondaryMetrics.push({
             name: "Total Income",
@@ -637,7 +646,9 @@ export function ChartHeader({
             </div>
 
             <div className="w-full min-h-[120px]">
-              <div className="text-xs text-muted-foreground mb-2">BREAKDOWN</div>
+              <div className="text-xs text-muted-foreground mb-2">
+                BREAKDOWN
+              </div>
               {secondaryMetrics.length > 0 ? (
                 <NetWorthCards
                   netWorth={

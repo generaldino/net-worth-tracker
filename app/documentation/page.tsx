@@ -10,7 +10,7 @@ export default async function DocumentationPage() {
   const content = await readFile(filePath, "utf8");
 
   return (
-    <div className="min-h-screen bg-background pt-40 md:pt-16 scroll-smooth">
+    <div className="min-h-screen bg-background pt-44 md:pt-16 scroll-smooth">
       <div className="w-full py-8 px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">

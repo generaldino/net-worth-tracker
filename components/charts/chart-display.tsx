@@ -1438,7 +1438,7 @@ export function ChartDisplay({
                   />
                 )}
                 {sourceKeys.map((source, index) => {
-                  const hasData = wealthSourceData.some(
+                  const hasData = dataToUse.some(
                     (monthData) => (monthData[source] || 0) !== 0
                   );
                   if (hasData) {
