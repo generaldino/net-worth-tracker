@@ -1792,6 +1792,16 @@ export function ChartDisplay({
                 : 0,
           }));
 
+        // Debug logging for savings rate chart
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            "[Savings Rate Chart] Data points:",
+            savingsRateData.length
+          );
+          console.log("[Savings Rate Chart] YAxes configured: left, right");
+          console.log("[Savings Rate Chart] Hovered data:", hoveredData);
+        }
+
         if (!savingsRateData || savingsRateData.length === 0) {
           return (
             <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center">
@@ -1930,6 +1940,7 @@ export function ChartDisplay({
                 {hoveredData && (
                   <ReferenceLine
                     x={hoveredData.month}
+                    yAxisId="left"
                     stroke="hsl(var(--foreground))"
                     strokeWidth={1}
                     strokeDasharray="5 5"
@@ -1951,6 +1962,7 @@ export function ChartDisplay({
                   strokeWidth={2}
                   fill="url(#incomeGradient)"
                   stackId="income"
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -1975,6 +1987,7 @@ export function ChartDisplay({
                   strokeWidth={2}
                   fill="url(#expenditureGradient)"
                   stackId="expenditure"
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -1999,6 +2012,7 @@ export function ChartDisplay({
                   strokeWidth={2}
                   fill="url(#savingsGradient)"
                   stackId="savings"
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
@@ -2023,6 +2037,7 @@ export function ChartDisplay({
                   strokeWidth={3}
                   dot={{ fill: CHART_GREEN, r: 4 }}
                   activeDot={{ r: 6 }}
+                  isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
                       const payload = data.payload as {
