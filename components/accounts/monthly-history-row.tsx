@@ -8,10 +8,15 @@ import { useMasking } from "@/contexts/masking-context";
 import { useCurrencyConversion } from "@/hooks/use-currency-conversion";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
+import type { AccountType } from "@/lib/types";
+import { getFieldExplanation } from "@/lib/field-explanations";
+import { InfoButton } from "@/components/ui/info-button";
 
 interface MonthlyHistoryRowProps {
   entry: MonthlyEntry;
   isEditing: boolean;
+  showIncomeExpenditure: boolean;
+  accountType: AccountType;
   accountCurrency: Currency;
   displayCurrency: Currency;
   editingValues: {
@@ -30,6 +35,8 @@ interface MonthlyHistoryRowProps {
 export function MonthlyHistoryRow({
   entry,
   isEditing,
+  showIncomeExpenditure,
+  accountType,
   accountCurrency,
   displayCurrency,
   editingValues,
@@ -104,7 +111,21 @@ export function MonthlyHistoryRow({
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span className="text-muted-foreground block mb-1">Balance:</span>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-muted-foreground">Balance:</span>
+              {(() => {
+                const explanation = getFieldExplanation(
+                  accountType,
+                  "endingBalance"
+                );
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
             {isEditing ? (
               <Input
                 type="number"
@@ -120,44 +141,88 @@ export function MonthlyHistoryRow({
               </div>
             )}
           </div>
-          <div>
-            <span className="text-muted-foreground block mb-1">Income:</span>
-            {isEditing ? (
-              <Input
-                type="number"
-                value={editingValues.income}
-                onChange={(e) => onValueChange("income", e.target.value)}
-                className="h-8"
-              />
-            ) : (
-              <div className="font-medium">
-                {isMasked
-                  ? "••••••"
-                  : formatCurrencyAmount(convertedIncome, displayCurrency)}
+          {showIncomeExpenditure && (
+            <>
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-muted-foreground">Income:</span>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "income"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editingValues.income}
+                    onChange={(e) => onValueChange("income", e.target.value)}
+                    className="h-8"
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {isMasked
+                      ? "••••••"
+                      : formatCurrencyAmount(convertedIncome, displayCurrency)}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <div>
-            <span className="text-muted-foreground block mb-1">
-              Expenditure:
-            </span>
-            {isEditing ? (
-              <Input
-                type="number"
-                value={editingValues.expenditure}
-                onChange={(e) => onValueChange("expenditure", e.target.value)}
-                className="h-8"
-              />
-            ) : (
-              <div className="font-medium">
-                {isMasked
-                  ? "••••••"
-                  : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-muted-foreground">Expenditure:</span>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "expenditure"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                {isEditing ? (
+                  <Input
+                    type="number"
+                    value={editingValues.expenditure}
+                    onChange={(e) => onValueChange("expenditure", e.target.value)}
+                    className="h-8"
+                  />
+                ) : (
+                  <div className="font-medium">
+                    {isMasked
+                      ? "••••••"
+                      : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
           <div>
-            <span className="text-muted-foreground block mb-1">Growth:</span>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-muted-foreground">Growth:</span>
+              {(() => {
+                const explanation = getFieldExplanation(
+                  accountType,
+                  "accountGrowth"
+                );
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
             <div
               className={
                 entry.accountGrowth >= 0
@@ -176,7 +241,18 @@ export function MonthlyHistoryRow({
             </div>
           </div>
           <div>
-            <span className="text-muted-foreground block mb-1">Cash In:</span>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-muted-foreground">Cash In:</span>
+              {(() => {
+                const explanation = getFieldExplanation(accountType, "cashIn");
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
             {isEditing ? (
               <Input
                 type="number"
@@ -193,7 +269,18 @@ export function MonthlyHistoryRow({
             )}
           </div>
           <div>
-            <span className="text-muted-foreground block mb-1">Cash Out:</span>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-muted-foreground">Cash Out:</span>
+              {(() => {
+                const explanation = getFieldExplanation(accountType, "cashOut");
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
             {isEditing ? (
               <Input
                 type="number"
@@ -231,34 +318,38 @@ export function MonthlyHistoryRow({
           formatCurrencyAmount(convertedBalance, displayCurrency)
         )}
       </td>
-      <td>
-        {isEditing ? (
-          <Input
-            type="number"
-            value={editingValues.income}
-            onChange={(e) => onValueChange("income", e.target.value)}
-            className="w-[100px]"
-          />
-        ) : isMasked ? (
-          "••••••"
-        ) : (
-          formatCurrencyAmount(convertedIncome, displayCurrency)
-        )}
-      </td>
-      <td>
-        {isEditing ? (
-          <Input
-            type="number"
-            value={editingValues.expenditure}
-            onChange={(e) => onValueChange("expenditure", e.target.value)}
-            className="w-[100px]"
-          />
-        ) : isMasked ? (
-          "••••••"
-        ) : (
-          formatCurrencyAmount(convertedExpenditure, displayCurrency)
-        )}
-      </td>
+      {showIncomeExpenditure && (
+        <>
+          <td>
+            {isEditing ? (
+              <Input
+                type="number"
+                value={editingValues.income}
+                onChange={(e) => onValueChange("income", e.target.value)}
+                className="w-[100px]"
+              />
+            ) : isMasked ? (
+              "••••••"
+            ) : (
+              formatCurrencyAmount(convertedIncome, displayCurrency)
+            )}
+          </td>
+          <td>
+            {isEditing ? (
+              <Input
+                type="number"
+                value={editingValues.expenditure}
+                onChange={(e) => onValueChange("expenditure", e.target.value)}
+                className="w-[100px]"
+              />
+            ) : isMasked ? (
+              "••••••"
+            ) : (
+              formatCurrencyAmount(convertedExpenditure, displayCurrency)
+            )}
+          </td>
+        </>
+      )}
       <td>
         {isEditing ? (
           <Input

@@ -275,6 +275,7 @@ export function AccountRow({
               history={history}
               editingValues={editingValues}
               accountId={account.id}
+              accountType={account.type}
               accountCurrency={accountCurrency}
               displayCurrency={displayCurrency}
               onValueChange={onValueChange}

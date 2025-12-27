@@ -18,6 +18,9 @@ import { Plus } from "lucide-react";
 import { addMonthlyEntry, getCurrentValue } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
+import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { getFieldExplanation } from "@/lib/field-explanations";
+import { InfoButton } from "@/components/ui/info-button";
 
 interface AddMonthDialogProps {
   account: Account;
@@ -60,8 +63,12 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         endingBalance: Number.parseFloat(endingBalance) || 0,
         cashIn: Number.parseFloat(cashIn) || 0,
         cashOut: Number.parseFloat(cashOut) || 0,
-        income: Number.parseFloat(income) || 0,
-        expenditure: Number.parseFloat(expenditure) || 0,
+        income: shouldShowIncomeExpenditure(account.type)
+          ? Number.parseFloat(income) || 0
+          : 0,
+        expenditure: shouldShowIncomeExpenditure(account.type)
+          ? Number.parseFloat(expenditure) || 0
+          : 0,
       });
 
       if (result.success) {
@@ -72,8 +79,12 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           endingBalance: Number.parseFloat(endingBalance) || 0,
           cashIn: Number.parseFloat(cashIn) || 0,
           cashOut: Number.parseFloat(cashOut) || 0,
-          income: Number.parseFloat(income) || 0,
-          expenditure: Number.parseFloat(expenditure) || 0,
+          income: shouldShowIncomeExpenditure(account.type)
+            ? Number.parseFloat(income) || 0
+            : 0,
+          expenditure: shouldShowIncomeExpenditure(account.type)
+            ? Number.parseFloat(expenditure) || 0
+            : 0,
           cashFlow:
             (Number.parseFloat(cashIn) || 0) -
             (Number.parseFloat(cashOut) || 0),
@@ -134,11 +145,13 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
             Enter the month-end balance and cash flows for this account.
             <br />
             <span className="text-sm text-muted-foreground">
-              Current balance: {formatCurrencyAmount(currentValue, account.currency || "GBP")}
+              Current balance:{" "}
+              {formatCurrencyAmount(currentValue, account.currency || "GBP")}
             </span>
             <br />
             <span className="text-xs text-muted-foreground font-medium">
-              All values should be in {account.currency || "GBP"} {getCurrencySymbol(account.currency || "GBP")}
+              All values should be in {account.currency || "GBP"}{" "}
+              {getCurrencySymbol(account.currency || "GBP")}
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -154,7 +167,21 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="ending-balance">Ending Balance</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="ending-balance">Ending Balance</Label>
+              {(() => {
+                const explanation = getFieldExplanation(
+                  account.type,
+                  "endingBalance"
+                );
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
             <Input
               id="ending-balance"
               type="number"
@@ -163,28 +190,71 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               placeholder="0"
             />
           </div>
+          {shouldShowIncomeExpenditure(account.type) && (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="income">Income</Label>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      account.type,
+                      "income"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                <Input
+                  id="income"
+                  type="number"
+                  value={income}
+                  onChange={(e) => setIncome(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="expenditure">Expenditure</Label>
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      account.type,
+                      "expenditure"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+                <Input
+                  id="expenditure"
+                  type="number"
+                  value={expenditure}
+                  onChange={(e) => setExpenditure(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            </>
+          )}
           <div className="space-y-2">
-            <Label htmlFor="income">Income</Label>
-            <Input
-              id="income"
-              type="number"
-              value={income}
-              onChange={(e) => setIncome(e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="expenditure">Expenditure</Label>
-            <Input
-              id="expenditure"
-              type="number"
-              value={expenditure}
-              onChange={(e) => setExpenditure(e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cash-in">Cash In</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="cash-in">Cash In</Label>
+              {(() => {
+                const explanation = getFieldExplanation(account.type, "cashIn");
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
             <Input
               id="cash-in"
               type="number"
@@ -194,7 +264,21 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cash-out">Cash Out</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="cash-out">Cash Out</Label>
+              {(() => {
+                const explanation = getFieldExplanation(
+                  account.type,
+                  "cashOut"
+                );
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
             <Input
               id="cash-out"
               type="number"

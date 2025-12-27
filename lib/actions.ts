@@ -915,6 +915,7 @@ export async function getChartData(
       let interestEarned = 0;
       let capitalGains = 0;
       let totalWorkIncome = 0;
+      let totalExpenditure = 0;
       let totalAccountGrowth = 0;
 
       // Per-account breakdowns (with currency info)
@@ -992,20 +993,32 @@ export async function getChartData(
 
         const accountCurrency = (account.currency || "GBP") as Currency;
 
-        // Add income to total (raw)
-        const income = Number(entry.income || 0);
-        totalWorkIncome += income;
+        // Add income to total (only from Current accounts)
+        if (account.type === "Current") {
+          const income = Number(entry.income || 0);
+          totalWorkIncome += income;
 
-        // Track accounts that received income for breakdown
-        if (income > 0) {
-          savingsAccounts.push({
-            accountId: account.id,
-            name: account.name,
-            type: account.type,
-            amount: income, // Show income in breakdown
-            currency: accountCurrency,
-            owner: account.owner || "Unknown",
-          });
+          // Track accounts that received income for breakdown
+          if (income > 0) {
+            savingsAccounts.push({
+              accountId: account.id,
+              name: account.name,
+              type: account.type,
+              amount: income, // Show income in breakdown
+              currency: accountCurrency,
+              owner: account.owner || "Unknown",
+            });
+          }
+
+          // Add expenditure from Current accounts
+          const expenditure = Number(entry.expenditure || 0);
+          totalExpenditure += expenditure;
+        }
+
+        // Add Credit Card Cash Out to total expenditure (spending on cards is expenditure)
+        if (account.type === "Credit_Card") {
+          const cashOut = Number(entry.cashOut || 0);
+          totalExpenditure += cashOut;
         }
 
         // Sum all account growth (for calculating savings from income)
@@ -1057,6 +1070,7 @@ export async function getChartData(
         "Interest Earned": interestEarned,
         "Capital Gains": capitalGains,
         "Total Income": totalWorkIncome,
+        "Total Expenditure": totalExpenditure,
         "Savings Rate":
           totalWorkIncome > 0
             ? Number(((savingsFromIncome / totalWorkIncome) * 100).toFixed(1))

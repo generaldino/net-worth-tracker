@@ -17,6 +17,9 @@ import { type Account, type MonthlyEntry } from "@/lib/types";
 import { CalendarIcon } from "lucide-react";
 import { getCurrentValue } from "@/lib/actions";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
+import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { getFieldExplanation } from "@/lib/field-explanations";
+import { InfoButton } from "@/components/ui/info-button";
 
 interface MonthlyEntryDialogProps {
   accounts: Account[];
@@ -104,18 +107,24 @@ export function MonthlyEntryDialog({
   };
 
   const handleSubmit = () => {
-    const entriesToSave = entries.map((entry) => ({
-      accountId: entry.accountId,
-      monthKey: entry.month,
-      month: entry.month,
-      endingBalance: entry.endingBalance,
-      cashIn: entry.cashIn,
-      cashOut: entry.cashOut,
-      income: entry.income,
-      expenditure: entry.expenditure,
-      cashFlow: entry.cashIn - entry.cashOut,
-      accountGrowth: 0, // This will be calculated on the server
-    }));
+    const entriesToSave = entries.map((entry) => {
+      const account = accounts.find((a) => a.id === entry.accountId);
+      const showIncomeExpenditure = account
+        ? shouldShowIncomeExpenditure(account.type)
+        : false;
+      return {
+        accountId: entry.accountId,
+        monthKey: entry.month,
+        month: entry.month,
+        endingBalance: entry.endingBalance,
+        cashIn: entry.cashIn,
+        cashOut: entry.cashOut,
+        income: showIncomeExpenditure ? entry.income : 0,
+        expenditure: showIncomeExpenditure ? entry.expenditure : 0,
+        cashFlow: entry.cashIn - entry.cashOut,
+        accountGrowth: 0, // This will be calculated on the server
+      };
+    });
     onSaveEntries(month, entriesToSave);
     setOpen(false);
   };
@@ -137,9 +146,8 @@ export function MonthlyEntryDialog({
           <DialogTitle>Monthly Account Values</DialogTitle>
           <DialogDescription>
             Enter the ending balance and cash flows for each account for the
-            selected month. Cash In/Out should include all money movements
-            (including income/expenditure). Then specify how much of Cash In was
-            income and how much of Cash Out was expenditure.
+            selected month. For Current accounts, also specify income and
+            expenditure. For other accounts, only Cash In/Out are needed.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -185,7 +193,21 @@ export function MonthlyEntryDialog({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-sm">Ending Balance</Label>
+                      <div className="flex items-center gap-1">
+                        <Label className="text-sm">Ending Balance</Label>
+                        {(() => {
+                          const explanation = getFieldExplanation(
+                            account.type,
+                            "endingBalance"
+                          );
+                          return explanation ? (
+                            <InfoButton
+                              title={explanation.title}
+                              description={explanation.description}
+                            />
+                          ) : null;
+                        })()}
+                      </div>
                       <Input
                         type="number"
                         value={entry?.endingBalance || 0}
@@ -199,53 +221,84 @@ export function MonthlyEntryDialog({
                         placeholder="0"
                       />
                     </div>
+                    {shouldShowIncomeExpenditure(account.type) && (
+                      <>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-sm">Income</Label>
+                            {(() => {
+                              const explanation = getFieldExplanation(
+                                account.type,
+                                "income"
+                              );
+                              return explanation ? (
+                                <InfoButton
+                                  title={explanation.title}
+                                  description={explanation.description}
+                                />
+                              ) : null;
+                            })()}
+                          </div>
+                          <Input
+                            type="number"
+                            value={entry?.income || 0}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                account.id.toString(),
+                                "income",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-sm">Expenditure</Label>
+                            {(() => {
+                              const explanation = getFieldExplanation(
+                                account.type,
+                                "expenditure"
+                              );
+                              return explanation ? (
+                                <InfoButton
+                                  title={explanation.title}
+                                  description={explanation.description}
+                                />
+                              ) : null;
+                            })()}
+                          </div>
+                          <Input
+                            type="number"
+                            value={entry?.expenditure || 0}
+                            onChange={(e) =>
+                              handleEntryChange(
+                                account.id.toString(),
+                                "expenditure",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0"
+                          />
+                        </div>
+                      </>
+                    )}
                     <div className="space-y-1">
-                      <Label className="text-sm">
-                        Income{" "}
-                        <span className="text-xs text-muted-foreground">
-                          (part of Cash In)
-                        </span>
-                      </Label>
-                      <Input
-                        type="number"
-                        value={entry?.income || 0}
-                        onChange={(e) =>
-                          handleEntryChange(
-                            account.id.toString(),
-                            "income",
-                            e.target.value
-                          )
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm">
-                        Expenditure{" "}
-                        <span className="text-xs text-muted-foreground">
-                          (part of Cash Out)
-                        </span>
-                      </Label>
-                      <Input
-                        type="number"
-                        value={entry?.expenditure || 0}
-                        onChange={(e) =>
-                          handleEntryChange(
-                            account.id.toString(),
-                            "expenditure",
-                            e.target.value
-                          )
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-sm">
-                        Cash In{" "}
-                        <span className="text-xs text-muted-foreground">
-                          (total, including income)
-                        </span>
-                      </Label>
+                      <div className="flex items-center gap-1">
+                        <Label className="text-sm">Cash In</Label>
+                        {(() => {
+                          const explanation = getFieldExplanation(
+                            account.type,
+                            "cashIn"
+                          );
+                          return explanation ? (
+                            <InfoButton
+                              title={explanation.title}
+                              description={explanation.description}
+                            />
+                          ) : null;
+                        })()}
+                      </div>
                       <Input
                         type="number"
                         value={entry?.cashIn || 0}
@@ -260,12 +313,21 @@ export function MonthlyEntryDialog({
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-sm">
-                        Cash Out{" "}
-                        <span className="text-xs text-muted-foreground">
-                          (total, including expenditure)
-                        </span>
-                      </Label>
+                      <div className="flex items-center gap-1">
+                        <Label className="text-sm">Cash Out</Label>
+                        {(() => {
+                          const explanation = getFieldExplanation(
+                            account.type,
+                            "cashOut"
+                          );
+                          return explanation ? (
+                            <InfoButton
+                              title={explanation.title}
+                              description={explanation.description}
+                            />
+                          ) : null;
+                        })()}
+                      </div>
                       <Input
                         type="number"
                         value={entry?.cashOut || 0}

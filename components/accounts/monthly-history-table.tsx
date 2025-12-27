@@ -6,10 +6,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MonthlyHistoryRow } from "./monthly-history-row";
-import { type MonthlyEntry } from "@/lib/types";
+import { type MonthlyEntry, type AccountType } from "@/lib/types";
 import { updateMonthlyEntry } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import type { Currency } from "@/lib/fx-rates";
+import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { getFieldExplanation } from "@/lib/field-explanations";
+import { InfoButton } from "@/components/ui/info-button";
 
 interface MonthlyHistoryTableProps {
   history: MonthlyEntry[];
@@ -27,6 +30,7 @@ interface MonthlyHistoryTableProps {
     >
   >;
   accountId: string;
+  accountType: AccountType;
   accountCurrency: Currency;
   displayCurrency: Currency;
   onValueChange: (
@@ -43,12 +47,14 @@ export function MonthlyHistoryTable({
   history,
   editingValues,
   accountId,
+  accountType,
   accountCurrency,
   displayCurrency,
   onValueChange,
   onSave,
   onEdit,
 }: MonthlyHistoryTableProps) {
+  const showIncomeExpenditure = shouldShowIncomeExpenditure(accountType);
   if (history.length === 0) {
     return (
       <div className="text-center py-6 sm:py-8 text-muted-foreground">
@@ -68,8 +74,12 @@ export function MonthlyHistoryTable({
           endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
           cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
           cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
-          income: Number.parseFloat(editedEntry.income) || 0,
-          expenditure: Number.parseFloat(editedEntry.expenditure) || 0,
+          income: showIncomeExpenditure
+            ? Number.parseFloat(editedEntry.income) || 0
+            : 0,
+          expenditure: showIncomeExpenditure
+            ? Number.parseFloat(editedEntry.expenditure) || 0
+            : 0,
         });
 
         if (result.success) {
@@ -108,6 +118,8 @@ export function MonthlyHistoryTable({
               key={entry.month}
               entry={entry}
               isEditing={isEditing}
+              showIncomeExpenditure={showIncomeExpenditure}
+              accountType={accountType}
               accountCurrency={accountCurrency}
               displayCurrency={displayCurrency}
               editingValues={
@@ -138,13 +150,129 @@ export function MonthlyHistoryTable({
           <TableHeader>
             <TableRow>
               <TableHead className="w-[120px]">Month</TableHead>
-              <TableHead className="w-[140px]">Balance</TableHead>
-              <TableHead className="w-[120px]">Income</TableHead>
-              <TableHead className="w-[120px]">Expenditure</TableHead>
-              <TableHead className="w-[120px]">Cash In</TableHead>
-              <TableHead className="w-[120px]">Cash Out</TableHead>
-              <TableHead className="w-[120px]">Cash Flow</TableHead>
-              <TableHead className="w-[120px]">Growth</TableHead>
+              <TableHead className="w-[140px]">
+                <div className="flex items-center gap-1">
+                  Balance
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "endingBalance"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+              </TableHead>
+              {showIncomeExpenditure && (
+                <>
+                  <TableHead className="w-[120px]">
+                    <div className="flex items-center gap-1">
+                      Income
+                      {(() => {
+                        const explanation = getFieldExplanation(
+                          accountType,
+                          "income"
+                        );
+                        return explanation ? (
+                          <InfoButton
+                            title={explanation.title}
+                            description={explanation.description}
+                          />
+                        ) : null;
+                      })()}
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[120px]">
+                    <div className="flex items-center gap-1">
+                      Expenditure
+                      {(() => {
+                        const explanation = getFieldExplanation(
+                          accountType,
+                          "expenditure"
+                        );
+                        return explanation ? (
+                          <InfoButton
+                            title={explanation.title}
+                            description={explanation.description}
+                          />
+                        ) : null;
+                      })()}
+                    </div>
+                  </TableHead>
+                </>
+              )}
+              <TableHead className="w-[120px]">
+                <div className="flex items-center gap-1">
+                  Cash In
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "cashIn"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+              </TableHead>
+              <TableHead className="w-[120px]">
+                <div className="flex items-center gap-1">
+                  Cash Out
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "cashOut"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+              </TableHead>
+              <TableHead className="w-[120px]">
+                <div className="flex items-center gap-1">
+                  Cash Flow
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "cashFlow"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+              </TableHead>
+              <TableHead className="w-[120px]">
+                <div className="flex items-center gap-1">
+                  Growth
+                  {(() => {
+                    const explanation = getFieldExplanation(
+                      accountType,
+                      "accountGrowth"
+                    );
+                    return explanation ? (
+                      <InfoButton
+                        title={explanation.title}
+                        description={explanation.description}
+                      />
+                    ) : null;
+                  })()}
+                </div>
+              </TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -158,6 +286,8 @@ export function MonthlyHistoryTable({
                   key={entry.month}
                   entry={entry}
                   isEditing={isEditing}
+                  showIncomeExpenditure={showIncomeExpenditure}
+                  accountType={accountType}
                   accountCurrency={accountCurrency}
                   displayCurrency={displayCurrency}
                   editingValues={
