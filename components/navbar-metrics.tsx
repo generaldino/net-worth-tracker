@@ -277,7 +277,7 @@ export function NavbarMetrics({ metrics }: NavbarMetricsProps) {
               YTD:
             </span>
             <span
-              className={`whitespace-nowrap text-xs font-semibold tabular-nums ${
+              className={`whitespace-nowrap text-xs font-semibold font-mono tabular-nums ${
                 metrics.netWorthPercentageYTD >= 0
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-red-600 dark:text-red-400"

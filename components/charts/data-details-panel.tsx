@@ -122,11 +122,13 @@ export function DataDetailsPanel({
                   : "text-red-600"
               }`}
             >
-              {typeof data["Growth Rate"] === "number"
-                ? `${data["Growth Rate"] >= 0 ? "+" : ""}${data[
-                    "Growth Rate"
-                  ].toFixed(2)}%`
-                : "—"}
+              <span className="font-mono tabular-nums">
+                {typeof data["Growth Rate"] === "number"
+                  ? `${data["Growth Rate"] >= 0 ? "+" : ""}${data[
+                      "Growth Rate"
+                    ].toFixed(2)}%`
+                  : "—"}
+              </span>
             </span>
           </div>
           <div className="flex justify-between">
@@ -177,7 +179,7 @@ export function DataDetailsPanel({
                     <span className="font-medium text-sm sm:text-base">
                       {formatCurrencyAmount(value as number, chartCurrency)}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground font-mono tabular-nums">
                       ({percentage.toFixed(1)}%)
                     </span>
                   </div>
@@ -288,7 +290,11 @@ export function DataDetailsPanel({
                       {source === "Savings Rate"
                         ? isMasked
                           ? "•••"
-                          : `${Math.round(Math.abs(value || 0))}%`
+                          : (
+                            <span className="font-mono tabular-nums">
+                              {Math.round(Math.abs(value || 0))}%
+                            </span>
+                          )
                         : isMasked
                         ? "••••••"
                         : value !== undefined
@@ -516,11 +522,13 @@ export function DataDetailsPanel({
                   : "text-red-600"
               }`}
             >
-              {typeof data["Savings Rate"] === "number"
-                ? `${data["Savings Rate"] >= 0 ? "+" : ""}${Math.round(
-                    data["Savings Rate"]
-                  )}%`
-                : "—"}
+              <span className="font-mono tabular-nums">
+                {typeof data["Savings Rate"] === "number"
+                  ? `${data["Savings Rate"] >= 0 ? "+" : ""}${Math.round(
+                      data["Savings Rate"]
+                    )}%`
+                  : "—"}
+              </span>
             </span>
           </div>
           <div className="flex justify-between">

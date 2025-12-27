@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useMemo, useEffect } from "react";
 import { useNetWorth } from "@/contexts/net-worth-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
@@ -76,8 +75,15 @@ function convertCurrencyAmount(
   }, 0);
 }
 
-export function FinancialMetricsNavbar() {
-  const [period, setPeriod] = useState<PeriodType>("ytd");
+interface FinancialMetricsNavbarProps {
+  period: PeriodType;
+  setPeriod: (period: PeriodType) => void;
+}
+
+export function FinancialMetricsNavbar({
+  period,
+  setPeriod,
+}: FinancialMetricsNavbarProps) {
   const { financialMetrics } = useNetWorth();
   const { displayCurrency } = useDisplayCurrency();
   const { getRate, fetchRates } = useExchangeRates();
@@ -237,7 +243,7 @@ export function FinancialMetricsNavbar() {
     }
     return new Intl.NumberFormat("en-US", {
       notation: "compact",
-      maximumFractionDigits: 1,
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
@@ -262,7 +268,7 @@ export function FinancialMetricsNavbar() {
   }
 
   return (
-    <div className="flex flex-1 items-center gap-4 overflow-x-auto sm:gap-6">
+    <div className="flex items-center gap-4 overflow-x-auto sm:gap-6">
       {metrics.map((metric, index) => (
         <div key={index} className="flex items-center gap-4">
           {/* Individual Metric */}
@@ -277,7 +283,7 @@ export function FinancialMetricsNavbar() {
               {getYoyChange(metric) !== undefined &&
                 metric.label !== "Earned" && (
                   <span
-                    className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
+                    className={`rounded px-1.5 py-0.5 text-xs font-semibold font-mono tabular-nums ${
                       getYoyChange(metric)! >= 0
                         ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
                         : "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400"
@@ -300,36 +306,6 @@ export function FinancialMetricsNavbar() {
           {index < metrics.length - 1 && <div className="h-8 w-px bg-border" />}
         </div>
       ))}
-
-      {/* Right side: Vertically stacked YTD/All Time toggle */}
-      <div className="flex shrink-0 items-center ml-auto">
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPeriod("ytd")}
-            className={`h-7 w-20 px-3 text-xs font-medium ${
-              period === "ytd"
-                ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            }`}
-          >
-            YTD
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPeriod("alltime")}
-            className={`h-7 w-20 px-3 text-xs font-medium ${
-              period === "alltime"
-                ? "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
-            }`}
-          >
-            All Time
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

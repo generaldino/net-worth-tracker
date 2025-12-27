@@ -39,7 +39,7 @@ export function ValueChangeDisplay({
         )}
       </div>
       <div
-        className={`text-xs ${
+        className={`text-xs font-mono tabular-nums ${
           percentageChange >= 0 ? "text-green-600" : "text-red-600"
         }`}
       >

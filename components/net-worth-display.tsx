@@ -118,7 +118,7 @@ export function NetWorthDisplay({
       </div>
       {formattedPercentage && percentageIncrease !== null && (
         <div
-          className={`text-sm sm:text-base lg:text-lg font-semibold ${
+          className={`text-sm sm:text-base lg:text-lg font-semibold font-mono tabular-nums ${
             percentageIncrease >= 0 ? "text-green-600" : "text-red-600"
           }`}
         >

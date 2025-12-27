@@ -279,13 +279,13 @@ export function ChartHeader({
                     </div>
                     <div className="text-sm sm:text-base font-semibold">
                       {isPercentage
-                        ? `${percentage}%`
+                        ? <span className="font-mono tabular-nums">{percentage}%</span>
                         : formatValueFn(item.value)}
                     </div>
                     {/* Always reserve space for percentage line to maintain consistent height */}
                     <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 min-h-[14px]">
                       {!isPercentage && showPercentage
-                        ? `${percentage}%`
+                        ? <span className="font-mono tabular-nums">{percentage}%</span>
                         : "\u00A0"}
                     </div>
                   </div>
@@ -490,7 +490,7 @@ export function ChartHeader({
                 GROWTH RATE
               </div>
               <div
-                className={`text-2xl sm:text-3xl font-bold ${
+                className={`text-2xl sm:text-3xl font-bold font-mono tabular-nums ${
                   growthRate >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
@@ -774,7 +774,7 @@ export function ChartHeader({
                 SAVINGS RATE
               </div>
               <div
-                className={`text-2xl sm:text-3xl font-bold ${
+                className={`text-2xl sm:text-3xl font-bold font-mono tabular-nums ${
                   savingsRate >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >

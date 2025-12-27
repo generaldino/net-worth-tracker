@@ -8,6 +8,7 @@ import { CurrencySelector } from "@/components/currency-selector";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useNetWorth } from "@/contexts/net-worth-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
+import { Button } from "@/components/ui/button";
 
 export function Navbar() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [period, setPeriod] = useState<"ytd" | "alltime">("ytd");
 
   useEffect(() => {
     // Check if mobile on mount and resize
@@ -68,14 +70,43 @@ export function Navbar() {
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <button
               onClick={() => router.push("/")}
-              className="font-semibold text-base sm:text-lg shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+              className="text-2xl sm:text-3xl shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
             >
-              💰 Wealth Tracker
+              💰
             </button>
             {netWorth !== null && netWorthBreakdown && financialMetrics && (
               <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
                 <div className="border-l h-8" />
-                <FinancialMetricsNavbar />
+                <FinancialMetricsNavbar period={period} setPeriod={setPeriod} />
+                <div className="border-l h-8" />
+                <div className="flex shrink-0 items-center">
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPeriod("ytd")}
+                      className={`h-7 w-20 px-3 text-xs font-medium ${
+                        period === "ytd"
+                          ? "text-foreground font-semibold hover:bg-accent"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      }`}
+                    >
+                      YTD
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPeriod("alltime")}
+                      className={`h-7 w-20 px-3 text-xs font-medium ${
+                        period === "alltime"
+                          ? "text-foreground font-semibold hover:bg-accent"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      }`}
+                    >
+                      All Time
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -91,7 +122,35 @@ export function Navbar() {
         {/* Mobile financial metrics display */}
         {netWorth !== null && netWorthBreakdown && financialMetrics && (
           <div className="md:hidden pb-3 border-t pt-3 mt-2">
-            <FinancialMetricsNavbar />
+            <FinancialMetricsNavbar period={period} setPeriod={setPeriod} />
+            <div className="flex justify-center mt-3">
+              <div className="flex flex-col gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPeriod("ytd")}
+                  className={`h-7 w-20 px-3 text-xs font-medium ${
+                    period === "ytd"
+                      ? "text-foreground font-semibold hover:bg-accent"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  }`}
+                >
+                  YTD
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPeriod("alltime")}
+                  className={`h-7 w-20 px-3 text-xs font-medium ${
+                    period === "alltime"
+                      ? "text-foreground font-semibold hover:bg-accent"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  }`}
+                >
+                  All Time
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
