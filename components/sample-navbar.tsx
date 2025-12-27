@@ -77,12 +77,11 @@ function convertCurrencyAmount(
 
 interface FinancialMetricsNavbarProps {
   period: PeriodType;
-  setPeriod: (period: PeriodType) => void;
+  setPeriod?: (period: PeriodType) => void;
 }
 
 export function FinancialMetricsNavbar({
   period,
-  setPeriod,
 }: FinancialMetricsNavbarProps) {
   const { financialMetrics } = useNetWorth();
   const { displayCurrency } = useDisplayCurrency();
