@@ -277,6 +277,8 @@ export async function getMonthlyData() {
         cashIn: number;
         cashOut: number;
         income: number;
+        internalTransfersOut: number;
+        debtPayments: number;
         expenditure: number;
         cashFlow: number;
         accountGrowth: number;
@@ -303,6 +305,8 @@ export async function getMonthlyData() {
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
         income: Number(entry.income || 0),
+        internalTransfersOut: Number(entry.internalTransfersOut || 0),
+        debtPayments: Number(entry.debtPayments || 0),
         expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
@@ -695,6 +699,8 @@ export async function getChartData(
         cashIn: number;
         cashOut: number;
         income: number;
+        internalTransfersOut: number;
+        debtPayments: number;
         expenditure: number;
         cashFlow: number;
         accountGrowth: number;
@@ -720,6 +726,8 @@ export async function getChartData(
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
         income: Number(entry.income || 0),
+        internalTransfersOut: Number(entry.internalTransfersOut || 0),
+        debtPayments: Number(entry.debtPayments || 0),
         expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
@@ -1225,6 +1233,8 @@ export async function getAccountHistory(accountId: string) {
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
         income: Number(entry.income || 0),
+        internalTransfersOut: Number(entry.internalTransfersOut || 0),
+        debtPayments: Number(entry.debtPayments || 0),
         expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth,

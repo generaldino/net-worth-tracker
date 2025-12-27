@@ -15,6 +15,8 @@ type FieldExplanations = Record<
     accountGrowth: FieldExplanation;
     income?: FieldExplanation;
     expenditure?: FieldExplanation;
+    internalTransfersOut?: FieldExplanation;
+    debtPayments?: FieldExplanation;
   }
 >;
 

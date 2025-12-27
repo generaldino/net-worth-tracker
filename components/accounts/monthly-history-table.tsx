@@ -335,17 +335,19 @@ export function MonthlyHistoryTable({
                   accountType={accountType}
                   accountCurrency={accountCurrency}
                   displayCurrency={displayCurrency}
-                  editingValues={
-                    isEditing
-                      ? editingValues[accountId][entry.month]
-                      : {
-                          endingBalance: entry.endingBalance.toString(),
-                          cashIn: entry.cashIn.toString(),
-                          cashOut: entry.cashOut.toString(),
-                          income: (entry.income || 0).toString(),
-                          expenditure: (entry.expenditure || 0).toString(),
-                        }
-                  }
+              editingValues={
+                isEditing
+                  ? editingValues[accountId][entry.month]
+                  : {
+                      endingBalance: entry.endingBalance.toString(),
+                      cashIn: entry.cashIn.toString(),
+                      cashOut: entry.cashOut.toString(),
+                      income: (entry.income || 0).toString(),
+                      internalTransfersOut: (entry.internalTransfersOut || 0).toString(),
+                      debtPayments: (entry.debtPayments || 0).toString(),
+                      expenditure: (entry.expenditure || 0).toString(),
+                    }
+              }
                   onValueChange={(field, value) =>
                     onValueChange(accountId, entry.month, field, value)
                   }

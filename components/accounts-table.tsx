@@ -116,21 +116,23 @@ export function AccountsTable({
   onUpdateMonthlyEntry,
   onAddNewMonth,
 }: AccountsTableProps) {
-  const [editingValues, setEditingValues] = useState<
+  type EditingValuesType = Record<
+    string,
     Record<
       string,
-      Record<
-        string,
-        {
-          endingBalance: string;
-          cashIn: string;
-          cashOut: string;
-          income: string;
-          expenditure: string;
-        }
-      >
+      {
+        endingBalance: string;
+        cashIn: string;
+        cashOut: string;
+        income: string;
+        internalTransfersOut: string;
+        debtPayments: string;
+        expenditure: string;
+      }
     >
-  >({});
+  >;
+
+  const [editingValues, setEditingValues] = useState<EditingValuesType>({});
   const [selectedTimePeriod, setSelectedTimePeriod] =
     useState<ValueTimePeriod>("3M");
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -298,7 +300,13 @@ export function AccountsTable({
       [accountId]: {
         ...(prev[accountId] || {}),
         [month]: {
-          ...(prev[accountId]?.[month] || {}),
+          endingBalance: prev[accountId]?.[month]?.endingBalance || "",
+          cashIn: prev[accountId]?.[month]?.cashIn || "",
+          cashOut: prev[accountId]?.[month]?.cashOut || "",
+          income: prev[accountId]?.[month]?.income || "",
+          internalTransfersOut: prev[accountId]?.[month]?.internalTransfersOut || "",
+          debtPayments: prev[accountId]?.[month]?.debtPayments || "",
+          expenditure: prev[accountId]?.[month]?.expenditure || "",
           [field]: value,
         },
       },
@@ -313,7 +321,8 @@ export function AccountsTable({
         cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
         cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
         income: Number.parseFloat(editedEntry.income) || 0,
-        expenditure: Number.parseFloat(editedEntry.expenditure) || 0,
+        internalTransfersOut: Number.parseFloat(editedEntry.internalTransfersOut) || 0,
+        debtPayments: Number.parseFloat(editedEntry.debtPayments) || 0,
       };
 
       await onUpdateMonthlyEntry(accountId, month, updatedEntry);
@@ -426,7 +435,7 @@ export function AccountsTable({
                     }
                   }
                   history={accountHistories[account.id] || []}
-                  editingValues={editingValues}
+                  editingValues={editingValues as EditingValuesType}
                   monthlyData={monthlyData}
                   selectedTimePeriod={selectedTimePeriod}
                   displayCurrency={
@@ -446,6 +455,8 @@ export function AccountsTable({
                           cashIn: entry.cashIn.toString(),
                           cashOut: entry.cashOut.toString(),
                           income: (entry.income || 0).toString(),
+                          internalTransfersOut: (entry.internalTransfersOut || 0).toString(),
+                          debtPayments: (entry.debtPayments || 0).toString(),
                           expenditure: (entry.expenditure || 0).toString(),
                         },
                       },
@@ -473,7 +484,7 @@ export function AccountsTable({
                 }
               }
               history={accountHistories[account.id] || []}
-              editingValues={editingValues}
+              editingValues={editingValues as EditingValuesType}
               monthlyData={monthlyData}
               selectedTimePeriod={selectedTimePeriod}
               displayCurrency={
@@ -493,6 +504,8 @@ export function AccountsTable({
                       cashIn: entry.cashIn.toString(),
                       cashOut: entry.cashOut.toString(),
                       income: (entry.income || 0).toString(),
+                      internalTransfersOut: (entry.internalTransfersOut || 0).toString(),
+                      debtPayments: (entry.debtPayments || 0).toString(),
                       expenditure: (entry.expenditure || 0).toString(),
                     },
                   },

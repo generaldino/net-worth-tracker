@@ -275,7 +275,23 @@ export function AccountRow({
 
             <MonthlyHistoryTable
               history={history}
-              editingValues={editingValues}
+              editingValues={
+                editingValues as unknown as Record<
+                  string,
+                  Record<
+                    string,
+                    {
+                      endingBalance: string;
+                      cashIn: string;
+                      cashOut: string;
+                      income: string;
+                      internalTransfersOut: string;
+                      debtPayments: string;
+                      expenditure: string;
+                    }
+                  >
+                >
+              }
               accountId={account.id}
               accountType={account.type}
               accountCurrency={accountCurrency}
