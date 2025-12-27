@@ -1510,11 +1510,13 @@ export async function getChartData(
           });
         }
 
-        // Calculate capital gains (remaining growth, excluding current and savings accounts)
+        // Calculate capital gains (remaining growth, excluding current, savings, and liability accounts)
         if (
           entry.accountGrowth !== 0 &&
           account.type !== "Current" &&
-          account.type !== "Savings"
+          account.type !== "Savings" &&
+          account.type !== "Credit_Card" &&
+          account.type !== "Loan"
         ) {
           capitalGains += entry.accountGrowth;
           capitalGainsAccounts.push({

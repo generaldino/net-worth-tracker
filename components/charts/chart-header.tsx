@@ -68,6 +68,8 @@ interface ChartHeaderProps {
     selectedScenario?: string | null;
   };
   headerControls?: React.ReactNode;
+  hoveredCardName?: string | null;
+  onCardHover?: (cardName: string | null) => void;
 }
 
 export interface HoveredData {
@@ -85,6 +87,8 @@ export function ChartHeader({
   totalOptions,
   projectionOptions,
   headerControls,
+  hoveredCardName,
+  onCardHover,
 }: ChartHeaderProps) {
   const { isMasked } = useMasking();
   const displayData = hoveredData || latestData;
@@ -256,6 +260,8 @@ export function ChartHeader({
                       : accountTypesForTotal.map((acc) => acc.name)
                   }
                   isPercentageView={isPercentage}
+                  hoveredCardName={hoveredCardName}
+                  onCardHover={onCardHover}
                 />
               ) : (
                 // Placeholder to maintain space when no account types
@@ -323,6 +329,8 @@ export function ChartHeader({
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
+                  hoveredCardName={hoveredCardName}
+                  onCardHover={onCardHover}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -446,6 +454,8 @@ export function ChartHeader({
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
+                  hoveredCardName={hoveredCardName}
+                  onCardHover={onCardHover}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -564,6 +574,8 @@ export function ChartHeader({
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
+                  hoveredCardName={hoveredCardName}
+                  onCardHover={onCardHover}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -639,6 +651,8 @@ export function ChartHeader({
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
+                  hoveredCardName={hoveredCardName}
+                  onCardHover={onCardHover}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -690,6 +704,8 @@ export function ChartHeader({
                       : accountTypesForProjection.map((acc) => acc.name)
                   }
                   isPercentageView={isPercentage}
+                  hoveredCardName={hoveredCardName}
+                  onCardHover={onCardHover}
                 />
               ) : (
                 // Placeholder to maintain space when no account types

@@ -73,6 +73,9 @@ interface ChartDisplayProps {
     viewType?: "absolute" | "percentage";
     selectedScenario?: string | null;
   };
+  byWealthSourceOptions?: {
+    viewType?: "cumulative" | "monthly";
+  };
   headerControls?: React.ReactNode;
 }
 
@@ -88,6 +91,7 @@ export function ChartDisplay({
   allocationOptions = { viewType: "account-type", selectedMonth: undefined },
   totalOptions = { viewType: "absolute" },
   projectionOptions = { viewType: "absolute", selectedScenario: null },
+  byWealthSourceOptions = { viewType: "cumulative" },
   headerControls,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
@@ -98,6 +102,7 @@ export function ChartDisplay({
 
   // Hover state management - all hooks must be called before any early returns
   const [hoveredData, setHoveredData] = useState<HoveredData | null>(null);
+  const [hoveredCardName, setHoveredCardName] = useState<string | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const isTouchingRef = useRef(false);
 
@@ -670,6 +675,73 @@ export function ChartDisplay({
     return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
+  // Calculate cumulative wealth source data (must be at top level for hooks)
+  const wealthSourceData = useMemo(() => {
+    if (chartType !== "by-wealth-source") {
+      return null;
+    }
+    
+    const isCumulative = byWealthSourceOptions?.viewType === "cumulative";
+    if (!isCumulative) {
+      return chartData.sourceData;
+    }
+    
+    // Calculate cumulative values
+    const sourceKeys = [
+      "Savings from Income",
+      "Interest Earned",
+      "Capital Gains",
+    ] as const;
+    
+    const cumulativeData = [];
+    const runningTotals: Record<string, number> = {
+      "Savings from Income": 0,
+      "Interest Earned": 0,
+      "Capital Gains": 0,
+    };
+    
+    // Sort data chronologically (oldest first)
+    const sortedData = [...chartData.sourceData].sort((a, b) => {
+      const dateA = new Date(a.month);
+      const dateB = new Date(b.month);
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    console.log("[Cumulative Calculation] Starting cumulative calculation");
+    console.log("[Cumulative Calculation] Total months:", sortedData.length);
+    console.log("[Cumulative Calculation] Monthly values:");
+    
+    for (const item of sortedData) {
+      const cumulativeItem: typeof item = {
+        ...item,
+      };
+      
+      const monthlyValues: Record<string, number> = {};
+      for (const source of sourceKeys) {
+        const monthlyValue = (item[source] as number) || 0;
+        monthlyValues[source] = monthlyValue;
+        runningTotals[source] += monthlyValue;
+        cumulativeItem[source] = runningTotals[source];
+      }
+      
+      console.log(`[Cumulative Calculation] ${item.month} (${item.monthKey}):`, {
+        monthly: monthlyValues,
+        cumulative: { ...runningTotals },
+      });
+      
+      cumulativeData.push(cumulativeItem);
+    }
+    
+    console.log("[Cumulative Calculation] Final cumulative totals:", runningTotals);
+    console.log("[Cumulative Calculation] Total cumulative:", 
+      runningTotals["Savings from Income"] + 
+      runningTotals["Interest Earned"] + 
+      runningTotals["Capital Gains"]
+    );
+    
+    return cumulativeData;
+  }, [chartType, chartData.sourceData, byWealthSourceOptions?.viewType]);
+
   const renderChart = () => {
     switch (chartType) {
       case "total":
@@ -836,33 +908,39 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                {totalAccountTypesArray.map((type, index) => (
-                  <Area
-                    key={type}
-                    type="monotone"
-                    dataKey={type}
-                    stackId="total"
-                    stroke={getUniqueColor(index)}
-                    fill={getUniqueColor(index)}
-                    fillOpacity={0.6}
-                    isAnimationActive={false}
-                    onClick={(data) => {
-                      if ("payload" in data) {
-                        const payload = data.payload as {
-                          month: string;
-                          monthKey: string;
-                          [key: string]: string | number;
-                        };
-                        const netWorth = payload["Net Worth"] as number;
-                        handleBarClick(
-                          { month: payload.month, netWorth },
-                          payload.month
-                        );
-                      }
-                    }}
-                    style={{ cursor: "pointer" }}
-                  />
-                ))}
+                {totalAccountTypesArray.map((type, index) => {
+                  const isHovered = hoveredCardName === type;
+                  const hasHover = hoveredCardName !== null;
+                  const opacity = hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
+                  
+                  return (
+                    <Area
+                      key={type}
+                      type="monotone"
+                      dataKey={type}
+                      stackId="total"
+                      stroke={getUniqueColor(index)}
+                      fill={getUniqueColor(index)}
+                      fillOpacity={opacity}
+                      isAnimationActive={false}
+                      onClick={(data) => {
+                        if ("payload" in data) {
+                          const payload = data.payload as {
+                            month: string;
+                            monthKey: string;
+                            [key: string]: string | number;
+                          };
+                          const netWorth = payload["Net Worth"] as number;
+                          handleBarClick(
+                            { month: payload.month, netWorth },
+                            payload.month
+                          );
+                        }
+                      }}
+                      style={{ cursor: "pointer" }}
+                    />
+                  );
+                })}
               </AreaChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -969,7 +1047,13 @@ export function ChartDisplay({
                   stackId="1"
                   stroke={CHART_GREEN}
                   fill={CHART_GREEN}
-                  fillOpacity={0.6}
+                  fillOpacity={
+                    hoveredCardName !== null
+                      ? hoveredCardName === "Assets"
+                        ? 0.9
+                        : 0.2
+                      : 0.6
+                  }
                   strokeWidth={2}
                   isAnimationActive={false}
                 />
@@ -979,7 +1063,13 @@ export function ChartDisplay({
                   stackId="1"
                   stroke={CHART_RED}
                   fill={CHART_RED}
-                  fillOpacity={0.6}
+                  fillOpacity={
+                    hoveredCardName !== null
+                      ? hoveredCardName === "Liabilities"
+                        ? 0.9
+                        : 0.2
+                      : 0.6
+                  }
                   strokeWidth={2}
                   isAnimationActive={false}
                 />
@@ -1254,6 +1344,10 @@ export function ChartDisplay({
           "Interest Earned",
           "Capital Gains",
         ] as const;
+        
+        // Use pre-calculated wealth source data (from top-level useMemo)
+        const dataToUse = wealthSourceData || chartData.sourceData;
+        
         return (
           <ChartContainer
             config={sourceKeys.reduce(
@@ -1269,7 +1363,7 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData.sourceData} margin={margins}>
+              <AreaChart data={dataToUse} margin={margins}>
                 <defs>
                   {sourceKeys.map((source, index) => (
                     <linearGradient
@@ -1344,10 +1438,14 @@ export function ChartDisplay({
                   />
                 )}
                 {sourceKeys.map((source, index) => {
-                  const hasData = chartData.sourceData.some(
+                  const hasData = wealthSourceData.some(
                     (monthData) => (monthData[source] || 0) !== 0
                   );
                   if (hasData) {
+                    const isHovered = hoveredCardName === source;
+                    const hasHover = hoveredCardName !== null;
+                    const opacity = hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
+                    
                     return (
                       <Area
                         key={source}
@@ -1355,7 +1453,7 @@ export function ChartDisplay({
                         dataKey={source}
                         stroke={getUniqueColor(index)}
                         fill={`url(#${source.replace(/\s+/g, "")}Gradient)`}
-                        fillOpacity={0.6}
+                        fillOpacity={opacity}
                         strokeWidth={2}
                         isAnimationActive={false}
                         onClick={(data) => {
@@ -1542,9 +1640,19 @@ export function ChartDisplay({
                       );
                     }}
                   >
-                    {allocationData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
+                    {allocationData.map((entry, index) => {
+                      const isHovered = hoveredCardName === entry.name;
+                      const hasHover = hoveredCardName !== null;
+                      const opacity = hasHover ? (isHovered ? 1 : 0.3) : 1;
+                      
+                      return (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={entry.fill}
+                          fillOpacity={opacity}
+                        />
+                      );
+                    })}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
                   <Legend
@@ -1709,6 +1817,13 @@ export function ChartDisplay({
                 <Bar
                   dataKey="Savings from Income"
                   fill={COLORS[0]}
+                  fillOpacity={
+                    hoveredCardName !== null
+                      ? hoveredCardName === "Savings from Income"
+                        ? 1
+                        : 0.3
+                      : 1
+                  }
                   stackId="waterfall"
                   isAnimationActive={false}
                   onClick={(data) => {
@@ -1728,6 +1843,13 @@ export function ChartDisplay({
                 <Bar
                   dataKey="Interest Earned"
                   fill={COLORS[1]}
+                  fillOpacity={
+                    hoveredCardName !== null
+                      ? hoveredCardName === "Interest Earned"
+                        ? 1
+                        : 0.3
+                      : 1
+                  }
                   stackId="waterfall"
                   isAnimationActive={false}
                   onClick={(data) => {
@@ -1747,6 +1869,13 @@ export function ChartDisplay({
                 <Bar
                   dataKey="Capital Gains"
                   fill={COLORS[2]}
+                  fillOpacity={
+                    hoveredCardName !== null
+                      ? hoveredCardName === "Capital Gains"
+                        ? 1
+                        : 0.3
+                      : 1
+                  }
                   stackId="waterfall"
                   isAnimationActive={false}
                   onClick={(data) => {
@@ -1909,6 +2038,14 @@ export function ChartDisplay({
                   dataKey="Total Expenditure"
                   yAxisId="left"
                   fill={CHART_RED}
+                  fillOpacity={
+                    hoveredCardName !== null
+                      ? hoveredCardName === "Total Expenditure" ||
+                        hoveredCardName === "Total Income"
+                        ? 1
+                        : 0.3
+                      : 1
+                  }
                   stackId="income-breakdown"
                   isAnimationActive={false}
                   onClick={(data) => {
@@ -1930,6 +2067,14 @@ export function ChartDisplay({
                   dataKey="Savings from Income"
                   yAxisId="left"
                   fill={COLORS[1]}
+                  fillOpacity={
+                    hoveredCardName !== null
+                      ? hoveredCardName === "Savings from Income" ||
+                        hoveredCardName === "Total Income"
+                        ? 1
+                        : 0.3
+                      : 1
+                  }
                   stackId="income-breakdown"
                   isAnimationActive={false}
                   onClick={(data) => {
@@ -1952,9 +2097,12 @@ export function ChartDisplay({
                   type="monotone"
                   dataKey="Savings Rate"
                   yAxisId="right"
-                  stroke={CHART_GREEN}
+                  stroke="#9333EA"
                   strokeWidth={3}
-                  dot={{ fill: CHART_GREEN, r: 4 }}
+                  strokeOpacity={
+                    hoveredCardName !== null ? 0.3 : 1
+                  }
+                  dot={{ fill: "#9333EA", r: 4 }}
                   activeDot={{ r: 6 }}
                   isAnimationActive={false}
                   onClick={(data) => {
@@ -2165,18 +2313,24 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                {projectionAccountTypesArray.map((type, index) => (
-                  <Area
-                    key={type}
-                    type="monotone"
-                    dataKey={type}
-                    stackId="projection"
-                    stroke={getUniqueColor(index)}
-                    fill={getUniqueColor(index)}
-                    fillOpacity={0.6}
-                    isAnimationActive={false}
-                  />
-                ))}
+                {projectionAccountTypesArray.map((type, index) => {
+                  const isHovered = hoveredCardName === type;
+                  const hasHover = hoveredCardName !== null;
+                  const opacity = hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
+                  
+                  return (
+                    <Area
+                      key={type}
+                      type="monotone"
+                      dataKey={type}
+                      stackId="projection"
+                      stroke={getUniqueColor(index)}
+                      fill={getUniqueColor(index)}
+                      fillOpacity={opacity}
+                      isAnimationActive={false}
+                    />
+                  );
+                })}
               </AreaChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -2216,6 +2370,8 @@ export function ChartDisplay({
         totalOptions={totalOptions}
         projectionOptions={projectionOptions}
         headerControls={headerControls}
+        hoveredCardName={hoveredCardName}
+        onCardHover={setHoveredCardName}
       />
 
       {/* Chart Container with touch support */}

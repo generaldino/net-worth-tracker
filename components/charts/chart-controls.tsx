@@ -76,6 +76,11 @@ export function ChartControls({
     "absolute"
   );
 
+  // By wealth source chart options
+  const [byWealthSourceViewType, setByWealthSourceViewType] = useState<
+    "cumulative" | "monthly"
+  >("cumulative");
+
   // Projection chart options
   const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<
     string | null
@@ -444,6 +449,11 @@ export function ChartControls({
                 }
               : undefined
           }
+          byWealthSourceOptions={
+            chartType === "by-wealth-source"
+              ? { viewType: byWealthSourceViewType }
+              : undefined
+          }
           headerControls={
             <>
               <div className="flex-shrink-0 min-w-[200px]">
@@ -476,6 +486,22 @@ export function ChartControls({
                   >
                     <option value="absolute">Absolute Values</option>
                     <option value="percentage">Percentage Composition</option>
+                  </select>
+                </label>
+              ) : chartType === "by-wealth-source" ? (
+                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="whitespace-nowrap">View:</span>
+                  <select
+                    value={byWealthSourceViewType}
+                    onChange={(e) =>
+                      setByWealthSourceViewType(
+                        e.target.value as "cumulative" | "monthly"
+                      )
+                    }
+                    className="px-2 py-1 rounded border bg-background min-w-[150px]"
+                  >
+                    <option value="cumulative">Cumulative</option>
+                    <option value="monthly">Monthly</option>
                   </select>
                 </label>
               ) : chartType === "projection" ? (
