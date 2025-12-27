@@ -13,6 +13,7 @@ import {
   Area,
   AreaChart,
   Line,
+  ComposedChart,
   PieChart,
   Pie,
   Cell,
@@ -1838,57 +1839,7 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={savingsRateData} margin={margins}>
-                <defs>
-                  <linearGradient
-                    id="savingsRateGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor={CHART_GREEN}
-                      stopOpacity={0.4}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={CHART_GREEN}
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                  <linearGradient
-                    id="incomeGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={COLORS[0]} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient
-                    id="expenditureGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor={CHART_RED} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={CHART_RED} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient
-                    id="savingsGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="5%" stopColor={COLORS[1]} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={COLORS[1]} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+              <ComposedChart data={savingsRateData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="month"
@@ -1953,40 +1904,12 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                {/* Total Income */}
-                <Area
-                  type="monotone"
-                  dataKey="Total Income"
-                  yAxisId="left"
-                  stroke={COLORS[0]}
-                  strokeWidth={2}
-                  fill="url(#incomeGradient)"
-                  stackId="income"
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        monthKey: string;
-                      };
-                      setClickedData({
-                        month: payload.month,
-                        data: payload,
-                        chartType: "savings-rate",
-                      });
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
-                />
-                {/* Total Expenditure */}
-                <Area
-                  type="monotone"
+                {/* Stacked Bars: Expenditure (bottom) + Savings (top) = Total Income */}
+                <Bar
                   dataKey="Total Expenditure"
                   yAxisId="left"
-                  stroke={CHART_RED}
-                  strokeWidth={2}
-                  fill="url(#expenditureGradient)"
-                  stackId="expenditure"
+                  fill={CHART_RED}
+                  stackId="income-breakdown"
                   isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
@@ -2003,15 +1926,11 @@ export function ChartDisplay({
                   }}
                   style={{ cursor: "pointer" }}
                 />
-                {/* Savings from Income */}
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="Savings from Income"
                   yAxisId="left"
-                  stroke={COLORS[1]}
-                  strokeWidth={2}
-                  fill="url(#savingsGradient)"
-                  stackId="savings"
+                  fill={COLORS[1]}
+                  stackId="income-breakdown"
                   isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
@@ -2053,7 +1972,7 @@ export function ChartDisplay({
                   }}
                   style={{ cursor: "pointer" }}
                 />
-              </AreaChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </ChartContainer>
         );

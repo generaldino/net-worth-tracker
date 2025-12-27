@@ -1081,10 +1081,10 @@ export async function getChartData(
         }
       });
 
-      // Calculate savings from income: Net Worth Change - Account Growth
-      // This represents the net cash added from work income (after spending)
-      // Transfers cancel out when calculating net worth change, so this is accurate
-      const savingsFromIncome = netWorthChange - totalAccountGrowth;
+      // Calculate savings from income: Income - Expenditure
+      // This represents the net cash saved from work income (after spending)
+      // This is a cash flow calculation, not based on net worth changes
+      const savingsFromIncome = totalWorkIncome - totalExpenditure;
 
       return {
         month: new Date(month + "-01").toLocaleDateString("en-GB", {
