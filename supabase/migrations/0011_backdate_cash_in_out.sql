@@ -24,3 +24,4 @@ WHERE
 -- from: cashFlow = cashIn - cashOut + income
 -- to:   cashFlow = cashIn - cashOut
 
+
