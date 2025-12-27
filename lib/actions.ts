@@ -294,9 +294,7 @@ export async function getMonthlyData() {
 
       // cashFlow = cashIn - cashOut
       // Note: cashIn now includes income, cashOut now includes expenditure
-      const cashFlow =
-        Number(entry.cashIn) -
-        Number(entry.cashOut);
+      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
       monthlyData[month].push({
         accountId: entry.accountId,
         monthKey: month,
@@ -715,9 +713,7 @@ export async function getChartData(
       }
 
       // Note: cashIn now includes income, cashOut now includes expenditure
-      const cashFlow =
-        Number(entry.cashIn) -
-        Number(entry.cashOut);
+      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
       monthlyData[month].push({
         accountId: entry.accountId,
         monthKey: month,
@@ -940,7 +936,6 @@ export async function getChartData(
       let capitalGains = 0;
       let totalWorkIncome = 0;
       let totalExpenditure = 0;
-      let totalAccountGrowth = 0;
 
       // Per-account breakdowns (with currency info)
       const savingsAccounts: Array<{
@@ -968,49 +963,7 @@ export async function getChartData(
         owner: string;
       }> = [];
 
-      // Calculate current month's net worth
-      const currentNetWorth = monthlyData[month]
-        .filter((entry) =>
-          filteredAccounts.some((account) => account.id === entry.accountId)
-        )
-        .reduce((sum, entry) => {
-          const account = filteredAccounts.find(
-            (acc) => acc.id === entry.accountId
-          );
-          // Credit cards and loans are liabilities - subtract from net worth
-          if (account?.type === "Credit_Card" || account?.type === "Loan") {
-            return sum - entry.endingBalance;
-          }
-          // All other accounts are assets - add to net worth
-          return sum + entry.endingBalance;
-        }, 0);
-
-      // Calculate previous month's net worth (must have previous month in ALL data, not just filtered)
-      // We need the actual previous month from the sorted months array, not just filteredMonths
-      const monthIndexInAllMonths = months.indexOf(month);
-      let previousNetWorth = 0;
-      if (monthIndexInAllMonths > 0) {
-        const previousMonth = months[monthIndexInAllMonths - 1];
-        previousNetWorth = monthlyData[previousMonth]
-          .filter((entry) =>
-            filteredAccounts.some((account) => account.id === entry.accountId)
-          )
-          .reduce((sum, entry) => {
-            const account = filteredAccounts.find(
-              (acc) => acc.id === entry.accountId
-            );
-            if (account?.type === "Credit_Card" || account?.type === "Loan") {
-              return sum - entry.endingBalance;
-            }
-            return sum + entry.endingBalance;
-          }, 0);
-      }
-
-      // Calculate net worth change (only if we have a previous month)
-      const netWorthChange =
-        monthIndexInAllMonths > 0 ? currentNetWorth - previousNetWorth : 0;
-
-      // Sum account growth for all accounts
+      // Process account entries
       monthlyData[month].forEach((entry) => {
         const account = filteredAccounts.find((a) => a.id === entry.accountId);
         if (!account) return;
@@ -1046,9 +999,6 @@ export async function getChartData(
           const expenditure = Number(entry.expenditure || 0);
           totalExpenditure += expenditure;
         }
-
-        // Sum all account growth (for calculating savings from income)
-        totalAccountGrowth += entry.accountGrowth;
 
         // Calculate interest earned (if applicable)
         if (account.type === "Savings" && entry.accountGrowth > 0) {
@@ -1211,9 +1161,7 @@ export async function getAccountHistory(accountId: string) {
     // Transform the entries to include calculated fields
     const history = entries.map((entry, index) => {
       // Note: cashIn now includes income, cashOut now includes expenditure
-      const cashFlow =
-        Number(entry.cashIn) -
-        Number(entry.cashOut);
+      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
       let accountGrowth = 0;
 
       // Calculate accountGrowth by comparing with previous month's entry
@@ -1468,9 +1416,7 @@ export async function exportToCSV(): Promise<string> {
 
       // Calculate cash flow
       // Note: cashIn now includes income, cashOut now includes expenditure
-      const cashFlow =
-        Number(entry.cashIn) -
-        Number(entry.cashOut);
+      const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
 
       // Calculate account growth by comparing with previous month's entry
       let accountGrowth = 0;

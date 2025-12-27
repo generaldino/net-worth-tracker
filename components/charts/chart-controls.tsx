@@ -190,6 +190,7 @@ export function ChartControls({
     selectedProjectionScenario,
     setProjectionData,
     setSelectedScenarioId,
+    calculateProjectionForScenario,
   ]);
 
   // Extract all unique months from chart data for rate fetching
@@ -364,7 +365,7 @@ export function ChartControls({
     () => initialData.accounts.map((account) => account.id),
     [initialData.accounts]
   );
-  const selectedTypes = useMemo(() => accountTypes, []);
+  const selectedTypes = useMemo(() => accountTypes, [accountTypes]);
   const selectedCategories = useMemo(() => accountCategories, []);
   const selectedOwner = "all";
 
