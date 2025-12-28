@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { LandingPage } from "@/components/auth/landing-page";
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 import { MaskingProviderWrapper } from "@/components/masking-provider-wrapper";
 import { ExchangeRatesProvider } from "@/contexts/exchange-rates-context";
 import { DisplayCurrencyProvider } from "@/contexts/display-currency-context";
@@ -33,31 +34,45 @@ export default async function RootLayout({
 
   if (!session) {
     return (
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
-          <LandingPage />
-          <Toaster />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <LandingPage />
+            <Toaster />
+          </ThemeProvider>
         </body>
       </html>
     );
   }
 
   return (
-    <html lang="en" className="overflow-x-hidden">
+    <html lang="en" className="overflow-x-hidden" suppressHydrationWarning>
       <body className={`${inter.className} overflow-x-hidden`}>
-        <MaskingProviderWrapper>
-          <ExchangeRatesProvider>
-            <DisplayCurrencyProvider>
-              <ProjectionProvider>
-                <NetWorthProvider>
-                  <Navbar />
-                  {children}
-                </NetWorthProvider>
-              </ProjectionProvider>
-            </DisplayCurrencyProvider>
-          </ExchangeRatesProvider>
-        </MaskingProviderWrapper>
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <MaskingProviderWrapper>
+            <ExchangeRatesProvider>
+              <DisplayCurrencyProvider>
+                <ProjectionProvider>
+                  <NetWorthProvider>
+                    <Navbar />
+                    {children}
+                  </NetWorthProvider>
+                </ProjectionProvider>
+              </DisplayCurrencyProvider>
+            </ExchangeRatesProvider>
+          </MaskingProviderWrapper>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
