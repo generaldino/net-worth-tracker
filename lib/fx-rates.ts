@@ -34,7 +34,7 @@ export async function getExchangeRates(
   try {
     // Always fetch with GBP as base to normalize all rates
     const response = await fetch(`${HEXARATE_API_URL}?base=GBP`);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch exchange rates: ${response.statusText}`);
     }
@@ -45,7 +45,7 @@ export async function getExchangeRates(
     // This means 1 GBP = 1.15 EUR, 1 GBP = 1.27 USD, etc.
     // We normalize all rates relative to GBP
     const gbpRates = data.rates || {};
-    
+
     const rates: ExchangeRates = {
       base: "GBP",
       rates: {
@@ -64,7 +64,7 @@ export async function getExchangeRates(
     return rates;
   } catch (error) {
     console.error("Error fetching exchange rates:", error);
-    
+
     // Return cached rates as fallback if available
     if (cachedRates) {
       return cachedRates;
@@ -96,11 +96,11 @@ export async function convertCurrency(
   }
 
   const rates = await getExchangeRates("GBP");
-  
+
   // Rates are stored as: 1 GBP = X EUR, 1 GBP = Y USD, etc.
   // To convert from EUR to GBP: divide by rates.rates.EUR
   // To convert from GBP to EUR: multiply by rates.rates.EUR
-  
+
   // Convert to GBP first
   let amountInGbp: number;
   if (fromCurrency === "GBP") {
@@ -109,7 +109,7 @@ export async function convertCurrency(
     // If fromCurrency is EUR, and rates.rates.EUR = 1.15, then 1 EUR = 1/1.15 GBP
     amountInGbp = amount / rates.rates[fromCurrency];
   }
-  
+
   // Convert from GBP to target currency
   let amountInTarget: number;
   if (toCurrency === "GBP") {
@@ -138,6 +138,7 @@ export function getCurrencySymbol(currency: Currency): string {
 /**
  * Formats a number as currency
  * Note: This function does NOT handle masking - use the masking context's formatCurrency for masked values
+ * Note: Amounts are rounded down (floored) before formatting
  */
 export function formatCurrencyAmount(
   amount: number,
@@ -145,17 +146,35 @@ export function formatCurrencyAmount(
   options?: Intl.NumberFormatOptions
 ): string {
   const symbol = getCurrencySymbol(currency);
+  // Round down the amount before formatting
+  const flooredAmount = Math.floor(amount);
   const formatted = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
     ...options,
-  }).format(amount);
+  }).format(flooredAmount);
 
   // For AED, symbol comes after
   if (currency === "AED") {
     return `${formatted} ${symbol}`;
   }
-  
+
   return `${symbol}${formatted}`;
 }
 
+/**
+ * Formats a number as a percentage
+ * Note: Percentages are rounded down (floored) before formatting
+ * Note: Value should already be in percentage format (0-100), not decimal (0-1)
+ */
+export function formatPercentage(
+  value: number,
+  options?: { showSign?: boolean }
+): string {
+  const { showSign = false } = options || {};
+  // Round down the percentage before formatting
+  const flooredValue = Math.floor(value);
+  const formatted = flooredValue.toFixed(0);
+  const sign = showSign && flooredValue >= 0 ? "+" : "";
+  return `${sign}${formatted}%`;
+}

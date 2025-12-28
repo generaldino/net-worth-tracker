@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ChartType } from "@/components/charts/types";
-import { formatCurrencyAmount } from "@/lib/fx-rates";
+import { formatCurrencyAmount, formatPercentage as formatPercentageUtil } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 import { useMemo } from "react";
@@ -150,11 +150,10 @@ export function ChartHeader({
   };
 
   const formatPercentage = (
-    value: number | undefined,
-    decimals: number = 1
+    value: number | undefined
   ): string => {
     if (value === undefined) return "—";
-    return `${value >= 0 ? "+" : ""}${value.toFixed(decimals)}%`;
+    return formatPercentageUtil(value, { showSign: true });
   };
 
   // Helper function to get color for a metric based on chart type
@@ -351,7 +350,7 @@ export function ChartHeader({
                   growthRate >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {formatPercentage(growthRate, 2)}
+                {formatPercentage(growthRate)}
               </div>
             </div>
 

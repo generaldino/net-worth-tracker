@@ -2,7 +2,7 @@
 
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
-import { formatCurrencyAmount } from "@/lib/fx-rates";
+import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import { useEffect, useMemo } from "react";
 import type { Currency } from "@/lib/fx-rates";
@@ -108,7 +108,7 @@ export function NetWorthDisplay({
 
   // Format percentage increase (always visible, not masked)
   const formattedPercentage = percentageIncrease !== null
-    ? `${percentageIncrease >= 0 ? "+" : ""}${percentageIncrease.toFixed(1)}%`
+    ? formatPercentage(percentageIncrease, { showSign: true })
     : null;
 
   return (

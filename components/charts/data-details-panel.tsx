@@ -6,7 +6,7 @@ import { SOURCE_KEYS, getUniqueColor } from "@/components/charts/constants";
 import { useState } from "react";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
-import { formatCurrencyAmount } from "@/lib/fx-rates";
+import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 
 interface AccountBreakdown {
@@ -124,9 +124,7 @@ export function DataDetailsPanel({
             >
               <span className="font-mono tabular-nums">
                 {typeof data["Growth Rate"] === "number"
-                  ? `${data["Growth Rate"] >= 0 ? "+" : ""}${data[
-                      "Growth Rate"
-                    ].toFixed(2)}%`
+                  ? formatPercentage(data["Growth Rate"], { showSign: true })
                   : "—"}
               </span>
             </span>
@@ -180,7 +178,7 @@ export function DataDetailsPanel({
                       {formatCurrencyAmount(value as number, chartCurrency)}
                     </span>
                     <span className="text-xs text-muted-foreground font-mono tabular-nums">
-                      ({percentage.toFixed(1)}%)
+                      ({formatPercentage(percentage)})
                     </span>
                   </div>
                 </div>
@@ -292,7 +290,7 @@ export function DataDetailsPanel({
                           ? "•••"
                           : (
                             <span className="font-mono tabular-nums">
-                              {Math.round(Math.abs(value || 0))}%
+                              {formatPercentage(Math.abs(value || 0))}
                             </span>
                           )
                         : isMasked

@@ -6,7 +6,7 @@ import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import { useMasking } from "@/contexts/masking-context";
 import type { Currency } from "@/lib/fx-rates";
-import { getCurrencySymbol } from "@/lib/fx-rates";
+import { getCurrencySymbol, formatPercentage } from "@/lib/fx-rates";
 
 /**
  * Financial Metrics Navbar Component
@@ -288,8 +288,7 @@ export function FinancialMetricsNavbar({
                         : "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400"
                     }`}
                   >
-                    {getYoyChange(metric)! >= 0 ? "+" : ""}
-                    {getYoyChange(metric)!.toFixed(0)}%
+                    {formatPercentage(getYoyChange(metric)!, { showSign: true })}
                   </span>
                 )}
             </div>

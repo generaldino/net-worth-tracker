@@ -1,7 +1,7 @@
 "use client";
 
 import { useMasking } from "@/contexts/masking-context";
-import { formatCurrencyAmount } from "@/lib/fx-rates";
+import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 
 interface ValueChangeDisplayProps {
@@ -43,8 +43,7 @@ export function ValueChangeDisplay({
           percentageChange >= 0 ? "text-green-600" : "text-red-600"
         }`}
       >
-        ({percentageChange >= 0 ? "+" : ""}
-        {percentageChange.toFixed(1)}%)
+        {formatPercentage(percentageChange, { showSign: true })})
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ import { PeriodSelector } from "./period-selector";
 import { COLORS, CHART_GREEN, CHART_RED, getUniqueColor } from "./constants";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
-import { formatCurrencyAmount } from "@/lib/fx-rates";
+import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useProjection } from "@/contexts/projection-context";
 import type { TimePeriod } from "@/lib/types";
@@ -872,7 +872,7 @@ export function ChartDisplay({
                   hide={true}
                   tickFormatter={(value) =>
                     isTotalPercentage
-                      ? `${value.toFixed(0)}%` // Never mask percentages
+                      ? formatPercentage(value) // Never mask percentages
                       : isMasked
                       ? "•••"
                       : formatCurrencyAmount(value / 1000, chartCurrency, {
@@ -1131,7 +1131,7 @@ export function ChartDisplay({
           return {
             month: item.month,
             monthKey: item.monthKey,
-            "Growth Rate": Number(growthRate.toFixed(2)),
+            "Growth Rate": Math.floor(growthRate),
             netWorth: currentNetWorth,
           };
         });
@@ -1152,7 +1152,7 @@ export function ChartDisplay({
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
                   hide={true}
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                  tickFormatter={(value) => formatPercentage(value)}
                   fontSize={fontSize}
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
@@ -1403,8 +1403,8 @@ export function ChartDisplay({
                     isMasked
                       ? "•••"
                       : formatCurrencyAmount(value / 1000, chartCurrency, {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
                         }) + "K"
                   }
                   fontSize={fontSize}
@@ -1541,8 +1541,8 @@ export function ChartDisplay({
             const fill = data.payload?.fill || COLORS[0];
             const percentage =
               totalAllocation > 0
-                ? ((data.value / totalAllocation) * 100).toFixed(1)
-                : "0";
+                ? (data.value / totalAllocation) * 100
+                : 0;
             return (
               <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
                 <p className="font-medium mb-2">{data.name}</p>
@@ -1556,7 +1556,7 @@ export function ChartDisplay({
                       ? "••••••"
                       : formatCurrencyAmount(data.value, chartCurrency)}
                   </span>
-                  <span className="text-muted-foreground">({percentage}%)</span>
+                  <span className="text-muted-foreground">({formatPercentage(percentage)})</span>
                 </div>
               </div>
             );
@@ -1588,7 +1588,7 @@ export function ChartDisplay({
               fontSize={12}
               fontWeight="bold"
             >
-              {`${(percent * 100).toFixed(0)}%`}
+              {formatPercentage(percent * 100)}
             </text>
           );
         };
@@ -1666,9 +1666,9 @@ export function ChartDisplay({
                         ?.value;
                       const percentage =
                         totalAllocation > 0 && entryValue
-                          ? ((entryValue / totalAllocation) * 100).toFixed(1)
-                          : "0";
-                      return `${value} (${percentage}%)`;
+                          ? (entryValue / totalAllocation) * 100
+                          : 0;
+                      return `${value} (${formatPercentage(percentage)})`;
                     }}
                   />
                 </PieChart>
@@ -1986,8 +1986,8 @@ export function ChartDisplay({
                     isMasked
                       ? "•••"
                       : formatCurrencyAmount(value / 1000, chartCurrency, {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
                         }) + "K"
                   }
                   fontSize={fontSize}
@@ -2277,7 +2277,7 @@ export function ChartDisplay({
                   hide={true}
                   tickFormatter={(value) =>
                     isPercentage
-                      ? `${value.toFixed(0)}%` // Never mask percentages
+                      ? formatPercentage(value) // Never mask percentages
                       : isMasked
                       ? "•••"
                       : formatCurrencyAmount(value / 1000, chartCurrency, {

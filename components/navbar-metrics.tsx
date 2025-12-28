@@ -5,6 +5,7 @@ import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import { useMemo, useEffect } from "react";
 import type { Currency } from "@/lib/fx-rates";
+import { formatPercentage } from "@/lib/fx-rates";
 
 interface FinancialMetricsData {
   netWorthYTD: number;
@@ -283,8 +284,7 @@ export function NavbarMetrics({ metrics }: NavbarMetricsProps) {
                   : "text-red-600 dark:text-red-400"
               }`}
             >
-              {metrics.netWorthPercentageYTD >= 0 ? "+" : ""}
-              {metrics.netWorthPercentageYTD.toFixed(1)}%
+              {formatPercentage(metrics.netWorthPercentageYTD, { showSign: true })}
             </span>
           </div>
         </>

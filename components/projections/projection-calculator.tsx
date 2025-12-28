@@ -13,6 +13,7 @@ import {
   updateProjectionScenario,
   deleteProjectionScenario,
 } from "@/lib/actions";
+import { formatPercentage } from "@/lib/fx-rates";
 import { ProjectionScenarioManager } from "./projection-scenario-manager";
 import type { AccountType } from "@/lib/types";
 import { useRouter } from "next/navigation";
@@ -216,12 +217,12 @@ export function ProjectionCalculator({
     if (Math.abs(allocationSum - 100) > 0.01) {
       setError("savingsAllocation", {
         type: "manual",
-        message: `Savings allocation must sum to 100%. Current sum: ${allocationSum.toFixed(2)}%`,
+        message: `Savings allocation must sum to 100%. Current sum: ${formatPercentage(allocationSum)}`,
       });
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: `Savings allocation must sum to 100%. Current sum: ${allocationSum.toFixed(2)}%`,
+        description: `Savings allocation must sum to 100%. Current sum: ${formatPercentage(allocationSum)}`,
       });
       return;
     }
@@ -265,7 +266,7 @@ export function ProjectionCalculator({
         toast({
           variant: "destructive",
           title: "Validation Error",
-          description: `Savings allocation must sum to 100%. Current sum: ${allocationSum.toFixed(2)}%`,
+          description: `Savings allocation must sum to 100%. Current sum: ${formatPercentage(allocationSum)}`,
         });
         return;
       }
@@ -561,7 +562,7 @@ export function ProjectionCalculator({
                 <div>
                   <Label className="text-muted-foreground">Growth %</Label>
                   <p className="text-2xl font-bold">
-                    {projectionData.growthPercentage.toFixed(2)}%
+                    {formatPercentage(projectionData.growthPercentage)}
                   </p>
                 </div>
               </div>

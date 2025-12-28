@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { formatCurrencyAmount } from "@/lib/fx-rates";
+import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 
@@ -53,9 +53,9 @@ export function NetWorthCards({
     // In percentage view, asset.value is already a percentage (0-100), use absValue for bar
     // In absolute view, calculate percentage from absolute value
     const percentage = isPercentageView
-      ? parseFloat(asset.absValue.toFixed(1))
+      ? asset.absValue
       : netWorth !== 0
-      ? parseFloat(((asset.value / Math.abs(netWorth)) * 100).toFixed(1))
+      ? (asset.value / Math.abs(netWorth)) * 100
       : 0;
 
     return {
@@ -70,17 +70,12 @@ export function NetWorthCards({
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth">
       {assetCards.map((asset) => {
-        const isHovered = hoveredCardName === asset.originalName;
-        const hasHover = hoveredCardName !== null;
-        const opacity = hasHover ? (isHovered ? 1 : 0.3) : 1;
-
         return (
           <Card
             key={asset.type}
             className="p-5 hover:shadow-lg transition-all duration-300 border-border/50 hover:border-border group min-w-[240px] flex-shrink-0"
             onMouseEnter={() => onCardHover?.(asset.originalName)}
             onMouseLeave={() => onCardHover?.(null)}
-            style={{ opacity }}
           >
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -100,7 +95,7 @@ export function NetWorthCards({
                 {isMasked
                   ? "••••••"
                   : isPercentageView
-                  ? `${Math.abs(asset.amount).toFixed(0)}%`
+                  ? formatPercentage(Math.abs(asset.amount))
                   : formatCurrencyAmount(asset.amount, chartCurrency)}
               </p>
               <div className="flex items-center gap-2">
@@ -120,7 +115,7 @@ export function NetWorthCards({
                       : "text-muted-foreground"
                   }`}
                 >
-                  {asset.percentage.toFixed(0)}%
+                  {formatPercentage(asset.percentage)}
                 </p>
               </div>
             </div>
