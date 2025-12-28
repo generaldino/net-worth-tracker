@@ -1,5 +1,6 @@
 import { AccountsTable } from "@/components/accounts-table";
 import { ChartSection } from "@/components/charts/chart-section";
+import { NewAccountsSectionWrapper } from "@/components/new-accounts-section-wrapper";
 import {
   calculateNetWorth,
   getAccounts,
@@ -79,6 +80,15 @@ export async function AccountsManager() {
         <div className="w-full py-4 px-4 sm:px-6">
           <div className="space-y-4 sm:space-y-6">
             <ChartSection />
+
+            <div className="w-full">
+              <div className="pb-3 sm:pb-6">
+                <h2 className="text-lg sm:text-xl font-semibold">
+                  Accounts (New)
+                </h2>
+              </div>
+              <NewAccountsSectionWrapper />
+            </div>
 
             <div className="w-full">
               <div className="pb-3 sm:pb-6">
