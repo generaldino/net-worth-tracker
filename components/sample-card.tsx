@@ -35,7 +35,6 @@ export function NetWorthCards({
   getColor,
   allAccountTypeNames,
   isPercentageView = false,
-  hoveredCardName,
   onCardHover,
 }: NetWorthCardsProps) {
   const { isMasked } = useMasking();
