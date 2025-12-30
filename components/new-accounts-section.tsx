@@ -13,6 +13,7 @@ import {
   ArchiveRestore,
   Download,
   Filter,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +79,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { AddAccountFormFields } from "@/components/add-account-form-fields";
-import { MonthlyHistoryTable } from "@/components/accounts/monthly-history-table";
+import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
 
 export interface NewAccountsSectionProps {
   accounts: Account[];
@@ -169,23 +170,6 @@ export function NewAccountsSection({
   const [selectedPeriod, setSelectedPeriod] =
     React.useState<ValueTimePeriod>("3M");
   const [showClosed, setShowClosed] = React.useState(false);
-  const [editingValues, setEditingValues] = React.useState<
-    Record<
-      string,
-      Record<
-        string,
-        {
-          endingBalance: string;
-          cashIn: string;
-          cashOut: string;
-          income: string;
-          internalTransfersOut: string;
-          debtPayments: string;
-          expenditure: string;
-        }
-      >
-    >
-  >({});
 
   const [filterAccountTypes, setFilterAccountTypes] = React.useState<
     Set<AccountType>
@@ -576,76 +560,6 @@ export function NewAccountsSection({
                   onToggleExpand={() => toggleExpanded(account.id)}
                   isMasked={isMasked}
                   displayCurrency={displayCurrency}
-                  editingValues={editingValues}
-                  onValueChange={(accountId, month, field, value) => {
-                    setEditingValues((prev) => ({
-                      ...prev,
-                      [accountId]: {
-                        ...(prev[accountId] || {}),
-                        [month]: {
-                          ...(prev[accountId]?.[month] || {
-                            endingBalance: "",
-                            cashIn: "",
-                            cashOut: "",
-                            income: "",
-                            internalTransfersOut: "",
-                            debtPayments: "",
-                            expenditure: "",
-                          }),
-                          [field]: value,
-                        },
-                      },
-                    }));
-                  }}
-                  onSave={async (accountId, month) => {
-                    const editedEntry = editingValues[accountId]?.[month];
-                    if (editedEntry) {
-                      const { updateMonthlyEntry } = await import(
-                        "@/lib/actions"
-                      );
-                      const result = await updateMonthlyEntry(
-                        accountId,
-                        month,
-                        {
-                          endingBalance:
-                            Number.parseFloat(editedEntry.endingBalance) || 0,
-                          cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
-                          cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
-                          income: Number.parseFloat(editedEntry.income) || 0,
-                          internalTransfersOut:
-                            Number.parseFloat(
-                              editedEntry.internalTransfersOut
-                            ) || 0,
-                          debtPayments:
-                            Number.parseFloat(editedEntry.debtPayments) || 0,
-                        }
-                      );
-                      if (result.success) {
-                        setEditingValues((prev) => {
-                          const newState = { ...prev };
-                          if (newState[accountId]?.[month]) {
-                            delete newState[accountId][month];
-                            if (Object.keys(newState[accountId]).length === 0) {
-                              delete newState[accountId];
-                            }
-                          }
-                          return newState;
-                        });
-                        router.refresh();
-                        toast({
-                          title: "Success",
-                          description: "Monthly entry updated successfully",
-                        });
-                      } else {
-                        toast({
-                          variant: "destructive",
-                          title: "Error",
-                          description:
-                            result.error || "Failed to update monthly entry",
-                        });
-                      }
-                    }
-                  }}
                   onEdit={() => {
                     setSelectedAccount(account);
                     setShowEditAccountDialog(true);
@@ -894,6 +808,315 @@ export function NewAccountsSection({
   );
 }
 
+interface StyledMonthlyHistoryTableProps {
+  history: MonthlyEntry[];
+  accountType: AccountType;
+  accountCurrency: Currency;
+  displayCurrency: Currency;
+  isMasked: boolean;
+  onEditEntry: (entry: MonthlyEntry) => void;
+}
+
+function StyledMonthlyHistoryTable({
+  history,
+  accountType,
+  accountCurrency,
+  displayCurrency,
+  isMasked,
+  onEditEntry,
+}: StyledMonthlyHistoryTableProps) {
+  const isCurrentAccount = shouldShowIncomeExpenditure(accountType);
+
+  const FieldHeader = ({
+    label,
+    tooltip,
+  }: {
+    label: string;
+    tooltip?: string;
+  }) => (
+    <div className="flex items-center gap-1 whitespace-nowrap">
+      <span>{label}</span>
+      {tooltip && (
+        <span title={tooltip}>
+          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+        </span>
+      )}
+    </div>
+  );
+
+  // Sort history by month (oldest first for calculating growth)
+  const sortedHistory = [...history].sort(
+    (a: MonthlyEntry, b: MonthlyEntry) =>
+      new Date(a.month).getTime() - new Date(b.month).getTime()
+  );
+
+  return (
+    <div className="border rounded-lg overflow-hidden bg-background">
+      <table className="w-full text-xs">
+        <thead className="bg-muted/50">
+          <tr className="border-b">
+            <th className="text-left p-2 font-medium">
+              <FieldHeader label="Month" />
+            </th>
+            <th className="text-right p-2 font-medium">
+              <FieldHeader
+                label="Ending Balance"
+                tooltip="The account balance at the end of this month"
+              />
+            </th>
+            {isCurrentAccount && (
+              <>
+                <th className="text-right p-2 font-medium">
+                  <FieldHeader
+                    label="Income"
+                    tooltip="Total income received this month (salary, bonuses, etc.)"
+                  />
+                </th>
+                <th className="text-right p-2 font-medium">
+                  <FieldHeader
+                    label="Internal Transfers"
+                    tooltip="Money transferred to other accounts you own"
+                  />
+                </th>
+                <th className="text-right p-2 font-medium">
+                  <FieldHeader
+                    label="Debt Payments"
+                    tooltip="Payments made towards loans or credit cards"
+                  />
+                </th>
+                <th className="text-right p-2 font-medium">
+                  <FieldHeader
+                    label="Expenditure"
+                    tooltip="Actual spending (Cash Out - Internal Transfers - Debt Payments)"
+                  />
+                </th>
+              </>
+            )}
+            <th className="text-right p-2 font-medium">
+              <FieldHeader
+                label="Cash In"
+                tooltip="Total money added to this account"
+              />
+            </th>
+            <th className="text-right p-2 font-medium">
+              <FieldHeader
+                label="Cash Out"
+                tooltip="Total money removed from this account"
+              />
+            </th>
+            <th className="text-right p-2 font-medium">
+              <FieldHeader
+                label="Cash Flow"
+                tooltip="Net cash movement (Cash In - Cash Out)"
+              />
+            </th>
+            <th className="text-right p-2 font-medium">
+              <FieldHeader
+                label="Growth"
+                tooltip="Account growth from market movements or interest"
+              />
+            </th>
+            <th className="text-right p-2 font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="bg-card">
+          {sortedHistory.map((entry, index) => {
+            const previousBalance =
+              index > 0 ? sortedHistory[index - 1].endingBalance : 0;
+            const cashFlow = entry.cashFlow ?? entry.cashIn - entry.cashOut;
+            const accountGrowth =
+              entry.accountGrowth ??
+              (index > 0
+                ? entry.endingBalance - previousBalance - cashFlow
+                : 0);
+
+            return (
+              <StyledMonthlyHistoryRow
+                key={entry.month}
+                entry={entry}
+                accountCurrency={accountCurrency}
+                displayCurrency={displayCurrency}
+                isMasked={isMasked}
+                isCurrentAccount={isCurrentAccount}
+                cashFlow={cashFlow}
+                accountGrowth={accountGrowth}
+                onEditEntry={onEditEntry}
+              />
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+interface StyledMonthlyHistoryRowProps {
+  entry: MonthlyEntry;
+  accountCurrency: Currency;
+  displayCurrency: Currency;
+  isMasked: boolean;
+  isCurrentAccount: boolean;
+  cashFlow: number;
+  accountGrowth: number;
+  onEditEntry: (entry: MonthlyEntry) => void;
+}
+
+function StyledMonthlyHistoryRow({
+  entry,
+  accountCurrency,
+  displayCurrency,
+  isMasked,
+  isCurrentAccount,
+  cashFlow,
+  accountGrowth,
+  onEditEntry,
+}: StyledMonthlyHistoryRowProps) {
+  const { convertedAmount: convertedEndingBalance } = useCurrencyConversion(
+    entry.endingBalance,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedIncome } = useCurrencyConversion(
+    entry.income || 0,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedInternalTransfersOut } =
+    useCurrencyConversion(
+      entry.internalTransfersOut || 0,
+      accountCurrency,
+      displayCurrency,
+      entry.month
+    );
+  const { convertedAmount: convertedDebtPayments } = useCurrencyConversion(
+    entry.debtPayments || 0,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedExpenditure } = useCurrencyConversion(
+    entry.expenditure || 0,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedCashIn } = useCurrencyConversion(
+    entry.cashIn,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedCashOut } = useCurrencyConversion(
+    entry.cashOut,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedCashFlow } = useCurrencyConversion(
+    cashFlow,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const { convertedAmount: convertedAccountGrowth } = useCurrencyConversion(
+    accountGrowth,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+
+  return (
+    <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+      <td className="p-2 font-medium">{entry.month}</td>
+      <td className="p-2 text-right tabular-nums">
+        {isMasked
+          ? "••••••"
+          : formatCurrencyAmount(convertedEndingBalance, displayCurrency)}
+      </td>
+      {isCurrentAccount && (
+        <>
+          <td className="p-2 text-right tabular-nums">
+            {isMasked
+              ? "••••••"
+              : formatCurrencyAmount(convertedIncome, displayCurrency)}
+          </td>
+          <td className="p-2 text-right tabular-nums">
+            {isMasked
+              ? "••••••"
+              : formatCurrencyAmount(
+                  convertedInternalTransfersOut,
+                  displayCurrency
+                )}
+          </td>
+          <td className="p-2 text-right tabular-nums">
+            {isMasked
+              ? "••••••"
+              : formatCurrencyAmount(convertedDebtPayments, displayCurrency)}
+          </td>
+          <td className="p-2 text-right tabular-nums">
+            {isMasked
+              ? "••••••"
+              : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
+          </td>
+        </>
+      )}
+      <td className="p-2 text-right tabular-nums text-green-600 dark:text-green-400">
+        {isMasked
+          ? "••••••"
+          : formatCurrencyAmount(convertedCashIn, displayCurrency)}
+      </td>
+      <td className="p-2 text-right tabular-nums text-red-600 dark:text-red-400">
+        {isMasked
+          ? "••••••"
+          : formatCurrencyAmount(convertedCashOut, displayCurrency)}
+      </td>
+      <td
+        className={cn(
+          "p-2 text-right tabular-nums font-medium",
+          cashFlow >= 0
+            ? "text-green-600 dark:text-green-400"
+            : "text-red-600 dark:text-red-400"
+        )}
+      >
+        {!isMasked && (cashFlow >= 0 ? "+" : "")}
+        {isMasked
+          ? "••••••"
+          : formatCurrencyAmount(Math.abs(convertedCashFlow), displayCurrency)}
+      </td>
+      <td
+        className={cn(
+          "p-2 text-right tabular-nums font-medium",
+          accountGrowth >= 0
+            ? "text-green-600 dark:text-green-400"
+            : "text-red-600 dark:text-red-400"
+        )}
+      >
+        {!isMasked && (accountGrowth >= 0 ? "+" : "")}
+        {isMasked
+          ? "••••••"
+          : formatCurrencyAmount(
+              Math.abs(convertedAccountGrowth),
+              displayCurrency
+            )}
+      </td>
+      <td className="p-2 text-right">
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => onEditEntry(entry)}
+          >
+            <Edit2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 // Missing component implementations - simplified versions
 interface AccountRowDesktopProps {
   account: Account;
@@ -904,28 +1127,6 @@ interface AccountRowDesktopProps {
   onToggleExpand: () => void;
   isMasked: boolean;
   displayCurrency: DisplayCurrency;
-  editingValues: Record<
-    string,
-    Record<
-      string,
-      {
-        endingBalance: string;
-        cashIn: string;
-        cashOut: string;
-        income: string;
-        internalTransfersOut: string;
-        debtPayments: string;
-        expenditure: string;
-      }
-    >
-  >;
-  onValueChange: (
-    accountId: string,
-    month: string,
-    field: string,
-    value: string
-  ) => void;
-  onSave: (accountId: string, month: string) => void;
   onEdit: () => void;
   onDelete: () => void;
   onToggleClosed: () => void;
@@ -942,9 +1143,6 @@ function AccountRowDesktop({
   onToggleExpand,
   isMasked,
   displayCurrency,
-  editingValues,
-  onValueChange,
-  onSave,
   onEdit,
   onDelete,
   onToggleClosed,
@@ -1127,18 +1325,13 @@ function AccountRowDesktop({
 
               {history && history.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <MonthlyHistoryTable
+                  <StyledMonthlyHistoryTable
                     history={history}
-                    editingValues={editingValues}
-                    accountId={account.id}
                     accountType={account.type}
                     accountCurrency={accountCurrency}
                     displayCurrency={effectiveDisplayCurrency}
-                    onValueChange={onValueChange}
-                    onSave={onSave}
-                    onEdit={(accountId, month, entry) => {
-                      onEditEntry(entry);
-                    }}
+                    isMasked={isMasked}
+                    onEditEntry={onEditEntry}
                   />
                 </div>
               ) : (
@@ -1493,25 +1686,40 @@ function AddEntryDialog({
 
   const [formData, setFormData] = React.useState({
     month: "",
-    endingBalance: 0,
-    cashIn: 0,
-    cashOut: 0,
-    income: 0,
-    internalTransfersOut: 0,
-    debtPayments: 0,
+    endingBalance: "",
+    cashIn: "",
+    cashOut: "",
+    income: "",
+    internalTransfersOut: "",
+    debtPayments: "",
   });
+
+  // Reset form when dialog opens/closes
+  React.useEffect(() => {
+    if (open) {
+      setFormData({
+        month: "",
+        endingBalance: "",
+        cashIn: "",
+        cashOut: "",
+        income: "",
+        internalTransfersOut: "",
+        debtPayments: "",
+      });
+    }
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    setFormData({
-      month: "",
-      endingBalance: 0,
-      cashIn: 0,
-      cashOut: 0,
-      income: 0,
-      internalTransfersOut: 0,
-      debtPayments: 0,
+    onSave({
+      month: formData.month,
+      endingBalance: Number.parseFloat(formData.endingBalance) || 0,
+      cashIn: Number.parseFloat(formData.cashIn) || 0,
+      cashOut: Number.parseFloat(formData.cashOut) || 0,
+      income: Number.parseFloat(formData.income) || 0,
+      internalTransfersOut:
+        Number.parseFloat(formData.internalTransfersOut) || 0,
+      debtPayments: Number.parseFloat(formData.debtPayments) || 0,
     });
   };
 
@@ -1550,10 +1758,9 @@ function AddEntryDialog({
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  endingBalance: Number.parseFloat(e.target.value) || 0,
+                  endingBalance: e.target.value,
                 })
               }
-              required
             />
           </div>
 
@@ -1568,10 +1775,9 @@ function AddEntryDialog({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    cashIn: Number.parseFloat(e.target.value) || 0,
+                    cashIn: e.target.value,
                   })
                 }
-                required
               />
             </div>
 
@@ -1585,10 +1791,9 @@ function AddEntryDialog({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    cashOut: Number.parseFloat(e.target.value) || 0,
+                    cashOut: e.target.value,
                   })
                 }
-                required
               />
             </div>
           </div>
@@ -1606,7 +1811,7 @@ function AddEntryDialog({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        income: Number.parseFloat(e.target.value) || 0,
+                        income: e.target.value,
                       })
                     }
                   />
@@ -1624,8 +1829,7 @@ function AddEntryDialog({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        internalTransfersOut:
-                          Number.parseFloat(e.target.value) || 0,
+                        internalTransfersOut: e.target.value,
                       })
                     }
                   />
@@ -1643,7 +1847,7 @@ function AddEntryDialog({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        debtPayments: Number.parseFloat(e.target.value) || 0,
+                        debtPayments: e.target.value,
                       })
                     }
                   />
@@ -1685,24 +1889,26 @@ function EditEntryDialog({
 
   const [formData, setFormData] = React.useState({
     month: "",
-    endingBalance: 0,
-    cashIn: 0,
-    cashOut: 0,
-    income: 0,
-    internalTransfersOut: 0,
-    debtPayments: 0,
+    endingBalance: "",
+    cashIn: "",
+    cashOut: "",
+    income: "",
+    internalTransfersOut: "",
+    debtPayments: "",
   });
 
   React.useEffect(() => {
     if (entry) {
       setFormData({
         month: entry.entry.month,
-        endingBalance: entry.entry.endingBalance,
-        cashIn: entry.entry.cashIn,
-        cashOut: entry.entry.cashOut,
-        income: entry.entry.income || 0,
-        internalTransfersOut: entry.entry.internalTransfersOut || 0,
-        debtPayments: entry.entry.debtPayments || 0,
+        endingBalance: entry.entry.endingBalance.toString(),
+        cashIn: entry.entry.cashIn.toString(),
+        cashOut: entry.entry.cashOut.toString(),
+        income: (entry.entry.income || 0).toString(),
+        internalTransfersOut: (
+          entry.entry.internalTransfersOut || 0
+        ).toString(),
+        debtPayments: (entry.entry.debtPayments || 0).toString(),
       });
     }
   }, [entry]);
@@ -1712,7 +1918,14 @@ function EditEntryDialog({
     if (entry) {
       onSave({
         ...entry.entry,
-        ...formData,
+        month: formData.month,
+        endingBalance: Number.parseFloat(formData.endingBalance) || 0,
+        cashIn: Number.parseFloat(formData.cashIn) || 0,
+        cashOut: Number.parseFloat(formData.cashOut) || 0,
+        income: Number.parseFloat(formData.income) || 0,
+        internalTransfersOut:
+          Number.parseFloat(formData.internalTransfersOut) || 0,
+        debtPayments: Number.parseFloat(formData.debtPayments) || 0,
       });
     }
   };
@@ -1752,7 +1965,7 @@ function EditEntryDialog({
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  endingBalance: Number.parseFloat(e.target.value) || 0,
+                  endingBalance: e.target.value,
                 })
               }
               required
@@ -1770,7 +1983,7 @@ function EditEntryDialog({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    cashIn: Number.parseFloat(e.target.value) || 0,
+                    cashIn: e.target.value,
                   })
                 }
                 required
@@ -1787,7 +2000,7 @@ function EditEntryDialog({
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    cashOut: Number.parseFloat(e.target.value) || 0,
+                    cashOut: e.target.value,
                   })
                 }
                 required
@@ -1808,7 +2021,7 @@ function EditEntryDialog({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        income: Number.parseFloat(e.target.value) || 0,
+                        income: e.target.value,
                       })
                     }
                   />
@@ -1826,8 +2039,7 @@ function EditEntryDialog({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        internalTransfersOut:
-                          Number.parseFloat(e.target.value) || 0,
+                        internalTransfersOut: e.target.value,
                       })
                     }
                   />
@@ -1845,7 +2057,7 @@ function EditEntryDialog({
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        debtPayments: Number.parseFloat(e.target.value) || 0,
+                        debtPayments: e.target.value,
                       })
                     }
                   />
