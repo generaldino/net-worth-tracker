@@ -1113,6 +1113,46 @@ export async function updateMonthlyEntry(
   }
 }
 
+export async function deleteMonthlyEntry(accountId: string, month: string) {
+  try {
+    const userId = await getUserId();
+
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Check if the account exists and belongs to the user
+    const account = await db
+      .select()
+      .from(accountsTable)
+      .where(eq(accountsTable.id, accountId))
+      .limit(1);
+
+    if (account.length === 0) {
+      return { success: false, error: "Account not found" };
+    }
+
+    // Delete the monthly entry
+    await db
+      .delete(monthlyEntries)
+      .where(
+        and(
+          eq(monthlyEntries.accountId, accountId),
+          eq(monthlyEntries.month, month)
+        )
+      );
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting monthly entry:", error);
+    return {
+      success: false,
+      error: "Failed to delete monthly entry",
+    };
+  }
+}
+
 export async function getChartData(
   timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "all",
   owner: string = "all",

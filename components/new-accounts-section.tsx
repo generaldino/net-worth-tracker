@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -75,11 +76,12 @@ import {
   toggleAccountClosed,
   addMonthlyEntry,
   updateMonthlyEntry,
+  deleteMonthlyEntry,
 } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
-import { AddAccountFormFields } from "@/components/add-account-form-fields";
 import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { createAccount } from "@/lib/actions";
 
 export interface NewAccountsSectionProps {
   accounts: Account[];
@@ -190,6 +192,8 @@ export function NewAccountsSection({
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showAddEntryDialog, setShowAddEntryDialog] = React.useState(false);
   const [showEditEntryDialog, setShowEditEntryDialog] = React.useState(false);
+  const [showDeleteEntryDialog, setShowDeleteEntryDialog] =
+    React.useState(false);
   const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(
     null
   );
@@ -599,6 +603,10 @@ export function NewAccountsSection({
                     setSelectedEntry({ accountId: account.id, entry });
                     setShowEditEntryDialog(true);
                   }}
+                  onDeleteEntry={(entry) => {
+                    setSelectedEntry({ accountId: account.id, entry });
+                    setShowDeleteEntryDialog(true);
+                  }}
                 />
               ))}
             </tbody>
@@ -693,20 +701,34 @@ export function NewAccountsSection({
       />
 
       {/* Add Account Dialog */}
-      <Dialog
+      <AddAccountDialog
         open={showAddAccountDialog}
         onOpenChange={setShowAddAccountDialog}
-      >
-        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Account</DialogTitle>
-            <DialogDescription>
-              Enter the details of your new financial account.
-            </DialogDescription>
-          </DialogHeader>
-          <AddAccountFormFields />
-        </DialogContent>
-      </Dialog>
+        onSave={async (newAccount) => {
+          const result = await createAccount({
+            name: newAccount.name,
+            type: newAccount.type,
+            category: newAccount.category,
+            currency: newAccount.currency,
+            isISA: newAccount.isISA,
+            owner: newAccount.owner,
+          });
+          if (result.success) {
+            router.refresh();
+            toast({
+              title: "Success",
+              description: "Account created successfully",
+            });
+            setShowAddAccountDialog(false);
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: result.error || "Failed to create account",
+            });
+          }
+        }}
+      />
 
       <DeleteAccountDialog
         open={showDeleteDialog}
@@ -804,6 +826,33 @@ export function NewAccountsSection({
           }
         }}
       />
+
+      <DeleteEntryDialog
+        open={showDeleteEntryDialog}
+        onOpenChange={setShowDeleteEntryDialog}
+        entryMonth={selectedEntry?.entry.month || ""}
+        onConfirm={async () => {
+          if (!selectedEntry) return;
+          const result = await deleteMonthlyEntry(
+            selectedEntry.accountId,
+            selectedEntry.entry.month
+          );
+          if (result.success) {
+            router.refresh();
+            toast({
+              title: "Success",
+              description: "Monthly entry deleted successfully",
+            });
+            setShowDeleteEntryDialog(false);
+          } else {
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: result.error || "Failed to delete monthly entry",
+            });
+          }
+        }}
+      />
     </div>
   );
 }
@@ -815,6 +864,7 @@ interface StyledMonthlyHistoryTableProps {
   displayCurrency: Currency;
   isMasked: boolean;
   onEditEntry: (entry: MonthlyEntry) => void;
+  onDeleteEntry: (entry: MonthlyEntry) => void;
 }
 
 function StyledMonthlyHistoryTable({
@@ -824,6 +874,7 @@ function StyledMonthlyHistoryTable({
   displayCurrency,
   isMasked,
   onEditEntry,
+  onDeleteEntry,
 }: StyledMonthlyHistoryTableProps) {
   const isCurrentAccount = shouldShowIncomeExpenditure(accountType);
 
@@ -941,6 +992,7 @@ function StyledMonthlyHistoryTable({
                 cashFlow={cashFlow}
                 accountGrowth={accountGrowth}
                 onEditEntry={onEditEntry}
+                onDeleteEntry={onDeleteEntry}
               />
             );
           })}
@@ -959,6 +1011,7 @@ interface StyledMonthlyHistoryRowProps {
   cashFlow: number;
   accountGrowth: number;
   onEditEntry: (entry: MonthlyEntry) => void;
+  onDeleteEntry: (entry: MonthlyEntry) => void;
 }
 
 function StyledMonthlyHistoryRow({
@@ -970,6 +1023,7 @@ function StyledMonthlyHistoryRow({
   cashFlow,
   accountGrowth,
   onEditEntry,
+  onDeleteEntry,
 }: StyledMonthlyHistoryRowProps) {
   const { convertedAmount: convertedEndingBalance } = useCurrencyConversion(
     entry.endingBalance,
@@ -1111,6 +1165,14 @@ function StyledMonthlyHistoryRow({
           >
             <Edit2 className="h-3 w-3" />
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:text-destructive"
+            onClick={() => onDeleteEntry(entry)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
         </div>
       </td>
     </tr>
@@ -1132,6 +1194,7 @@ interface AccountRowDesktopProps {
   onToggleClosed: () => void;
   onAddEntry: () => void;
   onEditEntry: (entry: MonthlyEntry) => void;
+  onDeleteEntry: (entry: MonthlyEntry) => void;
 }
 
 function AccountRowDesktop({
@@ -1148,6 +1211,7 @@ function AccountRowDesktop({
   onToggleClosed,
   onAddEntry,
   onEditEntry,
+  onDeleteEntry,
 }: AccountRowDesktopProps) {
   const accountCurrency = (account.currency || "GBP") as Currency;
   const effectiveDisplayCurrency =
@@ -1332,6 +1396,7 @@ function AccountRowDesktop({
                     displayCurrency={effectiveDisplayCurrency}
                     isMasked={isMasked}
                     onEditEntry={onEditEntry}
+                    onDeleteEntry={onDeleteEntry}
                   />
                 </div>
               ) : (
@@ -1624,6 +1689,224 @@ function AccountCardMobile({
         </div>
       )}
     </div>
+  );
+}
+
+function DeleteEntryDialog({
+  open,
+  onOpenChange,
+  entryMonth,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  entryMonth: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Monthly Entry?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to delete the entry for{" "}
+            <strong>{entryMonth}</strong>? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            Delete Entry
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function AddAccountDialog({
+  open,
+  onOpenChange,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (account: {
+    name: string;
+    type: AccountType;
+    category: AccountCategory;
+    currency: Currency;
+    isISA: boolean;
+    owner: string;
+  }) => void;
+}) {
+  const [formData, setFormData] = React.useState({
+    name: "",
+    type: "Current" as AccountType,
+    category: "Cash" as AccountCategory,
+    currency: "GBP" as Currency,
+    isISA: false,
+    owner: "",
+  });
+
+  // Reset form when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setFormData({
+        name: "",
+        type: "Current",
+        category: "Cash",
+        currency: "GBP",
+        isISA: false,
+        owner: "",
+      });
+    }
+  }, [open]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add New Account</DialogTitle>
+          <DialogDescription>
+            Create a new account to track your finances.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Account Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              placeholder="e.g., Vanguard S&P 500"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="type">Account Type</Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, type: value as AccountType })
+                }
+              >
+                <SelectTrigger id="type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Current">Current</SelectItem>
+                  <SelectItem value="Savings">Savings</SelectItem>
+                  <SelectItem value="Investment">Investment</SelectItem>
+                  <SelectItem value="Stock">Stock</SelectItem>
+                  <SelectItem value="Crypto">Crypto</SelectItem>
+                  <SelectItem value="Pension">Pension</SelectItem>
+                  <SelectItem value="Commodity">Commodity</SelectItem>
+                  <SelectItem value="Stock_options">Stock Options</SelectItem>
+                  <SelectItem value="Credit_Card">Credit Card</SelectItem>
+                  <SelectItem value="Loan">Loan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    category: value as AccountCategory,
+                  })
+                }
+              >
+                <SelectTrigger id="category">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="Investments">Investments</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <Select
+                value={formData.currency}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, currency: value as Currency })
+                }
+              >
+                <SelectTrigger id="currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="GBP">GBP (£)</SelectItem>
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                  <SelectItem value="AED">AED (د.إ)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="owner">Owner</Label>
+              <Input
+                id="owner"
+                value={formData.owner}
+                onChange={(e) =>
+                  setFormData({ ...formData, owner: e.target.value })
+                }
+                placeholder="e.g., John"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isISA"
+              checked={formData.isISA}
+              onCheckedChange={(checked: boolean) =>
+                setFormData({ ...formData, isISA: checked })
+              }
+            />
+            <Label
+              htmlFor="isISA"
+              className="text-sm font-normal cursor-pointer"
+            >
+              This is an ISA account
+            </Label>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">Add Account</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
