@@ -160,9 +160,9 @@ export function MonthlyHistoryTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[120px]">Month</TableHead>
-              <TableHead className="w-[140px]">
-                <div className="flex items-center gap-1">
+              <TableHead className="w-[120px] text-center">Month</TableHead>
+              <TableHead className="w-[140px] text-center">
+                <div className="flex items-center justify-center gap-1">
                   Balance
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -180,8 +180,8 @@ export function MonthlyHistoryTable({
               </TableHead>
               {showIncomeExpenditure && (
                 <>
-                  <TableHead className="w-[120px]">
-                    <div className="flex items-center gap-1">
+                  <TableHead className="w-[120px] text-center">
+                    <div className="flex items-center justify-center gap-1">
                       Income
                       {(() => {
                         const explanation = getFieldExplanation(
@@ -197,8 +197,8 @@ export function MonthlyHistoryTable({
                       })()}
                     </div>
                   </TableHead>
-                  <TableHead className="w-[120px]">
-                    <div className="flex items-center gap-1">
+                  <TableHead className="w-[120px] text-center">
+                    <div className="flex items-center justify-center gap-1">
                       Internal Transfers Out
                       {(() => {
                         const explanation = getFieldExplanation(
@@ -214,8 +214,8 @@ export function MonthlyHistoryTable({
                       })()}
                     </div>
                   </TableHead>
-                  <TableHead className="w-[120px]">
-                    <div className="flex items-center gap-1">
+                  <TableHead className="w-[120px] text-center">
+                    <div className="flex items-center justify-center gap-1">
                       Debt Payments
                       {(() => {
                         const explanation = getFieldExplanation(
@@ -231,8 +231,8 @@ export function MonthlyHistoryTable({
                       })()}
                     </div>
                   </TableHead>
-                  <TableHead className="w-[120px]">
-                    <div className="flex items-center gap-1">
+                  <TableHead className="w-[120px] text-center">
+                    <div className="flex items-center justify-center gap-1">
                       Expenditure (Computed)
                       {(() => {
                         const explanation = getFieldExplanation(
@@ -250,8 +250,8 @@ export function MonthlyHistoryTable({
                   </TableHead>
                 </>
               )}
-              <TableHead className="w-[120px]">
-                <div className="flex items-center gap-1">
+              <TableHead className="w-[120px] text-center">
+                <div className="flex items-center justify-center gap-1">
                   Cash In
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -267,8 +267,8 @@ export function MonthlyHistoryTable({
                   })()}
                 </div>
               </TableHead>
-              <TableHead className="w-[120px]">
-                <div className="flex items-center gap-1">
+              <TableHead className="w-[120px] text-center">
+                <div className="flex items-center justify-center gap-1">
                   Cash Out
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -284,8 +284,8 @@ export function MonthlyHistoryTable({
                   })()}
                 </div>
               </TableHead>
-              <TableHead className="w-[120px]">
-                <div className="flex items-center gap-1">
+              <TableHead className="w-[120px] text-center">
+                <div className="flex items-center justify-center gap-1">
                   Cash Flow
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -301,8 +301,8 @@ export function MonthlyHistoryTable({
                   })()}
                 </div>
               </TableHead>
-              <TableHead className="w-[120px]">
-                <div className="flex items-center gap-1">
+              <TableHead className="w-[120px] text-center">
+                <div className="flex items-center justify-center gap-1">
                   Growth
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -318,7 +318,7 @@ export function MonthlyHistoryTable({
                   })()}
                 </div>
               </TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead className="w-[100px] text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

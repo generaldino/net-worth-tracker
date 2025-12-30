@@ -125,7 +125,7 @@ export function MonthlyHistoryRow({
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <div className="flex items-center gap-1 mb-1">
+            <div className="flex items-center justify-center gap-1 mb-1">
               <span className="text-muted-foreground">Balance:</span>
               {(() => {
                 const explanation = getFieldExplanation(
@@ -148,7 +148,7 @@ export function MonthlyHistoryRow({
                 className="h-8"
               />
             ) : (
-              <div className="font-medium">
+              <div className="font-medium text-center">
                 {isMasked
                   ? "••••••"
                   : formatCurrencyAmount(convertedBalance, displayCurrency)}
@@ -158,7 +158,7 @@ export function MonthlyHistoryRow({
           {showIncomeExpenditure && (
             <>
               <div>
-                <div className="flex items-center gap-1 mb-1">
+                <div className="flex items-center justify-center gap-1 mb-1">
                   <span className="text-muted-foreground">Income:</span>
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -181,7 +181,7 @@ export function MonthlyHistoryRow({
                     className="h-8"
                   />
                 ) : (
-                  <div className="font-medium">
+                  <div className="font-medium text-center">
                     {isMasked
                       ? "••••••"
                       : formatCurrencyAmount(convertedIncome, displayCurrency)}
@@ -189,7 +189,7 @@ export function MonthlyHistoryRow({
                 )}
               </div>
               <div>
-                <div className="flex items-center gap-1 mb-1">
+                <div className="flex items-center justify-center gap-1 mb-1">
                   <span className="text-muted-foreground">Internal Transfers Out:</span>
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -212,7 +212,7 @@ export function MonthlyHistoryRow({
                     className="h-8"
                   />
                 ) : (
-                  <div className="font-medium">
+                  <div className="font-medium text-center">
                     {isMasked
                       ? "••••••"
                       : formatCurrencyAmount(convertedInternalTransfersOut, displayCurrency)}
@@ -220,7 +220,7 @@ export function MonthlyHistoryRow({
                 )}
               </div>
               <div>
-                <div className="flex items-center gap-1 mb-1">
+                <div className="flex items-center justify-center gap-1 mb-1">
                   <span className="text-muted-foreground">Debt Payments:</span>
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -243,7 +243,7 @@ export function MonthlyHistoryRow({
                     className="h-8"
                   />
                 ) : (
-                  <div className="font-medium">
+                  <div className="font-medium text-center">
                     {isMasked
                       ? "••••••"
                       : formatCurrencyAmount(convertedDebtPayments, displayCurrency)}
@@ -251,7 +251,7 @@ export function MonthlyHistoryRow({
                 )}
               </div>
               <div>
-                <div className="flex items-center gap-1 mb-1">
+                <div className="flex items-center justify-center gap-1 mb-1">
                   <span className="text-muted-foreground">Expenditure (Computed):</span>
                   {(() => {
                     const explanation = getFieldExplanation(
@@ -266,7 +266,7 @@ export function MonthlyHistoryRow({
                     ) : null;
                   })()}
                 </div>
-                <div className="font-medium bg-muted px-2 py-1 rounded">
+                <div className="font-medium bg-muted px-2 py-1 rounded text-center">
                   {isMasked
                     ? "••••••"
                     : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
@@ -275,7 +275,7 @@ export function MonthlyHistoryRow({
             </>
           )}
           <div>
-            <div className="flex items-center gap-1 mb-1">
+            <div className="flex items-center justify-center gap-1 mb-1">
               <span className="text-muted-foreground">Growth:</span>
               {(() => {
                 const explanation = getFieldExplanation(
@@ -291,11 +291,11 @@ export function MonthlyHistoryRow({
               })()}
             </div>
             <div
-              className={
+              className={`text-center ${
                 entry.accountGrowth >= 0
                   ? "text-green-600 font-medium"
                   : "text-red-600 font-medium"
-              }
+              }`}
             >
               {isMasked ? (
                 "••••••"
@@ -308,7 +308,7 @@ export function MonthlyHistoryRow({
             </div>
           </div>
           <div>
-            <div className="flex items-center gap-1 mb-1">
+            <div className="flex items-center justify-center gap-1 mb-1">
               <span className="text-muted-foreground">Cash In:</span>
               {(() => {
                 const explanation = getFieldExplanation(accountType, "cashIn");
@@ -328,7 +328,7 @@ export function MonthlyHistoryRow({
                 className="h-8"
               />
             ) : (
-              <div className="font-medium">
+              <div className="font-medium text-center">
                 {isMasked
                   ? "••••••"
                   : formatCurrencyAmount(convertedCashIn, displayCurrency)}
@@ -336,7 +336,7 @@ export function MonthlyHistoryRow({
             )}
           </div>
           <div>
-            <div className="flex items-center gap-1 mb-1">
+            <div className="flex items-center justify-center gap-1 mb-1">
               <span className="text-muted-foreground">Cash Out:</span>
               {(() => {
                 const explanation = getFieldExplanation(accountType, "cashOut");
@@ -356,7 +356,7 @@ export function MonthlyHistoryRow({
                 className="h-8"
               />
             ) : (
-              <div className="font-medium">
+              <div className="font-medium text-center">
                 {isMasked
                   ? "••••••"
                   : formatCurrencyAmount(convertedCashOut, displayCurrency)}
@@ -370,8 +370,8 @@ export function MonthlyHistoryRow({
 
   return (
     <tr>
-      <td>{entry.month}</td>
-      <td>
+      <td className="text-center">{entry.month}</td>
+      <td className="text-center">
         {isEditing ? (
           <Input
             type="number"
@@ -387,7 +387,7 @@ export function MonthlyHistoryRow({
       </td>
       {showIncomeExpenditure && (
         <>
-          <td>
+          <td className="text-center">
             {isEditing ? (
               <Input
                 type="number"
@@ -401,7 +401,7 @@ export function MonthlyHistoryRow({
               formatCurrencyAmount(convertedIncome, displayCurrency)
             )}
           </td>
-          <td>
+          <td className="text-center">
             {isEditing ? (
               <Input
                 type="number"
@@ -415,7 +415,7 @@ export function MonthlyHistoryRow({
               formatCurrencyAmount(convertedInternalTransfersOut, displayCurrency)
             )}
           </td>
-          <td>
+          <td className="text-center">
             {isEditing ? (
               <Input
                 type="number"
@@ -429,7 +429,7 @@ export function MonthlyHistoryRow({
               formatCurrencyAmount(convertedDebtPayments, displayCurrency)
             )}
           </td>
-          <td className="bg-muted/50">
+          <td className="bg-muted/50 text-center">
             {isMasked ? (
               "••••••"
             ) : (
@@ -438,7 +438,7 @@ export function MonthlyHistoryRow({
           </td>
         </>
       )}
-      <td>
+      <td className="text-center">
         {isEditing ? (
           <Input
             type="number"
@@ -452,7 +452,7 @@ export function MonthlyHistoryRow({
           formatCurrencyAmount(convertedCashIn, displayCurrency)
         )}
       </td>
-      <td>
+      <td className="text-center">
         {isEditing ? (
           <Input
             type="number"
@@ -466,7 +466,7 @@ export function MonthlyHistoryRow({
           formatCurrencyAmount(convertedCashOut, displayCurrency)
         )}
       </td>
-      <td className={entry.cashFlow >= 0 ? "text-green-600" : "text-red-600"}>
+      <td className={`text-center ${entry.cashFlow >= 0 ? "text-green-600" : "text-red-600"}`}>
         {isMasked ? (
           "••••••"
         ) : (
@@ -477,7 +477,7 @@ export function MonthlyHistoryRow({
         )}
       </td>
       <td
-        className={entry.accountGrowth >= 0 ? "text-green-600" : "text-red-600"}
+        className={`text-center ${entry.accountGrowth >= 0 ? "text-green-600" : "text-red-600"}`}
       >
         {isMasked ? (
           "••••••"
@@ -488,7 +488,7 @@ export function MonthlyHistoryRow({
           </>
         )}
       </td>
-      <td>
+      <td className="text-center">
         {isEditing ? (
           <Button variant="outline" size="sm" onClick={onSave}>
             <Save className="h-4 w-4 mr-1" />

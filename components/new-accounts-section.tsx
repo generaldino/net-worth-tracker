@@ -903,7 +903,7 @@ function StyledMonthlyHistoryTable({
   }) => {
     const explanation = getFieldExplanation(accountType, field);
     return (
-      <div className="flex items-center gap-1 whitespace-nowrap">
+      <div className="flex items-center gap-1 whitespace-nowrap justify-center">
         <span>{label}</span>
         {explanation && (
           <TooltipProvider>
