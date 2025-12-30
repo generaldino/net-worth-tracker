@@ -33,12 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -258,7 +252,6 @@ export function AccountsTableSample() {
   const [isMasked, setIsMasked] = React.useState(false);
   const [selectedPeriod, setSelectedPeriod] = React.useState<TimePeriod>("3M");
   const [showClosed, setShowClosed] = React.useState(false);
-  const [editingEntry, setEditingEntry] = React.useState<string | null>(null);
 
   const [filterAccountTypes, setFilterAccountTypes] = React.useState<
     Set<AccountType>
@@ -649,8 +642,6 @@ export function AccountsTableSample() {
                   onToggleExpand={() => toggleExpanded(account.id)}
                   isMasked={isMasked}
                   formatCurrency={formatCurrency}
-                  editingEntry={editingEntry}
-                  setEditingEntry={setEditingEntry}
                   onEdit={(acc) => {
                     setSelectedAccount(acc);
                     setShowEditAccountDialog(true);
@@ -693,8 +684,6 @@ export function AccountsTableSample() {
               onToggleExpand={() => toggleExpanded(account.id)}
               isMasked={isMasked}
               formatCurrency={formatCurrency}
-              editingEntry={editingEntry}
-              setEditingEntry={setEditingEntry}
               onEdit={(acc) => {
                 setSelectedAccount(acc);
                 setShowEditAccountDialog(true);
@@ -867,8 +856,6 @@ interface AccountRowProps {
     currency: Currency,
     masked?: boolean
   ) => string;
-  editingEntry: string | null;
-  setEditingEntry: (id: string | null) => void;
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
   onToggleClosed: (account: Account) => void;
@@ -883,8 +870,6 @@ function AccountRow({
   onToggleExpand,
   isMasked,
   formatCurrency,
-  editingEntry,
-  setEditingEntry,
   onEdit,
   onDelete,
   onToggleClosed,
@@ -1065,15 +1050,14 @@ function AccountRow({
                     currency={account.currency}
                     isMasked={isMasked}
                     formatCurrency={formatCurrency}
-                    editingEntry={editingEntry}
-                    setEditingEntry={setEditingEntry}
                     onEdit={(entry) => onEditEntry(account.id, entry)}
                     onDelete={(entry) => onDeleteEntry(account.id, entry)}
                   />
                 </div>
               ) : (
                 <div className="text-center py-6 text-muted-foreground text-xs border rounded-lg bg-background/50">
-                  No monthly data yet. Click 'Add Month' to get started.
+                  No monthly data yet. Click &apos;Add Month&apos; to get
+                  started.
                 </div>
               )}
             </div>
@@ -1094,8 +1078,6 @@ interface MonthlyHistoryTableProps {
     currency: Currency,
     masked?: boolean
   ) => string;
-  editingEntry: string | null;
-  setEditingEntry: (id: string | null) => void;
   onEdit: (entry: MonthlyEntry) => void;
   onDelete: (entry: MonthlyEntry) => void;
 }
@@ -1106,8 +1088,6 @@ function MonthlyHistoryTable({
   currency,
   isMasked,
   formatCurrency,
-  editingEntry,
-  setEditingEntry,
   onEdit,
   onDelete,
 }: MonthlyHistoryTableProps) {
@@ -1123,16 +1103,9 @@ function MonthlyHistoryTable({
     <div className="flex items-center gap-1 whitespace-nowrap">
       <span>{label}</span>
       {tooltip && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-3 w-3 text-muted-foreground cursor-help" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs">
-              <p className="text-xs">{tooltip}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <span title={tooltip}>
+          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+        </span>
       )}
     </div>
   );
@@ -2213,8 +2186,6 @@ interface AccountCardMobileProps {
     currency: Currency,
     masked?: boolean
   ) => string;
-  editingEntry: string | null;
-  setEditingEntry: (id: string | null) => void;
   onEdit: (account: Account) => void;
   onDelete: (account: Account) => void;
   onToggleClosed: (account: Account) => void;
@@ -2229,8 +2200,6 @@ function AccountCardMobile({
   onToggleExpand,
   isMasked,
   formatCurrency,
-  editingEntry,
-  setEditingEntry,
   onEdit,
   onDelete,
   onToggleClosed,
