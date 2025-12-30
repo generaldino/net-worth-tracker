@@ -59,6 +59,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { getFieldExplanation } from "@/lib/field-explanations";
+import {
   type Account,
   type MonthlyEntry,
   type AccountType,
@@ -880,25 +887,56 @@ function StyledMonthlyHistoryTable({
 
   const FieldHeader = ({
     label,
-    tooltip,
+    field,
   }: {
     label: string;
-    tooltip?: string;
-  }) => (
-    <div className="flex items-center gap-1 whitespace-nowrap">
-      <span>{label}</span>
-      {tooltip && (
-        <span title={tooltip}>
-          <Info className="h-3 w-3 text-muted-foreground cursor-help" />
-        </span>
-      )}
-    </div>
-  );
+    field:
+      | "endingBalance"
+      | "cashIn"
+      | "cashOut"
+      | "cashFlow"
+      | "accountGrowth"
+      | "income"
+      | "expenditure"
+      | "internalTransfersOut"
+      | "debtPayments";
+  }) => {
+    const explanation = getFieldExplanation(accountType, field);
+    return (
+      <div className="flex items-center gap-1 whitespace-nowrap">
+        <span>{label}</span>
+        {explanation && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-muted"
+                  aria-label={`Info about ${label}`}
+                >
+                  <Info className="h-3 w-3 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <div className="space-y-1">
+                  <p className="font-semibold text-sm">{explanation.title}</p>
+                  <p className="text-sm text-background/80">
+                    {explanation.description}
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+    );
+  };
 
-  // Sort history by month (oldest first for calculating growth)
+  // Sort history by month (latest first)
   const sortedHistory = [...history].sort(
     (a: MonthlyEntry, b: MonthlyEntry) =>
-      new Date(a.month).getTime() - new Date(b.month).getTime()
+      new Date(b.month).getTime() - new Date(a.month).getTime()
   );
 
   return (
@@ -907,67 +945,43 @@ function StyledMonthlyHistoryTable({
         <thead className="bg-muted/50">
           <tr className="border-b">
             <th className="text-left p-2 font-medium">
-              <FieldHeader label="Month" />
+              <span>Month</span>
             </th>
-            <th className="text-right p-2 font-medium">
-              <FieldHeader
-                label="Ending Balance"
-                tooltip="The account balance at the end of this month"
-              />
+            <th className="text-center p-2 font-medium">
+              <FieldHeader label="Ending Balance" field="endingBalance" />
             </th>
             {isCurrentAccount && (
               <>
-                <th className="text-right p-2 font-medium">
-                  <FieldHeader
-                    label="Income"
-                    tooltip="Total income received this month (salary, bonuses, etc.)"
-                  />
+                <th className="text-center p-2 font-medium">
+                  <FieldHeader label="Income" field="income" />
                 </th>
-                <th className="text-right p-2 font-medium">
+                <th className="text-center p-2 font-medium">
                   <FieldHeader
                     label="Internal Transfers"
-                    tooltip="Money transferred to other accounts you own"
+                    field="internalTransfersOut"
                   />
                 </th>
-                <th className="text-right p-2 font-medium">
-                  <FieldHeader
-                    label="Debt Payments"
-                    tooltip="Payments made towards loans or credit cards"
-                  />
+                <th className="text-center p-2 font-medium">
+                  <FieldHeader label="Debt Payments" field="debtPayments" />
                 </th>
-                <th className="text-right p-2 font-medium">
-                  <FieldHeader
-                    label="Expenditure"
-                    tooltip="Actual spending (Cash Out - Internal Transfers - Debt Payments)"
-                  />
+                <th className="text-center p-2 font-medium">
+                  <FieldHeader label="Expenditure" field="expenditure" />
                 </th>
               </>
             )}
-            <th className="text-right p-2 font-medium">
-              <FieldHeader
-                label="Cash In"
-                tooltip="Total money added to this account"
-              />
+            <th className="text-center p-2 font-medium">
+              <FieldHeader label="Cash In" field="cashIn" />
             </th>
-            <th className="text-right p-2 font-medium">
-              <FieldHeader
-                label="Cash Out"
-                tooltip="Total money removed from this account"
-              />
+            <th className="text-center p-2 font-medium">
+              <FieldHeader label="Cash Out" field="cashOut" />
             </th>
-            <th className="text-right p-2 font-medium">
-              <FieldHeader
-                label="Cash Flow"
-                tooltip="Net cash movement (Cash In - Cash Out)"
-              />
+            <th className="text-center p-2 font-medium">
+              <FieldHeader label="Cash Flow" field="cashFlow" />
             </th>
-            <th className="text-right p-2 font-medium">
-              <FieldHeader
-                label="Growth"
-                tooltip="Account growth from market movements or interest"
-              />
+            <th className="text-center p-2 font-medium">
+              <FieldHeader label="Growth" field="accountGrowth" />
             </th>
-            <th className="text-right p-2 font-medium">Actions</th>
+            <th className="text-center p-2 font-medium">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-card">
@@ -1084,19 +1098,19 @@ function StyledMonthlyHistoryRow({
   return (
     <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
       <td className="p-2 font-medium">{entry.month}</td>
-      <td className="p-2 text-right tabular-nums">
+      <td className="p-2 text-center tabular-nums">
         {isMasked
           ? "••••••"
           : formatCurrencyAmount(convertedEndingBalance, displayCurrency)}
       </td>
       {isCurrentAccount && (
         <>
-          <td className="p-2 text-right tabular-nums">
+          <td className="p-2 text-center tabular-nums">
             {isMasked
               ? "••••••"
               : formatCurrencyAmount(convertedIncome, displayCurrency)}
           </td>
-          <td className="p-2 text-right tabular-nums">
+          <td className="p-2 text-center tabular-nums">
             {isMasked
               ? "••••••"
               : formatCurrencyAmount(
@@ -1104,31 +1118,31 @@ function StyledMonthlyHistoryRow({
                   displayCurrency
                 )}
           </td>
-          <td className="p-2 text-right tabular-nums">
+          <td className="p-2 text-center tabular-nums">
             {isMasked
               ? "••••••"
               : formatCurrencyAmount(convertedDebtPayments, displayCurrency)}
           </td>
-          <td className="p-2 text-right tabular-nums">
+          <td className="p-2 text-center tabular-nums">
             {isMasked
               ? "••••••"
               : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
           </td>
         </>
       )}
-      <td className="p-2 text-right tabular-nums text-green-600 dark:text-green-400">
+      <td className="p-2 text-center tabular-nums text-green-600 dark:text-green-400">
         {isMasked
           ? "••••••"
           : formatCurrencyAmount(convertedCashIn, displayCurrency)}
       </td>
-      <td className="p-2 text-right tabular-nums text-red-600 dark:text-red-400">
+      <td className="p-2 text-center tabular-nums text-red-600 dark:text-red-400">
         {isMasked
           ? "••••••"
           : formatCurrencyAmount(convertedCashOut, displayCurrency)}
       </td>
       <td
         className={cn(
-          "p-2 text-right tabular-nums font-medium",
+          "p-2 text-center tabular-nums font-medium",
           cashFlow >= 0
             ? "text-green-600 dark:text-green-400"
             : "text-red-600 dark:text-red-400"
@@ -1141,7 +1155,7 @@ function StyledMonthlyHistoryRow({
       </td>
       <td
         className={cn(
-          "p-2 text-right tabular-nums font-medium",
+          "p-2 text-center tabular-nums font-medium",
           accountGrowth >= 0
             ? "text-green-600 dark:text-green-400"
             : "text-red-600 dark:text-red-400"
@@ -1155,8 +1169,8 @@ function StyledMonthlyHistoryRow({
               displayCurrency
             )}
       </td>
-      <td className="p-2 text-right">
-        <div className="flex items-center justify-end gap-1">
+      <td className="p-2 text-center">
+        <div className="flex items-center justify-center gap-1">
           <Button
             variant="ghost"
             size="icon"
