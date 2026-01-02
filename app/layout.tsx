@@ -11,6 +11,8 @@ import { ExchangeRatesProvider } from "@/contexts/exchange-rates-context";
 import { DisplayCurrencyProvider } from "@/contexts/display-currency-context";
 import { ProjectionProvider } from "@/contexts/projection-context";
 import { NetWorthProvider } from "@/contexts/net-worth-context";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -51,8 +53,8 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className="overflow-x-hidden" suppressHydrationWarning>
-      <body className={`${inter.className} overflow-x-hidden`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -64,8 +66,17 @@ export default async function RootLayout({
               <DisplayCurrencyProvider>
                 <ProjectionProvider>
                   <NetWorthProvider>
-                    <Navbar />
-                    {children}
+                    <SidebarProvider defaultOpen={false}>
+                      <AppSidebar
+                        name={session.user.name}
+                        email={session.user.email}
+                        avatarUrl={session.user.avatarUrl}
+                      />
+                      <SidebarInset className="overflow-x-hidden">
+                        <Navbar />
+                        {children}
+                      </SidebarInset>
+                    </SidebarProvider>
                   </NetWorthProvider>
                 </ProjectionProvider>
               </DisplayCurrencyProvider>

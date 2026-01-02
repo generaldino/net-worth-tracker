@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ProfileDropdown } from "@/components/auth/profile-dropdown";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useNetWorth } from "@/contexts/net-worth-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function Navbar() {
-  const router = useRouter();
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const { netWorth, netWorthBreakdown, financialMetrics } = useNetWorth();
   const [isVisible, setIsVisible] = useState(true);
@@ -61,22 +59,17 @@ export function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
+      className={`sticky top-0 z-40 w-full max-w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ${
         isMobile && !isVisible ? "-translate-y-full" : "translate-y-0"
       }`}
     >
-      <div className="w-full px-4 sm:px-6">
-        <div className="flex items-center justify-between gap-4 py-3 min-h-[56px] w-full">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <button
-              onClick={() => router.push("/")}
-              className="text-2xl sm:text-3xl shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
-            >
-              💰
-            </button>
+      <div className="w-full max-w-full px-4 sm:px-6 overflow-hidden">
+        <div className="flex items-center justify-between gap-2 sm:gap-4 py-3 min-h-[56px] w-full">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            <SidebarTrigger className="-ml-1" />
             {netWorth !== null && netWorthBreakdown && financialMetrics && (
-              <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
-                <div className="border-l h-8" />
+              <div className="hidden lg:flex items-center gap-3 min-w-0 flex-1">
+                <div className="border-l h-8 ml-2" />
                 <FinancialMetricsNavbar period={period} />
                 <div className="border-l h-8" />
                 <div className="flex shrink-0 items-center">
@@ -116,12 +109,11 @@ export function Navbar() {
               onValueChange={setDisplayCurrency}
             />
             <MaskToggleButton />
-            <ProfileDropdown />
           </div>
         </div>
-        {/* Mobile financial metrics display */}
+        {/* Mobile/tablet financial metrics display */}
         {netWorth !== null && netWorthBreakdown && financialMetrics && (
-          <div className="md:hidden pb-3 border-t pt-3 mt-2">
+          <div className="lg:hidden pb-3 border-t pt-3 mt-2">
             <FinancialMetricsNavbar period={period} setPeriod={setPeriod} />
             <div className="flex justify-center mt-3">
               <div className="flex gap-1">

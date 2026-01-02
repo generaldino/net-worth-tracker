@@ -38,8 +38,8 @@ export async function AccountsManager() {
         percentageIncrease={percentageIncrease}
       />
       <FinancialMetricsSetter metrics={financialMetrics} />
-      <div className="min-h-screen bg-background overflow-x-hidden pt-46 md:pt-20">
-        <div className="w-full py-4 px-4 sm:px-6">
+      <div className="min-h-[calc(100svh-56px)] bg-background overflow-x-hidden max-w-full">
+        <div className="w-full max-w-full py-4 px-4 sm:px-6">
           <div className="space-y-4 sm:space-y-6">
             <ChartSection />
 
