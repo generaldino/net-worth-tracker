@@ -1397,15 +1397,7 @@ export function ChartDisplay({
                   ))}
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={width && width < 640 ? "preserveStartEnd" : 0}
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   hide={true}
                   tickFormatter={(value) =>
@@ -1987,15 +1979,7 @@ export function ChartDisplay({
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={savingsRateData} margin={margins}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis
-                  dataKey="month"
-                  fontSize={fontSize}
-                  angle={width && width < 640 ? -60 : -45}
-                  textAnchor="end"
-                  height={margins.bottom + 10}
-                  interval={width && width < 640 ? "preserveStartEnd" : 0}
-                  tick={{ fontSize }}
-                />
+                <XAxis dataKey="month" hide={true} />
                 <YAxis
                   yAxisId="left"
                   hide={true}
