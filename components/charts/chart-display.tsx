@@ -77,6 +77,8 @@ interface ChartDisplayProps {
     viewType?: "cumulative" | "monthly";
   };
   headerControls?: React.ReactNode;
+  hiddenCards?: Set<string>;
+  onToggleHidden?: (cardName: string) => void;
 }
 
 export function ChartDisplay({
@@ -93,6 +95,8 @@ export function ChartDisplay({
   projectionOptions = { viewType: "absolute", selectedScenario: null },
   byWealthSourceOptions = { viewType: "cumulative" },
   headerControls,
+  hiddenCards = new Set(),
+  onToggleHidden,
 }: ChartDisplayProps) {
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
@@ -911,7 +915,8 @@ export function ChartDisplay({
                 {totalAccountTypesArray.map((type, index) => {
                   const isHovered = hoveredCardName === type;
                   const hasHover = hoveredCardName !== null;
-                  const opacity = hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
+                  const isHidden = hiddenCards.has(type);
+                  const opacity = isHidden ? 0 : hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
                   
                   return (
                     <Area
@@ -919,7 +924,7 @@ export function ChartDisplay({
                       type="monotone"
                       dataKey={type}
                       stackId="total"
-                      stroke={getUniqueColor(index)}
+                      stroke={isHidden ? "transparent" : getUniqueColor(index)}
                       fill={getUniqueColor(index)}
                       fillOpacity={opacity}
                       isAnimationActive={false}
@@ -937,7 +942,7 @@ export function ChartDisplay({
                           );
                         }
                       }}
-                      style={{ cursor: "pointer" }}
+                      style={{ cursor: isHidden ? "default" : "pointer" }}
                     />
                   );
                 })}
@@ -1045,10 +1050,12 @@ export function ChartDisplay({
                   type="monotone"
                   dataKey="Assets"
                   stackId="1"
-                  stroke={CHART_GREEN}
+                  stroke={hiddenCards.has("Assets") ? "transparent" : CHART_GREEN}
                   fill={CHART_GREEN}
                   fillOpacity={
-                    hoveredCardName !== null
+                    hiddenCards.has("Assets")
+                      ? 0
+                      : hoveredCardName !== null
                       ? hoveredCardName === "Assets"
                         ? 0.9
                         : 0.2
@@ -1061,10 +1068,12 @@ export function ChartDisplay({
                   type="monotone"
                   dataKey="Liabilities"
                   stackId="1"
-                  stroke={CHART_RED}
+                  stroke={hiddenCards.has("Liabilities") ? "transparent" : CHART_RED}
                   fill={CHART_RED}
                   fillOpacity={
-                    hoveredCardName !== null
+                    hiddenCards.has("Liabilities")
+                      ? 0
+                      : hoveredCardName !== null
                       ? hoveredCardName === "Liabilities"
                         ? 0.9
                         : 0.2
@@ -1444,14 +1453,15 @@ export function ChartDisplay({
                   if (hasData) {
                     const isHovered = hoveredCardName === source;
                     const hasHover = hoveredCardName !== null;
-                    const opacity = hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
+                    const isHidden = hiddenCards.has(source);
+                    const opacity = isHidden ? 0 : hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
                     
                     return (
                       <Area
                         key={source}
                         type="monotone"
                         dataKey={source}
-                        stroke={getUniqueColor(index)}
+                        stroke={isHidden ? "transparent" : getUniqueColor(index)}
                         fill={`url(#${source.replace(/\s+/g, "")}Gradient)`}
                         fillOpacity={opacity}
                         strokeWidth={2}
@@ -1467,7 +1477,7 @@ export function ChartDisplay({
                             }
                           }
                         }}
-                        style={{ cursor: "pointer" }}
+                        style={{ cursor: isHidden ? "default" : "pointer" }}
                       />
                     );
                   }
@@ -1643,7 +1653,8 @@ export function ChartDisplay({
                     {allocationData.map((entry, index) => {
                       const isHovered = hoveredCardName === entry.name;
                       const hasHover = hoveredCardName !== null;
-                      const opacity = hasHover ? (isHovered ? 1 : 0.3) : 1;
+                      const isHidden = hiddenCards.has(entry.name);
+                      const opacity = isHidden ? 0.1 : hasHover ? (isHovered ? 1 : 0.3) : 1;
                       
                       return (
                         <Cell 
@@ -1816,9 +1827,11 @@ export function ChartDisplay({
                 {/* Savings from Income */}
                 <Bar
                   dataKey="Savings from Income"
-                  fill={COLORS[0]}
+                  fill={hiddenCards.has("Savings from Income") ? "transparent" : COLORS[0]}
                   fillOpacity={
-                    hoveredCardName !== null
+                    hiddenCards.has("Savings from Income")
+                      ? 0
+                      : hoveredCardName !== null
                       ? hoveredCardName === "Savings from Income"
                         ? 1
                         : 0.3
@@ -1837,14 +1850,16 @@ export function ChartDisplay({
                       }
                     }
                   }}
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: hiddenCards.has("Savings from Income") ? "default" : "pointer" }}
                 />
                 {/* Interest Earned */}
                 <Bar
                   dataKey="Interest Earned"
-                  fill={COLORS[1]}
+                  fill={hiddenCards.has("Interest Earned") ? "transparent" : COLORS[1]}
                   fillOpacity={
-                    hoveredCardName !== null
+                    hiddenCards.has("Interest Earned")
+                      ? 0
+                      : hoveredCardName !== null
                       ? hoveredCardName === "Interest Earned"
                         ? 1
                         : 0.3
@@ -1863,14 +1878,16 @@ export function ChartDisplay({
                       }
                     }
                   }}
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: hiddenCards.has("Interest Earned") ? "default" : "pointer" }}
                 />
                 {/* Capital Gains - can be negative */}
                 <Bar
                   dataKey="Capital Gains"
-                  fill={COLORS[2]}
+                  fill={hiddenCards.has("Capital Gains") ? "transparent" : COLORS[2]}
                   fillOpacity={
-                    hoveredCardName !== null
+                    hiddenCards.has("Capital Gains")
+                      ? 0
+                      : hoveredCardName !== null
                       ? hoveredCardName === "Capital Gains"
                         ? 1
                         : 0.3
@@ -1889,7 +1906,7 @@ export function ChartDisplay({
                       }
                     }
                   }}
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: hiddenCards.has("Capital Gains") ? "default" : "pointer" }}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -2037,9 +2054,11 @@ export function ChartDisplay({
                 <Bar
                   dataKey="Total Expenditure"
                   yAxisId="left"
-                  fill={CHART_RED}
+                  fill={hiddenCards.has("Total Expenditure") ? "transparent" : CHART_RED}
                   fillOpacity={
-                    hoveredCardName !== null
+                    hiddenCards.has("Total Expenditure")
+                      ? 0
+                      : hoveredCardName !== null
                       ? hoveredCardName === "Total Expenditure" ||
                         hoveredCardName === "Total Income"
                         ? 1
@@ -2061,14 +2080,16 @@ export function ChartDisplay({
                       });
                     }
                   }}
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: hiddenCards.has("Total Expenditure") ? "default" : "pointer" }}
                 />
                 <Bar
                   dataKey="Savings from Income"
                   yAxisId="left"
-                  fill={COLORS[1]}
+                  fill={hiddenCards.has("Savings from Income") ? "transparent" : COLORS[1]}
                   fillOpacity={
-                    hoveredCardName !== null
+                    hiddenCards.has("Savings from Income")
+                      ? 0
+                      : hoveredCardName !== null
                       ? hoveredCardName === "Savings from Income" ||
                         hoveredCardName === "Total Income"
                         ? 1
@@ -2090,7 +2111,7 @@ export function ChartDisplay({
                       });
                     }
                   }}
-                  style={{ cursor: "pointer" }}
+                  style={{ cursor: hiddenCards.has("Savings from Income") ? "default" : "pointer" }}
                 />
                 {/* Savings Rate Line */}
                 <Line
@@ -2316,7 +2337,8 @@ export function ChartDisplay({
                 {projectionAccountTypesArray.map((type, index) => {
                   const isHovered = hoveredCardName === type;
                   const hasHover = hoveredCardName !== null;
-                  const opacity = hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
+                  const isHidden = hiddenCards.has(type);
+                  const opacity = isHidden ? 0 : hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
                   
                   return (
                     <Area
@@ -2324,7 +2346,7 @@ export function ChartDisplay({
                       type="monotone"
                       dataKey={type}
                       stackId="projection"
-                      stroke={getUniqueColor(index)}
+                      stroke={isHidden ? "transparent" : getUniqueColor(index)}
                       fill={getUniqueColor(index)}
                       fillOpacity={opacity}
                       isAnimationActive={false}
@@ -2372,6 +2394,8 @@ export function ChartDisplay({
         headerControls={headerControls}
         hoveredCardName={hoveredCardName}
         onCardHover={setHoveredCardName}
+        hiddenCards={hiddenCards}
+        onToggleHidden={onToggleHidden}
       />
 
       {/* Chart Container with touch support */}

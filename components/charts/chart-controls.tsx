@@ -56,6 +56,34 @@ export function ChartControls({
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Hidden cards state - tracks which breakdown cards are hidden from the chart
+  const [hiddenCards, setHiddenCards] = useState<Set<string>>(new Set());
+  
+  // Toggle a card's visibility
+  const handleToggleHidden = useCallback((cardName: string) => {
+    setHiddenCards((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardName)) {
+        next.delete(cardName);
+      } else {
+        next.add(cardName);
+      }
+      return next;
+    });
+  }, []);
+  
+  // Clear hidden cards when chart type changes
+  const handleChartTypeChange = useCallback((newChartType: ChartType) => {
+    setChartType(newChartType);
+    setClickedData(null);
+    setHiddenCards(new Set()); // Reset hidden cards when switching chart type
+    // Clear projection scenario when switching away from projection chart
+    if (newChartType !== "projection") {
+      setProjectionData(null);
+      setSelectedScenarioId(null);
+    }
+  }, [setProjectionData, setSelectedScenarioId]);
 
   // Store initial data in a ref to prevent unnecessary re-renders
   // This ref will only be set once on mount and won't trigger re-renders
@@ -454,19 +482,18 @@ export function ChartControls({
               ? { viewType: byWealthSourceViewType }
               : undefined
           }
+          hiddenCards={hiddenCards}
+          onToggleHidden={handleToggleHidden}
           headerControls={
             <>
               <div className="flex-shrink-0 min-w-[200px]">
                 <ChartTypeSelector
                   value={chartType}
                   onChange={(value) => {
-                    setChartType(value);
-                    setClickedData(null);
+                    handleChartTypeChange(value);
                     // Clear projection scenario when switching away from projection chart
                     if (value !== "projection") {
                       setSelectedProjectionScenario(null);
-                      setProjectionData(null);
-                      setSelectedScenarioId(null);
                     }
                   }}
                   isLoading={isLoading}

@@ -65,6 +65,8 @@ interface ChartHeaderProps {
   headerControls?: React.ReactNode;
   hoveredCardName?: string | null;
   onCardHover?: (cardName: string | null) => void;
+  hiddenCards?: Set<string>;
+  onToggleHidden?: (cardName: string) => void;
 }
 
 export interface HoveredData {
@@ -84,6 +86,8 @@ export function ChartHeader({
   headerControls,
   hoveredCardName,
   onCardHover,
+  hiddenCards = new Set(),
+  onToggleHidden,
 }: ChartHeaderProps) {
   const { isMasked } = useMasking();
   const displayData = hoveredData || latestData;
@@ -213,23 +217,30 @@ export function ChartHeader({
 
     switch (chartType) {
       case "total": {
-        const netWorth =
+        const fullNetWorth =
           displayData.primaryValue ||
           (displayData.metrics["Net Worth"] as number);
         const isPercentage = totalOptions?.viewType === "percentage";
+
+        // Calculate adjusted net worth excluding hidden cards
+        const adjustedNetWorth = hiddenCards.size > 0
+          ? accountTypesForTotal
+              .filter((item) => !hiddenCards.has(item.name))
+              .reduce((sum, item) => sum + item.value, 0)
+          : fullNetWorth;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                NET WORTH
+                NET WORTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
-                  netWorth >= 0 ? "text-green-600" : "text-red-600"
+                  adjustedNetWorth >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {formatValue(netWorth)}
+                {formatValue(adjustedNetWorth)}
               </div>
             </div>
 
@@ -240,7 +251,7 @@ export function ChartHeader({
               </div>
               {accountTypesForTotal.length > 0 ? (
                 <NetWorthCards
-                  netWorth={netWorth}
+                  netWorth={adjustedNetWorth}
                   assets={accountTypesForTotal}
                   chartCurrency={chartCurrency}
                   getColor={(name, index, allNames) =>
@@ -256,6 +267,8 @@ export function ChartHeader({
                   isPercentageView={isPercentage}
                   hoveredCardName={hoveredCardName}
                   onCardHover={onCardHover}
+                  hiddenCards={hiddenCards}
+                  onToggleHidden={onToggleHidden}
                 />
               ) : (
                 // Placeholder to maintain space when no account types
@@ -269,7 +282,7 @@ export function ChartHeader({
       case "assets-vs-liabilities": {
         const assets = displayData.metrics["Assets"] as number;
         const liabilities = displayData.metrics["Liabilities"] as number;
-        const netWorth =
+        const fullNetWorth =
           displayData.primaryValue ||
           (displayData.metrics["Net Worth"] as number);
 
@@ -295,18 +308,28 @@ export function ChartHeader({
         }
         // No sorting needed - fixed order above
 
+        // Calculate adjusted net worth excluding hidden cards
+        const adjustedNetWorth = hiddenCards.size > 0
+          ? secondaryMetrics
+              .filter((item) => !hiddenCards.has(item.name))
+              .reduce((sum, item) => {
+                // Assets are positive, Liabilities should be subtracted
+                return item.name === "Liabilities" ? sum - item.value : sum + item.value;
+              }, 0)
+          : fullNetWorth;
+
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                NET WORTH
+                NET WORTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
-                  netWorth >= 0 ? "text-green-600" : "text-red-600"
+                  adjustedNetWorth >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {formatValue(netWorth)}
+                {formatValue(adjustedNetWorth)}
               </div>
             </div>
 
@@ -317,7 +340,7 @@ export function ChartHeader({
               </div>
               {secondaryMetrics.length > 0 ? (
                 <NetWorthCards
-                  netWorth={netWorth}
+                  netWorth={adjustedNetWorth}
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
                   getColor={(name, index, allNames) =>
@@ -327,6 +350,8 @@ export function ChartHeader({
                   isPercentageView={false}
                   hoveredCardName={hoveredCardName}
                   onCardHover={onCardHover}
+                  hiddenCards={hiddenCards}
+                  onToggleHidden={onToggleHidden}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -390,7 +415,7 @@ export function ChartHeader({
         ] as number;
         const interestEarned = displayData.metrics["Interest Earned"] as number;
         const capitalGains = displayData.metrics["Capital Gains"] as number;
-        const totalGrowth =
+        const fullTotalGrowth =
           (savingsFromIncome || 0) +
           (interestEarned || 0) +
           (capitalGains || 0);
@@ -424,18 +449,25 @@ export function ChartHeader({
         }
         // No sorting needed - fixed logical order above
 
+        // Calculate adjusted total excluding hidden cards
+        const adjustedTotalGrowth = hiddenCards.size > 0
+          ? secondaryMetrics
+              .filter((item) => !hiddenCards.has(item.name))
+              .reduce((sum, item) => sum + item.value, 0)
+          : fullTotalGrowth;
+
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                TOTAL GROWTH
+                TOTAL GROWTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
-                  totalGrowth >= 0 ? "text-green-600" : "text-red-600"
+                  adjustedTotalGrowth >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {formatValue(totalGrowth)}
+                {formatValue(adjustedTotalGrowth)}
               </div>
             </div>
 
@@ -446,7 +478,7 @@ export function ChartHeader({
               </div>
               {secondaryMetrics.length > 0 ? (
                 <NetWorthCards
-                  netWorth={totalGrowth}
+                  netWorth={adjustedTotalGrowth}
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
                   getColor={(name, index, allNames) =>
@@ -456,6 +488,8 @@ export function ChartHeader({
                   isPercentageView={false}
                   hoveredCardName={hoveredCardName}
                   onCardHover={onCardHover}
+                  hiddenCards={hiddenCards}
+                  onToggleHidden={onToggleHidden}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -494,7 +528,7 @@ export function ChartHeader({
       }
 
       case "waterfall": {
-        const endingBalance = displayData.metrics["Ending Balance"] as number;
+        const fullEndingBalance = displayData.metrics["Ending Balance"] as number;
         const startingBalance = displayData.metrics[
           "Starting Balance"
         ] as number;
@@ -503,7 +537,7 @@ export function ChartHeader({
         ] as number;
         const interestEarned = displayData.metrics["Interest Earned"] as number;
         const capitalGains = displayData.metrics["Capital Gains"] as number;
-        const netChange = endingBalance - (startingBalance || 0);
+        const fullNetChange = fullEndingBalance - (startingBalance || 0);
 
         const secondaryMetrics: Array<{
           name: string;
@@ -539,27 +573,36 @@ export function ChartHeader({
             absValue: Math.abs(capitalGains),
           });
         }
-        if (netChange !== undefined && !isNaN(netChange)) {
+        if (fullNetChange !== undefined && !isNaN(fullNetChange)) {
           secondaryMetrics.push({
             name: "Net Change",
-            value: netChange,
-            absValue: Math.abs(netChange),
+            value: fullNetChange,
+            absValue: Math.abs(fullNetChange),
           });
         }
         // No sorting needed - fixed chronological order above
+
+        // Calculate adjusted ending balance excluding hidden cards
+        // For waterfall: Starting Balance + visible changes = Adjusted Ending
+        const adjustedEndingBalance = hiddenCards.size > 0
+          ? (hiddenCards.has("Starting Balance") ? 0 : (startingBalance || 0)) +
+            (hiddenCards.has("Savings from Income") ? 0 : (savingsFromIncome || 0)) +
+            (hiddenCards.has("Interest Earned") ? 0 : (interestEarned || 0)) +
+            (hiddenCards.has("Capital Gains") ? 0 : (capitalGains || 0))
+          : fullEndingBalance;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                ENDING BALANCE
+                ENDING BALANCE {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
-                  endingBalance >= 0 ? "text-green-600" : "text-red-600"
+                  adjustedEndingBalance >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {formatValue(endingBalance)}
+                {formatValue(adjustedEndingBalance)}
               </div>
             </div>
 
@@ -570,7 +613,7 @@ export function ChartHeader({
               </div>
               {secondaryMetrics.length > 0 ? (
                 <NetWorthCards
-                  netWorth={endingBalance}
+                  netWorth={adjustedEndingBalance}
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
                   getColor={(name, index, allNames) =>
@@ -580,6 +623,8 @@ export function ChartHeader({
                   isPercentageView={false}
                   hoveredCardName={hoveredCardName}
                   onCardHover={onCardHover}
+                  hiddenCards={hiddenCards}
+                  onToggleHidden={onToggleHidden}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -590,7 +635,7 @@ export function ChartHeader({
       }
 
       case "savings-rate": {
-        const savingsRate = displayData.metrics["Savings Rate"] as number;
+        const fullSavingsRate = displayData.metrics["Savings Rate"] as number;
         const totalIncome = displayData.metrics["Total Income"] as number;
         const totalExpenditure = displayData.metrics[
           "Total Expenditure"
@@ -627,19 +672,27 @@ export function ChartHeader({
           });
         }
 
+        // For savings rate, recalculate based on visible metrics
+        // Savings Rate = (Income - Expenditure) / Income * 100
+        const visibleIncome = hiddenCards.has("Total Income") ? 0 : (totalIncome || 0);
+        const visibleExpenditure = hiddenCards.has("Total Expenditure") ? 0 : (totalExpenditure || 0);
+        const adjustedSavingsRate = hiddenCards.size > 0 && visibleIncome > 0
+          ? ((visibleIncome - visibleExpenditure) / visibleIncome) * 100
+          : fullSavingsRate;
+
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                SAVINGS RATE
+                SAVINGS RATE {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold font-mono tabular-nums ${
-                  savingsRate >= 0 ? "text-green-600" : "text-red-600"
+                  adjustedSavingsRate >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {savingsRate !== undefined && !isNaN(savingsRate)
-                  ? `${savingsRate >= 0 ? "+" : ""}${Math.round(savingsRate)}%`
+                {adjustedSavingsRate !== undefined && !isNaN(adjustedSavingsRate)
+                  ? `${adjustedSavingsRate >= 0 ? "+" : ""}${Math.round(adjustedSavingsRate)}%`
                   : "—"}
               </div>
             </div>
@@ -663,6 +716,8 @@ export function ChartHeader({
                   isPercentageView={false}
                   hoveredCardName={hoveredCardName}
                   onCardHover={onCardHover}
+                  hiddenCards={hiddenCards}
+                  onToggleHidden={onToggleHidden}
                 />
               ) : (
                 <div className="min-h-[70px]"></div>
@@ -673,23 +728,30 @@ export function ChartHeader({
       }
 
       case "projection": {
-        const netWorth =
+        const fullNetWorth =
           displayData.primaryValue ||
           (displayData.metrics["Net Worth"] as number);
         const isPercentage = projectionOptions?.viewType === "percentage";
+
+        // Calculate adjusted net worth excluding hidden cards
+        const adjustedNetWorth = hiddenCards.size > 0
+          ? accountTypesForProjection
+              .filter((item) => !hiddenCards.has(item.name))
+              .reduce((sum, item) => sum + item.value, 0)
+          : fullNetWorth;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                PROJECTED NET WORTH
+                PROJECTED NET WORTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
-                  netWorth >= 0 ? "text-green-600" : "text-red-600"
+                  adjustedNetWorth >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {formatValue(netWorth)}
+                {formatValue(adjustedNetWorth)}
               </div>
             </div>
 
@@ -700,7 +762,7 @@ export function ChartHeader({
               </div>
               {accountTypesForProjection.length > 0 ? (
                 <NetWorthCards
-                  netWorth={netWorth}
+                  netWorth={adjustedNetWorth}
                   assets={accountTypesForProjection}
                   chartCurrency={chartCurrency}
                   getColor={(name, index, allNames) =>
@@ -716,6 +778,8 @@ export function ChartHeader({
                   isPercentageView={isPercentage}
                   hoveredCardName={hoveredCardName}
                   onCardHover={onCardHover}
+                  hiddenCards={hiddenCards}
+                  onToggleHidden={onToggleHidden}
                 />
               ) : (
                 // Placeholder to maintain space when no account types
