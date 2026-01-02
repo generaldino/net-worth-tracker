@@ -1,5 +1,6 @@
+import type React from "react";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { LandingPage } from "@/components/auth/landing-page";
 import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -11,24 +12,16 @@ import { NetWorthProvider } from "@/contexts/net-worth-context";
 import { DemoProvider } from "@/contexts/demo-context";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { AccountsManager } from "@/components/accounts-manager";
-import { DashboardContent } from "@/components/dashboard-content";
 
-export default async function WealthTracker() {
+export default async function SharingLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const session = await auth();
 
   if (!session) {
-    return (
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <LandingPage />
-        <Toaster />
-      </ThemeProvider>
-    );
+    redirect("/");
   }
 
   return (
@@ -52,9 +45,7 @@ export default async function WealthTracker() {
                     />
                     <SidebarInset className="overflow-x-hidden">
                       <Navbar />
-                      <DashboardContent>
-                        <AccountsManager />
-                      </DashboardContent>
+                      {children}
                     </SidebarInset>
                   </SidebarProvider>
                 </DemoProvider>
@@ -67,3 +58,4 @@ export default async function WealthTracker() {
     </ThemeProvider>
   );
 }
+
