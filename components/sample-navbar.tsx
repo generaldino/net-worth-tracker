@@ -283,7 +283,7 @@ export function FinancialMetricsNavbar({
                 metric.label !== "Earned" &&
                 (metric.label === "Spent" || metric.label === "Saved" ? (
                   // Spent and Saved show "X% of income" format in grey
-                  <span className="rounded px-1.5 py-0.5 text-xs font-semibold font-mono tabular-nums bg-muted text-muted-foreground">
+                  <span className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold font-mono tabular-nums bg-muted text-muted-foreground">
                     {Math.abs(getYoyChange(metric)!).toFixed(1)}% of income
                   </span>
                 ) : (

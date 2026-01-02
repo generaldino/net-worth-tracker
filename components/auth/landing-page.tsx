@@ -87,11 +87,11 @@ export function LandingPage() {
                       <p className="text-sm text-muted-foreground mb-1">
                         {"Total Net Worth"}
                       </p>
-                      <h3 className="text-3xl font-bold">{"£449,287"}</h3>
+                      <h3 className="text-3xl font-bold">{"£287,450"}</h3>
                     </div>
                     <div className="flex items-center gap-1 text-emerald-600 text-sm font-medium">
                       <TrendingUp className="w-4 h-4" />
-                      <span>{"+41%"}</span>
+                      <span>{"+24%"}</span>
                     </div>
                   </div>
 
@@ -141,28 +141,28 @@ export function LandingPage() {
                   <div className="space-y-3">
                     {[
                       {
-                        name: "Stock",
-                        value: "£150.6K",
+                        name: "Investments",
+                        value: "£112.5K",
                         color: "bg-amber-500",
-                        percent: "33%",
+                        percent: "39%",
                       },
                       {
                         name: "Savings",
-                        value: "£75.8K",
+                        value: "£86.2K",
                         color: "bg-emerald-500",
-                        percent: "16%",
+                        percent: "30%",
                       },
                       {
-                        name: "Crypto",
-                        value: "£60.2K",
-                        color: "bg-orange-500",
-                        percent: "13%",
+                        name: "Property",
+                        value: "£58.4K",
+                        color: "bg-blue-500",
+                        percent: "20%",
                       },
                       {
                         name: "Current",
-                        value: "£42.4K",
-                        color: "bg-orange-400",
-                        percent: "9%",
+                        value: "£30.3K",
+                        color: "bg-purple-500",
+                        percent: "11%",
                       },
                     ].map((account, i) => (
                       <div
