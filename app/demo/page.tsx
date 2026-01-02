@@ -57,9 +57,6 @@ export default function DemoPage() {
                 <Sparkles className="w-3 h-3 mr-1" />
                 Demo Mode
               </Badge>
-              <span className="text-sm text-muted-foreground hidden md:inline">
-                Explore with sample data — your real data stays private
-              </span>
             </div>
             <GoogleSignInButton />
           </div>
@@ -177,4 +174,3 @@ export default function DemoPage() {
     </div>
   );
 }
-
