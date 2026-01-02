@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 
 interface NetWorthBreakdown {
   accountBalances: Array<{
@@ -67,15 +67,25 @@ export function NetWorthProvider({ children }: { children: ReactNode }) {
   const [financialMetrics, setFinancialMetrics] =
     useState<FinancialMetrics | null>(null);
 
-  const setNetWorthData = (
-    netWorth: number,
-    breakdown: NetWorthBreakdown,
-    percentageIncrease: number | null
-  ) => {
-    setNetWorth(netWorth);
-    setNetWorthBreakdown(breakdown);
-    setPercentageIncrease(percentageIncrease);
-  };
+  const setNetWorthData = useCallback(
+    (
+      netWorth: number,
+      breakdown: NetWorthBreakdown,
+      percentageIncrease: number | null
+    ) => {
+      setNetWorth(netWorth);
+      setNetWorthBreakdown(breakdown);
+      setPercentageIncrease(percentageIncrease);
+    },
+    []
+  );
+
+  const setFinancialMetricsCallback = useCallback(
+    (metrics: FinancialMetrics) => {
+      setFinancialMetrics(metrics);
+    },
+    []
+  );
 
   return (
     <NetWorthContext.Provider
@@ -85,7 +95,7 @@ export function NetWorthProvider({ children }: { children: ReactNode }) {
         percentageIncrease,
         financialMetrics,
         setNetWorthData,
-        setFinancialMetrics,
+        setFinancialMetrics: setFinancialMetricsCallback,
       }}
     >
       {children}

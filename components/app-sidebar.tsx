@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
+import { useDemo } from "@/contexts/demo-context";
 import {
   Home,
   Users,
@@ -14,6 +15,7 @@ import {
   Sun,
   Moon,
   ChevronUp,
+  FlaskConical,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,6 +64,33 @@ const navItems = [
     icon: BookOpen,
   },
 ];
+
+function DemoToggle() {
+  const { isDemoMode, toggleDemoMode } = useDemo();
+  const { state } = useSidebar();
+
+  return (
+    <SidebarMenuButton
+      onClick={toggleDemoMode}
+      tooltip={state === "collapsed" ? "Demo Mode" : undefined}
+      className={`w-full ${isDemoMode ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20" : ""}`}
+    >
+      <FlaskConical className="size-4" />
+      <span>Demo Mode</span>
+      <div
+        className={`ml-auto h-4 w-7 rounded-full transition-colors ${
+          isDemoMode ? "bg-emerald-500" : "bg-muted-foreground/30"
+        }`}
+      >
+        <div
+          className={`h-3 w-3 mt-0.5 rounded-full bg-white transition-transform ${
+            isDemoMode ? "translate-x-3.5" : "translate-x-0.5"
+          }`}
+        />
+      </div>
+    </SidebarMenuButton>
+  );
+}
 
 function ThemeSelector() {
   const { theme, setTheme } = useTheme();
@@ -280,9 +309,12 @@ export function AppSidebar({ name, email, avatarUrl }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* Footer with theme selector and user */}
+      {/* Footer with demo toggle, theme selector and user */}
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <DemoToggle />
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <ThemeSelector />
           </SidebarMenuItem>

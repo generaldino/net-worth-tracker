@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { GoogleSignInButton } from "./google-signin-button";
 import {
   TrendingUp,
@@ -55,10 +56,13 @@ export function LandingPage() {
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
                 <GoogleSignInButton />
-                <button className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium border border-border rounded-lg hover:bg-accent transition-colors">
+                <Link
+                  href="/demo"
+                  className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium border border-border rounded-lg hover:bg-accent transition-colors"
+                >
                   {"View demo"}
                   <ArrowRight className="w-4 h-4 ml-2" />
-                </button>
+                </Link>
               </div>
 
               <div className="flex items-center gap-6 text-sm text-muted-foreground">

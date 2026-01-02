@@ -153,10 +153,13 @@ export function AccountRow({
                         <Archive className="h-4 w-4 text-muted-foreground" />
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-1">
+                    <div className="flex flex-wrap gap-2 mt-1 items-center">
                       <AccountTypeBadge account={account} />
                       <span className="text-sm text-muted-foreground">
                         {account.owner}
+                      </span>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {accountCurrency}
                       </span>
                     </div>
                   </div>
@@ -213,7 +216,7 @@ export function AccountRow({
                 ) : (
                   <ChevronRight className="h-4 w-4 shrink-0" />
                 )}
-                <div className="grid grid-cols-6 gap-2 sm:gap-4 flex-1 items-center min-w-0">
+                <div className="grid grid-cols-7 gap-2 sm:gap-4 flex-1 items-center min-w-0">
                   <div className="font-medium flex items-center gap-2 min-w-0">
                     <span className="truncate">{account.name}</span>
                     {account.isClosed && (
@@ -223,6 +226,9 @@ export function AccountRow({
                   <div className="text-muted-foreground text-sm truncate">{account.owner}</div>
                   <div className="min-w-0">
                     <AccountTypeBadge account={account} />
+                  </div>
+                  <div className="text-sm font-medium text-muted-foreground">
+                    {accountCurrency}
                   </div>
                   <div className="font-medium min-w-0">
                     {isMasked ? (

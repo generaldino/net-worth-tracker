@@ -93,7 +93,10 @@ import { createAccount } from "@/lib/actions";
 export interface NewAccountsSectionProps {
   accounts: Account[];
   accountHistories: Record<string, MonthlyEntry[]>;
-  currentValues: Record<string, number>;
+  currentValues:
+    | Record<string, { balance: number; monthKey: string } | null>
+    | Record<string, number>;
+  isDemo?: boolean;
 }
 
 // Calculate value change based on time period
@@ -167,9 +170,25 @@ const accountTypeColors: Record<AccountType, string> = {
 export function NewAccountsSection({
   accounts: initialAccounts,
   accountHistories,
-  currentValues,
+  currentValues: rawCurrentValues,
+  isDemo = false,
 }: NewAccountsSectionProps) {
   const router = useRouter();
+
+  // Normalize currentValues to always be Record<string, number>
+  const currentValues = React.useMemo(() => {
+    const normalized: Record<string, number> = {};
+    for (const [key, value] of Object.entries(rawCurrentValues)) {
+      if (value === null) {
+        normalized[key] = 0;
+      } else if (typeof value === "number") {
+        normalized[key] = value;
+      } else {
+        normalized[key] = value.balance;
+      }
+    }
+    return normalized;
+  }, [rawCurrentValues]);
   const { isMasked } = useMasking();
   const { displayCurrency } = useDisplayCurrency();
   const [accounts, setAccounts] = React.useState<Account[]>(initialAccounts);
@@ -526,15 +545,17 @@ export function NewAccountsSection({
           </Button>
 
           {/* Add Account Button */}
-          <Button
-            size="sm"
-            className="gap-1.5 h-8 text-xs ml-auto"
-            onClick={() => setShowAddAccountDialog(true)}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Add Account</span>
-            <span className="sm:hidden">Add</span>
-          </Button>
+          {!isDemo && (
+            <Button
+              size="sm"
+              className="gap-1.5 h-8 text-xs ml-auto"
+              onClick={() => setShowAddAccountDialog(true)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Add Account</span>
+              <span className="sm:hidden">Add</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -571,15 +592,19 @@ export function NewAccountsSection({
                   onToggleExpand={() => toggleExpanded(account.id)}
                   isMasked={isMasked}
                   displayCurrency={displayCurrency}
+                  isDemo={isDemo}
                   onEdit={() => {
+                    if (isDemo) return;
                     setSelectedAccount(account);
                     setShowEditAccountDialog(true);
                   }}
                   onDelete={() => {
+                    if (isDemo) return;
                     setSelectedAccount(account);
                     setShowDeleteDialog(true);
                   }}
                   onToggleClosed={async () => {
+                    if (isDemo) return;
                     const result = await toggleAccountClosed(
                       account.id,
                       !account.isClosed
@@ -603,14 +628,17 @@ export function NewAccountsSection({
                     }
                   }}
                   onAddEntry={() => {
+                    if (isDemo) return;
                     setSelectedAccount(account);
                     setShowAddEntryDialog(true);
                   }}
                   onEditEntry={(entry) => {
+                    if (isDemo) return;
                     setSelectedEntry({ accountId: account.id, entry });
                     setShowEditEntryDialog(true);
                   }}
                   onDeleteEntry={(entry) => {
+                    if (isDemo) return;
                     setSelectedEntry({ accountId: account.id, entry });
                     setShowDeleteEntryDialog(true);
                   }}
@@ -638,15 +666,19 @@ export function NewAccountsSection({
               onToggleExpand={() => toggleExpanded(account.id)}
               isMasked={isMasked}
               displayCurrency={displayCurrency}
+              isDemo={isDemo}
               onEdit={() => {
+                if (isDemo) return;
                 setSelectedAccount(account);
                 setShowEditAccountDialog(true);
               }}
               onDelete={() => {
+                if (isDemo) return;
                 setSelectedAccount(account);
                 setShowDeleteDialog(true);
               }}
               onToggleClosed={async () => {
+                if (isDemo) return;
                 const result = await toggleAccountClosed(
                   account.id,
                   !account.isClosed
@@ -667,10 +699,12 @@ export function NewAccountsSection({
                 }
               }}
               onAddEntry={() => {
+                if (isDemo) return;
                 setSelectedAccount(account);
                 setShowAddEntryDialog(true);
               }}
               onEditEntry={(entry) => {
+                if (isDemo) return;
                 setSelectedEntry({ accountId: account.id, entry });
                 setShowEditEntryDialog(true);
               }}
@@ -1203,6 +1237,7 @@ interface AccountRowDesktopProps {
   onToggleExpand: () => void;
   isMasked: boolean;
   displayCurrency: DisplayCurrency;
+  isDemo?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onToggleClosed: () => void;
@@ -1220,6 +1255,7 @@ function AccountRowDesktop({
   onToggleExpand,
   isMasked,
   displayCurrency,
+  isDemo = false,
   onEdit,
   onDelete,
   onToggleClosed,
@@ -1344,39 +1380,41 @@ function AccountRowDesktop({
 
         {/* Actions */}
         <td className="p-2" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7">
-                <MoreVertical className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-sm" onClick={onEdit}>
-                <Edit2 className="h-3.5 w-3.5 mr-2" />
-                Edit Account
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-sm" onClick={onToggleClosed}>
-                {account.isClosed ? (
-                  <>
-                    <ArchiveRestore className="h-3.5 w-3.5 mr-2" />
-                    Reopen Account
-                  </>
-                ) : (
-                  <>
-                    <Archive className="h-3.5 w-3.5 mr-2" />
-                    Close Account
-                  </>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-destructive text-sm"
-                onClick={onDelete}
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-2" />
-                Delete Account
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isDemo && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="text-sm" onClick={onEdit}>
+                  <Edit2 className="h-3.5 w-3.5 mr-2" />
+                  Edit Account
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-sm" onClick={onToggleClosed}>
+                  {account.isClosed ? (
+                    <>
+                      <ArchiveRestore className="h-3.5 w-3.5 mr-2" />
+                      Reopen Account
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="h-3.5 w-3.5 mr-2" />
+                      Close Account
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive text-sm"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  Delete Account
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </td>
       </tr>
 
@@ -1502,6 +1540,7 @@ interface AccountCardMobileProps {
   onToggleExpand: () => void;
   isMasked: boolean;
   displayCurrency: DisplayCurrency;
+  isDemo?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onToggleClosed: () => void;
@@ -1518,6 +1557,7 @@ function AccountCardMobile({
   onToggleExpand,
   isMasked,
   displayCurrency,
+  isDemo = false,
   onEdit,
   onDelete,
   onToggleClosed,
