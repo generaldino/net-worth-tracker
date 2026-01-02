@@ -280,7 +280,14 @@ export function FinancialMetricsNavbar({
 
               {/* YoY Percentage Badge with colored background */}
               {getYoyChange(metric) !== undefined &&
-                metric.label !== "Earned" && (
+                metric.label !== "Earned" &&
+                (metric.label === "Spent" || metric.label === "Saved" ? (
+                  // Spent and Saved show "X% of income" format in grey
+                  <span className="rounded px-1.5 py-0.5 text-xs font-semibold font-mono tabular-nums bg-muted text-muted-foreground">
+                    {Math.abs(getYoyChange(metric)!).toFixed(1)}% of income
+                  </span>
+                ) : (
+                  // Net Worth shows signed percentage with color
                   <span
                     className={`rounded px-1.5 py-0.5 text-xs font-semibold font-mono tabular-nums ${
                       getYoyChange(metric)! >= 0
@@ -288,9 +295,11 @@ export function FinancialMetricsNavbar({
                         : "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400"
                     }`}
                   >
-                    {formatPercentage(getYoyChange(metric)!, { showSign: true })}
+                    {formatPercentage(getYoyChange(metric)!, {
+                      showSign: true,
+                    })}
                   </span>
-                )}
+                ))}
             </div>
 
             {/* Metric Value */}
