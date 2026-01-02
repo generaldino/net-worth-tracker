@@ -40,7 +40,7 @@ export default function DemoPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Demo Banner */}
-      <div className="sticky top-0 z-50 border-b bg-gradient-to-r from-emerald-500/10 via-background to-emerald-500/10 backdrop-blur-sm">
+      <div className="border-b bg-gradient-to-r from-emerald-500/10 via-background to-emerald-500/10">
         <div className="container mx-auto px-4 sm:px-6 py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -61,18 +61,13 @@ export default function DemoPage() {
                 Explore with sample data — your real data stays private
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground hidden sm:inline">
-                Ready to track your own finances?
-              </span>
-              <GoogleSignInButton />
-            </div>
+            <GoogleSignInButton />
           </div>
         </div>
       </div>
 
       {/* Navbar with Financial Metrics */}
-      <nav className="sticky top-[57px] z-40 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <nav className="w-full border-b bg-background">
         <div className="w-full max-w-full px-4 sm:px-6 overflow-hidden">
           <div className="flex items-center justify-between gap-2 sm:gap-4 py-3 min-h-[56px] w-full">
             <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
