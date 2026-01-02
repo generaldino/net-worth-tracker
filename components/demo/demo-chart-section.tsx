@@ -8,7 +8,7 @@ import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useChartCurrencyConverter } from "@/lib/chart-currency-converter";
 import type { Currency } from "@/lib/fx-rates";
 import { ChartTypeSelector } from "@/components/charts/controls/chart-type-selector";
-import { getDemoChartData, demoAccounts } from "@/lib/demo-data";
+import { getDemoChartData } from "@/lib/demo-data";
 
 export function DemoChartSection() {
   const { getChartCurrency } = useDisplayCurrency();
@@ -147,22 +147,6 @@ export function DemoChartSection() {
     );
   }, [filteredChartDataByPeriod, getChartCurrency, convertChartData]);
 
-  // Get account types for filtering (exclude liabilities)
-  const accountTypes = useMemo(() => {
-    return Array.from(
-      new Set(
-        demoAccounts
-          .filter(
-            (account) =>
-              !account.isClosed &&
-              account.type !== "Credit_Card" &&
-              account.type !== "Loan"
-          )
-          .map((account) => account.type)
-      )
-    );
-  }, []);
-
   return (
     <div className="w-full">
       <div className="pt-0">
@@ -283,4 +267,3 @@ export function DemoChartSection() {
     </div>
   );
 }
-

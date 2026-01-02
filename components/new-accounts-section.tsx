@@ -1557,7 +1557,6 @@ function AccountCardMobile({
   onToggleExpand,
   isMasked,
   displayCurrency,
-  isDemo = false,
   onEdit,
   onDelete,
   onToggleClosed,

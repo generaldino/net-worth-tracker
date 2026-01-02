@@ -1,4 +1,5 @@
 import type { Account, MonthlyEntry, AccountType } from "@/lib/types";
+import type { ChartData, AccountData } from "@/components/charts/types";
 
 // Generate month keys for the last 24 months
 function generateMonthKeys(count: number): string[] {
@@ -272,11 +273,11 @@ export const demoMonthlyData = generateDemoEntries();
 // Calculate demo net worth
 export function calculateDemoNetWorth(): number {
   const monthKeys = Object.keys(demoMonthlyData).sort();
-  
+
   if (monthKeys.length === 0) {
     return 0;
   }
-  
+
   const latestMonth = monthKeys[monthKeys.length - 1];
   const entries = demoMonthlyData[latestMonth] || [];
 
@@ -381,7 +382,7 @@ export function getDemoFinancialMetrics() {
   // Calculate YTD and All Time change percentages
   const ytdChange = latestNetWorth - ytdStartNetWorth;
   const allTimeChange = latestNetWorth - firstNetWorth;
-  
+
   return {
     // netWorthYTD is the TOTAL net worth (used for display), percentages show the change
     netWorthYTD: latestNetWorth,
@@ -409,8 +410,7 @@ export function getDemoFinancialMetrics() {
     savingsRateYTD: incomeYTD > 0 ? (savingsYTD / incomeYTD) * 100 : null,
     savingsRateAllTime:
       incomeAllTime > 0 ? (savingsAllTime / incomeAllTime) * 100 : null,
-    spendingRateYTD:
-      incomeYTD > 0 ? (expenditureYTD / incomeYTD) * 100 : null,
+    spendingRateYTD: incomeYTD > 0 ? (expenditureYTD / incomeYTD) * 100 : null,
     spendingRateAllTime:
       incomeAllTime > 0 ? (expenditureAllTime / incomeAllTime) * 100 : null,
     incomeBreakdownYTD: [{ currency: "GBP", amount: incomeYTD }],
@@ -429,7 +429,7 @@ export function getDemoMonthKeys(): string[] {
 }
 
 // Generate demo chart data
-export function getDemoChartData() {
+export function getDemoChartData(): ChartData {
   const monthKeys = Object.keys(demoMonthlyData).sort();
 
   // Net worth data
@@ -459,64 +459,69 @@ export function getDemoChartData() {
   });
 
   // Account data (by individual account)
-  const accountData = monthKeys.map((monthKey) => {
-    const entries = demoMonthlyData[monthKey];
-    const data: Record<string, number | string> = {
-      month: formatMonth(monthKey),
-      monthKey,
-    };
-    entries.forEach((entry) => {
-      const account = demoAccounts.find((a) => a.id === entry.accountId);
-      if (account) {
-        data[account.name] = entry.endingBalance;
-      }
-    });
-    return data;
-  });
+  const accountData: Array<AccountData & { monthKey: string }> = monthKeys.map(
+    (monthKey) => {
+      const entries = demoMonthlyData[monthKey];
+      const data: AccountData & { monthKey: string } = {
+        month: formatMonth(monthKey),
+        monthKey,
+      };
+      entries.forEach((entry) => {
+        const account = demoAccounts.find((a) => a.id === entry.accountId);
+        if (account) {
+          data[account.name] = entry.endingBalance;
+        }
+      });
+      return data;
+    }
+  );
 
   // Account type data
-  const accountTypeData = monthKeys.map((monthKey) => {
-    const entries = demoMonthlyData[monthKey];
-    const typeBalances: Record<string, number> = {};
+  const accountTypeData: Array<AccountData & { monthKey: string }> =
+    monthKeys.map((monthKey) => {
+      const entries = demoMonthlyData[monthKey];
+      const typeBalances: Record<string, number> = {};
 
-    entries.forEach((entry) => {
-      const account = demoAccounts.find((a) => a.id === entry.accountId);
-      if (account) {
-        const type = account.type;
-        typeBalances[type] = (typeBalances[type] || 0) + entry.endingBalance;
-      }
+      entries.forEach((entry) => {
+        const account = demoAccounts.find((a) => a.id === entry.accountId);
+        if (account) {
+          const type = account.type;
+          typeBalances[type] = (typeBalances[type] || 0) + entry.endingBalance;
+        }
+      });
+
+      return {
+        month: formatMonth(monthKey),
+        monthKey,
+        ...typeBalances,
+      };
     });
-
-    return {
-      month: formatMonth(monthKey),
-      monthKey,
-      ...typeBalances,
-    };
-  });
 
   // Category data
-  const categoryData = monthKeys.map((monthKey) => {
-    const entries = demoMonthlyData[monthKey];
-    const categoryBalances: Record<string, number> = {};
+  const categoryData: Array<AccountData & { monthKey: string }> = monthKeys.map(
+    (monthKey) => {
+      const entries = demoMonthlyData[monthKey];
+      const categoryBalances: Record<string, number> = {};
 
-    entries.forEach((entry) => {
-      const account = demoAccounts.find((a) => a.id === entry.accountId);
-      if (account) {
-        const category = account.category || "Other";
-        categoryBalances[category] =
-          (categoryBalances[category] || 0) + entry.endingBalance;
-      }
-    });
+      entries.forEach((entry) => {
+        const account = demoAccounts.find((a) => a.id === entry.accountId);
+        if (account) {
+          const category = account.category || "Other";
+          categoryBalances[category] =
+            (categoryBalances[category] || 0) + entry.endingBalance;
+        }
+      });
 
-    return {
-      month: formatMonth(monthKey),
-      monthKey,
-      ...categoryBalances,
-    };
-  });
+      return {
+        month: formatMonth(monthKey),
+        monthKey,
+        ...categoryBalances,
+      };
+    }
+  );
 
   // Source data (wealth growth sources)
-  const sourceData = monthKeys.map((monthKey, index) => {
+  const sourceData = monthKeys.map((monthKey) => {
     const entries = demoMonthlyData[monthKey];
 
     let savingsFromIncome = 0;
@@ -530,7 +535,10 @@ export function getDemoChartData() {
       totalIncome += entry.income;
 
       // Calculate expenditure (cashOut that isn't transfers)
-      const expenditure = Math.max(0, entry.cashOut - (entry.cashIn - entry.income));
+      const expenditure = Math.max(
+        0,
+        entry.cashOut - (entry.cashIn - entry.income)
+      );
       totalExpenditure += expenditure;
 
       // For cash accounts, growth is interest
@@ -581,20 +589,7 @@ export function getDemoChartData() {
 }
 
 // Get demo account histories (for account section)
-export function getDemoAccountHistories(): Record<
-  string,
-  Array<{
-    monthKey: string;
-    month: string;
-    endingBalance: number;
-    cashIn: number;
-    cashOut: number;
-    income: number;
-    expenditure: number;
-    cashFlow: number;
-    accountGrowth: number;
-  }>
-> {
+export function getDemoAccountHistories(): Record<string, MonthlyEntry[]> {
   const histories: Record<string, MonthlyEntry[]> = {};
 
   demoAccounts.forEach((account) => {
@@ -638,4 +633,3 @@ export function getDemoCurrentValues(): Record<
 
   return currentValues;
 }
-
