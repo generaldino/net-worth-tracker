@@ -58,7 +58,7 @@ export default function DemoPage() {
                 Demo Mode
               </Badge>
             </div>
-            <GoogleSignInButton />
+            <GoogleSignInButton compact />
           </div>
         </div>
       </div>
