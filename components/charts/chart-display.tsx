@@ -35,6 +35,7 @@ import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useProjection } from "@/contexts/projection-context";
 import type { TimePeriod } from "@/lib/types";
+import { ChartSectionSkeleton } from "@/components/skeletons/chart-skeleton";
 
 interface PieTooltipPayload {
   name: string;
@@ -2345,24 +2346,9 @@ export function ChartDisplay({
   };
 
   // Early return for loading state - must be after all hooks
+  // Shows full section skeleton including header, cards, chart, and period selector
   if (isLoading) {
-    return (
-      <>
-        <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
-          <div className="text-muted-foreground">Loading chart data...</div>
-        </div>
-        {/* Period Selector - below the chart */}
-        {timePeriod !== undefined && onTimePeriodChange && (
-          <div className="mt-4 flex justify-center">
-            <PeriodSelector
-              value={timePeriod}
-              onChange={onTimePeriodChange}
-              isLoading={isLoading}
-            />
-          </div>
-        )}
-      </>
-    );
+    return <ChartSectionSkeleton />;
   }
 
   return (

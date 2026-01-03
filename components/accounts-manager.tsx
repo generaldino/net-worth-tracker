@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { ChartSection } from "@/components/charts/chart-section";
 import { NewAccountsSectionWrapper } from "@/components/new-accounts-section-wrapper";
-import { ChartSkeleton } from "@/components/skeletons/chart-skeleton";
+import { ChartSectionSkeleton } from "@/components/skeletons/chart-skeleton";
 import { AccountsSkeleton } from "@/components/skeletons/accounts-skeleton";
 
 export async function AccountsManager() {
@@ -13,7 +13,7 @@ export async function AccountsManager() {
       <div className="w-full max-w-full py-4 px-4 sm:px-6">
         <div className="space-y-4 sm:space-y-6">
           {/* Suspense boundary for charts - streams independently */}
-          <Suspense fallback={<ChartSkeleton />}>
+          <Suspense fallback={<ChartSectionSkeleton />}>
             <ChartSection />
           </Suspense>
           
