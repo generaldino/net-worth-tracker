@@ -8,6 +8,9 @@ import { useNetWorth } from "@/contexts/net-worth-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useUrlState } from "@/hooks/use-url-state";
+
+type MetricsPeriod = "ytd" | "alltime";
 
 export function Navbar() {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
@@ -15,7 +18,9 @@ export function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const [period, setPeriod] = useState<"ytd" | "alltime">("ytd");
+  
+  // URL-based state for shareable metrics period
+  const [period, setPeriod] = useUrlState<MetricsPeriod>("metrics", "ytd");
 
   useEffect(() => {
     // Check if mobile on mount and resize
