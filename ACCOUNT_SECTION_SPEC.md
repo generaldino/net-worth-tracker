@@ -443,7 +443,7 @@ Supported currencies:
 
     - Global toggle controlled via `MaskingContext` (React Context)
     - Default state: Masked (true) - values are hidden by default
-    - State is persisted in browser `localStorage` with key `"valueMasking"`
+    - State is persisted in browser cookies (SSR-friendly) with key `"valueMasking"`
     - Masked value display: `"••••••"` (six bullet points)
 
     #### Masking Behavior
@@ -482,11 +482,12 @@ Supported currencies:
     - `formatCurrency(value)` function handles masking logic
     - When masked, returns `"••••••"`; when unmasked, returns formatted number
     - Masking state updates trigger re-renders of all consuming components
-    - localStorage persistence ensures preference is remembered across sessions
+    - Cookie persistence ensures preference is remembered across sessions and works with SSR
 
     #### User Experience Notes
 
-    - Masking preference is per-browser (localStorage is browser-specific)
+    - Masking preference is per-browser (cookies are browser-specific)
+    - Server-side rendering shows correct masked/unmasked state immediately (no flash)
     - Masking can be toggled at any time without affecting data
     - Editing values temporarily shows them (values are visible in input fields)
     - Masking is a display-only feature - exported data, calculations, and server operations are unaffected

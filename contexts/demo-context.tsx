@@ -5,11 +5,9 @@ import {
   useContext,
   useState,
   useCallback,
-  useEffect,
   ReactNode,
 } from "react";
-
-const DEMO_MODE_KEY = "wealth-tracker-demo-mode";
+import { setDemoModePreference } from "@/lib/preferences";
 
 interface DemoContextType {
   isDemoMode: boolean;
@@ -19,32 +17,28 @@ interface DemoContextType {
 
 const DemoContext = createContext<DemoContextType | undefined>(undefined);
 
-export function DemoProvider({ children }: { children: ReactNode }) {
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
+interface DemoProviderProps {
+  children: ReactNode;
+  initialDemoMode?: boolean; // Passed from server component via cookies
+}
 
-  // Load persisted state on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(DEMO_MODE_KEY);
-    if (stored === "true") {
-      setIsDemoMode(true);
-    }
-    setIsHydrated(true);
-  }, []);
-
-  // Persist state changes to localStorage
-  useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem(DEMO_MODE_KEY, isDemoMode.toString());
-    }
-  }, [isDemoMode, isHydrated]);
+export function DemoProvider({ children, initialDemoMode = false }: DemoProviderProps) {
+  // Initialize with server-provided value (no useEffect needed!)
+  const [isDemoMode, setIsDemoMode] = useState(initialDemoMode);
 
   const toggleDemoMode = useCallback(() => {
-    setIsDemoMode((prev) => !prev);
+    setIsDemoMode((prev) => {
+      const newValue = !prev;
+      // Fire and forget - persist to cookie via server action
+      setDemoModePreference(newValue).catch(console.error);
+      return newValue;
+    });
   }, []);
 
   const setDemoMode = useCallback((enabled: boolean) => {
     setIsDemoMode(enabled);
+    // Fire and forget - persist to cookie via server action
+    setDemoModePreference(enabled).catch(console.error);
   }, []);
 
   return (
@@ -61,4 +55,3 @@ export function useDemo() {
   }
   return context;
 }
-

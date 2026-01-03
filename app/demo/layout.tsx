@@ -52,7 +52,7 @@ export default async function DemoLayout({
                 initialPercentageIncrease={demoPercentageIncrease}
                 initialFinancialMetrics={demoMetrics}
               >
-                <DemoProvider>
+                <DemoProvider initialDemoMode={true}>
                   {children}
                 </DemoProvider>
               </NetWorthProvider>

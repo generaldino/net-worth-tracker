@@ -25,10 +25,14 @@ export async function getUserPreferences() {
   
   const displayCurrency = (cookieStore.get(DISPLAY_CURRENCY_COOKIE)?.value ?? "GBP") as DisplayCurrency;
   const isMasked = cookieStore.get(VALUE_MASKING_COOKIE)?.value !== "false"; // Default to masked (true)
+  const isDemoMode = cookieStore.get("demoMode")?.value === "true"; // Default to false
+  const sidebarOpen = cookieStore.get("sidebarState")?.value === "true"; // Default to false (collapsed)
   
   return {
     displayCurrency,
     isMasked,
+    isDemoMode,
+    sidebarOpen,
   };
 }
 
@@ -58,4 +62,43 @@ export async function toggleMaskingPreference(): Promise<boolean> {
   const newValue = !currentValue;
   cookieStore.set(VALUE_MASKING_COOKIE, String(newValue), COOKIE_OPTIONS);
   return newValue;
+}
+
+// Demo mode cookie
+const DEMO_MODE_COOKIE = "demoMode";
+
+/**
+ * Get demo mode preference from cookies
+ */
+export async function getDemoModePreference(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return cookieStore.get(DEMO_MODE_COOKIE)?.value === "true";
+}
+
+/**
+ * Set demo mode preference (server action)
+ */
+export async function setDemoModePreference(enabled: boolean) {
+  const cookieStore = await cookies();
+  cookieStore.set(DEMO_MODE_COOKIE, String(enabled), COOKIE_OPTIONS);
+}
+
+// Sidebar state cookie
+const SIDEBAR_STATE_COOKIE = "sidebarState";
+
+/**
+ * Get sidebar state from cookies
+ */
+export async function getSidebarStatePreference(): Promise<boolean> {
+  const cookieStore = await cookies();
+  // Default to false (collapsed) if not set
+  return cookieStore.get(SIDEBAR_STATE_COOKIE)?.value === "true";
+}
+
+/**
+ * Set sidebar state preference (server action)
+ */
+export async function setSidebarStatePreference(open: boolean) {
+  const cookieStore = await cookies();
+  cookieStore.set(SIDEBAR_STATE_COOKIE, String(open), COOKIE_OPTIONS);
 }

@@ -40,7 +40,7 @@ export default async function WealthTracker() {
   }
 
   // Read user preferences from cookies (SSR-friendly)
-  const { displayCurrency, isMasked } = await getUserPreferences();
+  const { displayCurrency, isMasked, isDemoMode, sidebarOpen } = await getUserPreferences();
 
   // Fetch all data at the top level (server-side) in parallel
   const [
@@ -82,8 +82,8 @@ export default async function WealthTracker() {
                 initialPercentageIncrease={percentageIncrease}
                 initialFinancialMetrics={financialMetrics}
               >
-                <DemoProvider>
-                  <SidebarProvider defaultOpen={false}>
+                <DemoProvider initialDemoMode={isDemoMode}>
+                  <SidebarProvider defaultOpen={sidebarOpen}>
                     <AppSidebar
                       name={session.user.name}
                       email={session.user.email}

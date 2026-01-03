@@ -25,13 +25,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const SIDEBAR_COOKIE_NAME = "sidebar_state";
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const SIDEBAR_COOKIE_NAME = "sidebarState";
+const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
-const SIDEBAR_STORAGE_KEY = "sidebar_state";
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed";
@@ -70,34 +69,10 @@ function SidebarProvider({
   const isMobile = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
 
-  // Read initial state from localStorage (only runs on client)
-  const getInitialState = React.useCallback(() => {
-    if (typeof window === "undefined") return defaultOpen;
-    try {
-      const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
-      if (stored !== null) {
-        return stored === "true";
-      }
-    } catch {
-      // localStorage not available
-    }
-    return defaultOpen;
-  }, [defaultOpen]);
-
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
+  // Initialize with server-provided value via defaultOpen prop
+  // No localStorage needed - state comes from cookies read on server
   const [_open, _setOpen] = React.useState(defaultOpen);
-  const [isHydrated, setIsHydrated] = React.useState(false);
   const open = openProp ?? _open;
-
-  // Hydrate from localStorage after mount
-  React.useEffect(() => {
-    if (!isHydrated) {
-      const storedValue = getInitialState();
-      _setOpen(storedValue);
-      setIsHydrated(true);
-    }
-  }, [isHydrated, getInitialState]);
 
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -108,14 +83,7 @@ function SidebarProvider({
         _setOpen(openState);
       }
 
-      // Save to localStorage
-      try {
-        localStorage.setItem(SIDEBAR_STORAGE_KEY, String(openState));
-      } catch {
-        // localStorage not available
-      }
-
-      // This sets the cookie to keep the sidebar state.
+      // Save to cookie for SSR persistence
       document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
     },
     [setOpenProp, open]
