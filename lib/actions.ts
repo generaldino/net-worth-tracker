@@ -737,6 +737,46 @@ export async function getAccounts(includeClosed: boolean = false) {
   }
 }
 
+export async function getAccountById(accountId: string) {
+  try {
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return null;
+    }
+
+    const [account] = await db
+      .select()
+      .from(accountsTable)
+      .where(
+        and(
+          eq(accountsTable.id, accountId),
+          inArray(accountsTable.userId, accessibleUserIds)
+        )
+      )
+      .limit(1);
+
+    if (!account) {
+      return null;
+    }
+
+    return {
+      id: account.id,
+      name: account.name,
+      type: account.type,
+      isISA: account.isISA,
+      owner: account.owner,
+      category: account.category,
+      currency: account.currency,
+      isClosed: account.isClosed,
+      closedAt: account.closedAt,
+      displayOrder: account.displayOrder ?? 0,
+    };
+  } catch (error) {
+    console.error("Error fetching account by ID:", error);
+    return null;
+  }
+}
+
 export async function getMonthlyData() {
   try {
     const accessibleUserIds = await getAccessibleUserIds();
