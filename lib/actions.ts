@@ -2086,6 +2086,45 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
 }
 
 /**
+ * Get initial exchange rates for SSR - fetches rates for recent months
+ * Returns data in the format expected by ExchangeRatesProvider
+ */
+export async function getInitialExchangeRates(): Promise<
+  Record<string, { date: string; gbpRate: number; eurRate: number; usdRate: number; aedRate: number }>
+> {
+  try {
+    // Generate months for the last 24 months (covers most chart views)
+    const months: string[] = [];
+    const now = new Date();
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      months.push(`${year}-${month}`);
+    }
+
+    const rates = await fetchExchangeRatesForMonths(months);
+    
+    // Convert to the format expected by ExchangeRatesProvider
+    const result: Record<string, { date: string; gbpRate: number; eurRate: number; usdRate: number; aedRate: number }> = {};
+    rates.forEach((rate) => {
+      result[rate.date] = {
+        date: rate.date,
+        gbpRate: Number(rate.gbpRate),
+        eurRate: Number(rate.eurRate),
+        usdRate: Number(rate.usdRate),
+        aedRate: Number(rate.aedRate),
+      };
+    });
+    
+    return result;
+  } catch (error) {
+    console.error("Error getting initial exchange rates:", error);
+    return {};
+  }
+}
+
+/**
  * Server action to convert currency
  * This is needed because the HexaRate API doesn't allow direct browser requests (CORS)
  * @param forMonth - Optional month in "YYYY-MM" format to use historical rates

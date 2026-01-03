@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import type { DisplayCurrency } from "@/components/currency-selector";
+import { setDisplayCurrencyPreference } from "@/lib/preferences";
 
 interface DisplayCurrencyContextType {
   displayCurrency: DisplayCurrency;
@@ -14,37 +15,32 @@ const DisplayCurrencyContext = createContext<
   DisplayCurrencyContextType | undefined
 >(undefined);
 
-const DISPLAY_CURRENCY_KEY = "displayCurrency";
+interface DisplayCurrencyProviderProps {
+  children: ReactNode;
+  initialCurrency?: DisplayCurrency; // Passed from server component via cookies
+}
 
 export function DisplayCurrencyProvider({
   children,
-}: {
-  children: ReactNode;
-}) {
+  initialCurrency = "GBP",
+}: DisplayCurrencyProviderProps) {
   const [displayCurrency, setDisplayCurrencyState] =
-    useState<DisplayCurrency>("GBP");
+    useState<DisplayCurrency>(initialCurrency);
 
-  // Load currency preference from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(DISPLAY_CURRENCY_KEY);
-    if (saved !== null) {
-      setDisplayCurrencyState(saved as DisplayCurrency);
-    }
+  // Set currency - update state immediately (optimistic) and persist to cookie
+  const setDisplayCurrency = useCallback((currency: DisplayCurrency) => {
+    setDisplayCurrencyState(currency);
+    // Fire and forget - persist to cookie via server action
+    setDisplayCurrencyPreference(currency).catch(console.error);
   }, []);
 
-  // Save currency preference to localStorage when changed
-  const setDisplayCurrency = (currency: DisplayCurrency) => {
-    setDisplayCurrencyState(currency);
-    localStorage.setItem(DISPLAY_CURRENCY_KEY, currency);
-  };
-
-  const getChartCurrency = (): string => {
+  const getChartCurrency = useCallback((): string => {
     // When "Base Currency" is selected, use GBP as default for charts
     if (displayCurrency === "BASE") {
       return "GBP";
     }
     return displayCurrency;
-  };
+  }, [displayCurrency]);
 
   return (
     <DisplayCurrencyContext.Provider
@@ -64,5 +60,3 @@ export function useDisplayCurrency() {
   }
   return context;
 }
-
-

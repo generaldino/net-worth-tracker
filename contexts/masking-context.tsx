@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { setMaskingPreference } from "@/lib/preferences";
 
 interface MaskingContextType {
   isMasked: boolean;
@@ -12,32 +13,30 @@ const MaskingContext = createContext<MaskingContextType | undefined>(undefined);
 
 const MASKED_VALUE = "••••••";
 
-export function MaskingProvider({ children }: { children: ReactNode }) {
-  const [isMasked, setIsMasked] = useState(true);
+interface MaskingProviderProps {
+  children: ReactNode;
+  initialMasked?: boolean; // Passed from server component via cookies
+}
 
-  // Load masking preference from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("valueMasking");
-    if (saved !== null) {
-      setIsMasked(saved === "true");
-    }
-  }, []);
+export function MaskingProvider({ children, initialMasked = true }: MaskingProviderProps) {
+  const [isMasked, setIsMasked] = useState(initialMasked);
 
-  // Save masking preference to localStorage
-  const toggleMasking = () => {
+  // Toggle masking - update state immediately (optimistic) and persist to cookie
+  const toggleMasking = useCallback(() => {
     setIsMasked((prev) => {
       const newValue = !prev;
-      localStorage.setItem("valueMasking", String(newValue));
+      // Fire and forget - persist to cookie via server action
+      setMaskingPreference(newValue).catch(console.error);
       return newValue;
     });
-  };
+  }, []);
 
-  const formatCurrency = (value: number): string => {
+  const formatCurrency = useCallback((value: number): string => {
     if (isMasked) {
       return MASKED_VALUE;
     }
     return value.toLocaleString();
-  };
+  }, [isMasked]);
 
   return (
     <MaskingContext.Provider value={{ isMasked, toggleMasking, formatCurrency }}>
@@ -53,4 +52,3 @@ export function useMasking() {
   }
   return context;
 }
-

@@ -2,11 +2,14 @@
 
 import { MaskingProvider } from "@/contexts/masking-context";
 
-export function MaskingProviderWrapper({
-  children,
-}: {
+interface MaskingProviderWrapperProps {
   children: React.ReactNode;
-}) {
-  return <MaskingProvider>{children}</MaskingProvider>;
+  initialMasked?: boolean;
 }
 
+export function MaskingProviderWrapper({
+  children,
+  initialMasked,
+}: MaskingProviderWrapperProps) {
+  return <MaskingProvider initialMasked={initialMasked}>{children}</MaskingProvider>;
+}

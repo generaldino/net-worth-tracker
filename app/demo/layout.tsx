@@ -7,12 +7,34 @@ import { ProjectionProvider } from "@/contexts/projection-context";
 import { NetWorthProvider } from "@/contexts/net-worth-context";
 import { MaskingProviderWrapper } from "@/components/masking-provider-wrapper";
 import { DemoProvider } from "@/contexts/demo-context";
+import { getUserPreferences } from "@/lib/preferences";
+import { getInitialExchangeRates } from "@/lib/actions";
+import {
+  calculateDemoNetWorth,
+  getDemoNetWorthBreakdown,
+  getDemoPercentageIncrease,
+  getDemoFinancialMetrics,
+} from "@/lib/demo-data";
 
-export default function DemoLayout({
+export default async function DemoLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Read user preferences from cookies (SSR-friendly)
+  const { displayCurrency, isMasked } = await getUserPreferences();
+
+  // Fetch exchange rates and calculate demo data server-side
+  const [initialExchangeRates] = await Promise.all([
+    getInitialExchangeRates(),
+  ]);
+
+  // Calculate demo data at the server level (no useEffect needed!)
+  const demoNetWorth = calculateDemoNetWorth();
+  const demoBreakdown = getDemoNetWorthBreakdown();
+  const demoPercentageIncrease = getDemoPercentageIncrease();
+  const demoMetrics = getDemoFinancialMetrics();
+
   return (
     <ThemeProvider
       attribute="class"
@@ -20,11 +42,16 @@ export default function DemoLayout({
       enableSystem
       disableTransitionOnChange
     >
-      <MaskingProviderWrapper>
-        <ExchangeRatesProvider>
-          <DisplayCurrencyProvider>
+      <MaskingProviderWrapper initialMasked={isMasked}>
+        <ExchangeRatesProvider initialRates={initialExchangeRates}>
+          <DisplayCurrencyProvider initialCurrency={displayCurrency}>
             <ProjectionProvider>
-              <NetWorthProvider>
+              <NetWorthProvider
+                initialNetWorth={demoNetWorth}
+                initialNetWorthBreakdown={demoBreakdown}
+                initialPercentageIncrease={demoPercentageIncrease}
+                initialFinancialMetrics={demoMetrics}
+              >
                 <DemoProvider>
                   {children}
                 </DemoProvider>
@@ -37,4 +64,3 @@ export default function DemoLayout({
     </ThemeProvider>
   );
 }
-

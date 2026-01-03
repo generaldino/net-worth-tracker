@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -13,29 +13,13 @@ import { CurrencySelector } from "@/components/currency-selector";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useNetWorth } from "@/contexts/net-worth-context";
-import {
-  calculateDemoNetWorth,
-  getDemoNetWorthBreakdown,
-  getDemoPercentageIncrease,
-  getDemoFinancialMetrics,
-} from "@/lib/demo-data";
 
 export default function DemoPage() {
-  const { setNetWorthData, setFinancialMetrics } = useNetWorth();
+  // Demo data is now initialized in the layout via NetWorthProvider props
+  // No useEffect needed!
   const { netWorth, netWorthBreakdown, financialMetrics } = useNetWorth();
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const [period, setPeriod] = useState<"ytd" | "alltime">("ytd");
-
-  // Set demo data on mount
-  useEffect(() => {
-    const netWorth = calculateDemoNetWorth();
-    const breakdown = getDemoNetWorthBreakdown();
-    const percentageIncrease = getDemoPercentageIncrease();
-    const metrics = getDemoFinancialMetrics();
-
-    setNetWorthData(netWorth, breakdown, percentageIncrease);
-    setFinancialMetrics(metrics);
-  }, [setNetWorthData, setFinancialMetrics]);
 
   return (
     <div className="min-h-screen bg-background">

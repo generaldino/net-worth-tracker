@@ -13,6 +13,14 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AccountsManager } from "@/components/accounts-manager";
 import { DashboardContent } from "@/components/dashboard-content";
+import { getUserPreferences } from "@/lib/preferences";
+import {
+  calculateNetWorth,
+  getNetWorthBreakdown,
+  getFirstEntryNetWorth,
+  getFinancialMetrics,
+  getInitialExchangeRates,
+} from "@/lib/actions";
 
 export default async function WealthTracker() {
   const session = await auth();
@@ -31,6 +39,32 @@ export default async function WealthTracker() {
     );
   }
 
+  // Read user preferences from cookies (SSR-friendly)
+  const { displayCurrency, isMasked } = await getUserPreferences();
+
+  // Fetch all data at the top level (server-side) in parallel
+  const [
+    netWorth,
+    netWorthBreakdown,
+    firstEntryData,
+    financialMetrics,
+    initialExchangeRates,
+  ] = await Promise.all([
+    calculateNetWorth(),
+    getNetWorthBreakdown(),
+    getFirstEntryNetWorth(),
+    getFinancialMetrics(),
+    getInitialExchangeRates(),
+  ]);
+
+  // Calculate percentage increase from first entry
+  const percentageIncrease =
+    firstEntryData && firstEntryData.netWorth !== 0
+      ? ((netWorth - firstEntryData.netWorth) /
+          Math.abs(firstEntryData.netWorth)) *
+        100
+      : null;
+
   return (
     <ThemeProvider
       attribute="class"
@@ -38,11 +72,16 @@ export default async function WealthTracker() {
       enableSystem
       disableTransitionOnChange
     >
-      <MaskingProviderWrapper>
-        <ExchangeRatesProvider>
-          <DisplayCurrencyProvider>
+      <MaskingProviderWrapper initialMasked={isMasked}>
+        <ExchangeRatesProvider initialRates={initialExchangeRates}>
+          <DisplayCurrencyProvider initialCurrency={displayCurrency}>
             <ProjectionProvider>
-              <NetWorthProvider>
+              <NetWorthProvider
+                initialNetWorth={netWorth}
+                initialNetWorthBreakdown={netWorthBreakdown}
+                initialPercentageIncrease={percentageIncrease}
+                initialFinancialMetrics={financialMetrics}
+              >
                 <DemoProvider>
                   <SidebarProvider defaultOpen={false}>
                     <AppSidebar

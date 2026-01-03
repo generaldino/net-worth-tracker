@@ -4,7 +4,6 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   useCallback,
   useRef,
   ReactNode,
@@ -32,8 +31,18 @@ const ExchangeRatesContext = createContext<
   ExchangeRatesContextType | undefined
 >(undefined);
 
-export function ExchangeRatesProvider({ children }: { children: ReactNode }) {
-  const [rates, setRates] = useState<Record<string, ExchangeRate>>({});
+interface ExchangeRatesProviderProps {
+  children: ReactNode;
+  // Accept pre-fetched rates from server (SSR-friendly)
+  initialRates?: Record<string, ExchangeRate>;
+}
+
+export function ExchangeRatesProvider({
+  children,
+  initialRates = {},
+}: ExchangeRatesProviderProps) {
+  // Initialize with server-provided rates (no useEffect needed for initial load!)
+  const [rates, setRates] = useState<Record<string, ExchangeRate>>(initialRates);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -85,7 +94,7 @@ export function ExchangeRatesProvider({ children }: { children: ReactNode }) {
     }
   }, []); // Empty deps - function is stable now
 
-  const getRate = (month: string, currency: Currency): number | null => {
+  const getRate = useCallback((month: string, currency: Currency): number | null => {
     // Handle "latest" by using the most recent rate
     if (month === "latest") {
       const rateEntries = Object.values(rates);
@@ -127,7 +136,7 @@ export function ExchangeRatesProvider({ children }: { children: ReactNode }) {
       default:
         return null;
     }
-  };
+  }, [rates]);
 
   return (
     <ExchangeRatesContext.Provider
@@ -156,3 +165,6 @@ function getLastDayOfMonth(month: string): string {
   const lastDay = new Date(year, monthNum, 0);
   return lastDay.toISOString().split("T")[0];
 }
+
+// Export the ExchangeRate type for use in server components
+export type { ExchangeRate as ExchangeRateType };

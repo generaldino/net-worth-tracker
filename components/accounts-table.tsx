@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
   type Account,
   type MonthlyEntry,
@@ -16,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { AccountSelector } from "@/components/charts/controls/account-selector";
 import { AccountTypeSelector } from "@/components/charts/controls/account-type-selector";
 import { CategorySelector } from "@/components/charts/controls/category-selector";
-import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import {
   Select,
@@ -147,7 +146,6 @@ export function AccountsTable({
     useState<string[]>(accountCategories);
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const { displayCurrency } = useDisplayCurrency();
-  const { fetchRates } = useExchangeRates();
 
   // Get unique owners from accounts
   const owners = Array.from(new Set(accounts.map((account) => account.owner)));
@@ -178,25 +176,8 @@ export function AccountsTable({
     })
   );
 
-  // Collect all unique months from all account histories
-  const uniqueMonths = useMemo(() => {
-    const months = new Set<string>();
-    accounts.forEach((account) => {
-      const history = accountHistories[account.id] || [];
-      history.forEach((entry) => {
-        months.add(entry.month); // entry.month is already in "YYYY-MM" format
-      });
-    });
-    return Array.from(months);
-  }, [accounts, accountHistories]);
-
-  // Fetch all needed exchange rates when currency changes or component mounts
-  // Only fetch if not in BASE mode (BASE mode doesn't need conversions)
-  useEffect(() => {
-    if (displayCurrency !== "BASE") {
-      fetchRates(uniqueMonths);
-    }
-  }, [displayCurrency, uniqueMonths, fetchRates]);
+  // Rates are now pre-fetched server-side and passed to ExchangeRatesProvider
+  // No useEffect needed for initial rate fetching!
 
   // Calculate value changes based on selected time period (derived state)
   const calculatedValueChanges = Object.fromEntries(

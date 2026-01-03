@@ -13,7 +13,6 @@ import { ChartDisplay } from "@/components/charts/chart-display";
 import { getChartData } from "@/lib/actions";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useChartCurrencyConverter } from "@/lib/chart-currency-converter";
-import { useExchangeRates } from "@/contexts/exchange-rates-context";
 import type { Currency } from "@/lib/fx-rates";
 import { useProjection } from "@/contexts/projection-context";
 import { calculateProjection } from "@/lib/actions";
@@ -49,7 +48,6 @@ export function ChartControls({
 }: ChartControlsProps) {
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
-  const { fetchRates } = useExchangeRates();
   const { setProjectionData, setSelectedScenarioId } = useProjection();
   const [chartType, setChartType] = useState<ChartType>("total");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("1Y");
@@ -226,41 +224,8 @@ export function ChartControls({
     calculateProjectionForScenario,
   ]);
 
-  // Extract all unique months from chart data for rate fetching
-  // Convert from "YYYY-MM-DD" to "YYYY-MM" format
-  const uniqueMonths = useMemo(() => {
-    const months = new Set<string>();
-    const toMonthFormat = (monthKey: string): string => {
-      if (/^\d{4}-\d{2}$/.test(monthKey)) return monthKey;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(monthKey)) return monthKey.substring(0, 7);
-      return monthKey;
-    };
-
-    rawChartData.netWorthData.forEach((item) => {
-      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
-    });
-    rawChartData.accountData.forEach((item) => {
-      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
-    });
-    rawChartData.accountTypeData.forEach((item) => {
-      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
-    });
-    rawChartData.categoryData.forEach((item) => {
-      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
-    });
-    rawChartData.sourceData.forEach((item) => {
-      if (item.monthKey) months.add(toMonthFormat(item.monthKey));
-    });
-    return Array.from(months);
-  }, [rawChartData]);
-
-  // Fetch rates when component mounts or currency changes
-  useEffect(() => {
-    const chartCurrency = getChartCurrency();
-    if (chartCurrency !== "BASE" && uniqueMonths.length > 0) {
-      fetchRates(uniqueMonths);
-    }
-  }, [getChartCurrency, uniqueMonths, fetchRates]);
+  // Rates are now pre-fetched server-side and passed to ExchangeRatesProvider
+  // No useEffect needed for initial rate fetching!
 
   // Client-side function to filter months by time period
   const getFilteredMonths = (

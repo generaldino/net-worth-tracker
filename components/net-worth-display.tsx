@@ -4,7 +4,7 @@ import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import type { Currency } from "@/lib/fx-rates";
 
 interface NetWorthBreakdown {
@@ -29,19 +29,11 @@ export function NetWorthDisplay({
   percentageIncrease,
 }: NetWorthDisplayProps) {
   const { displayCurrency } = useDisplayCurrency();
-  const { getRate, fetchRates } = useExchangeRates();
+  const { getRate } = useExchangeRates();
   const { isMasked } = useMasking();
 
-  // Fetch rates for the latest month when component mounts
-  useEffect(() => {
-    if (displayCurrency !== "BASE" && netWorthBreakdown.monthKey) {
-      // Convert monthKey from "YYYY-MM-DD" to "YYYY-MM" if needed
-      const month = /^\d{4}-\d{2}$/.test(netWorthBreakdown.monthKey)
-        ? netWorthBreakdown.monthKey
-        : netWorthBreakdown.monthKey.substring(0, 7);
-      fetchRates([month]);
-    }
-  }, [displayCurrency, netWorthBreakdown.monthKey, fetchRates]);
+  // Rates are now pre-fetched server-side and passed to ExchangeRatesProvider
+  // No useEffect needed for initial rate fetching!
 
   // Convert net worth to display currency
   const convertedNetWorth = useMemo(() => {
@@ -128,4 +120,3 @@ export function NetWorthDisplay({
     </div>
   );
 }
-

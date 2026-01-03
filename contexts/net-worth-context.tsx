@@ -57,16 +57,33 @@ const NetWorthContext = createContext<NetWorthContextType | undefined>(
   undefined
 );
 
-export function NetWorthProvider({ children }: { children: ReactNode }) {
-  const [netWorth, setNetWorth] = useState<number | null>(null);
-  const [netWorthBreakdown, setNetWorthBreakdown] =
-    useState<NetWorthBreakdown | null>(null);
-  const [percentageIncrease, setPercentageIncrease] = useState<number | null>(
-    null
-  );
-  const [financialMetrics, setFinancialMetrics] =
-    useState<FinancialMetrics | null>(null);
+// Props interface for the provider - accepts initial data from server
+interface NetWorthProviderProps {
+  children: ReactNode;
+  initialNetWorth?: number | null;
+  initialNetWorthBreakdown?: NetWorthBreakdown | null;
+  initialPercentageIncrease?: number | null;
+  initialFinancialMetrics?: FinancialMetrics | null;
+}
 
+export function NetWorthProvider({
+  children,
+  initialNetWorth = null,
+  initialNetWorthBreakdown = null,
+  initialPercentageIncrease = null,
+  initialFinancialMetrics = null,
+}: NetWorthProviderProps) {
+  // Initialize state with server-provided data (no useEffect needed!)
+  const [netWorth, setNetWorth] = useState<number | null>(initialNetWorth);
+  const [netWorthBreakdown, setNetWorthBreakdown] =
+    useState<NetWorthBreakdown | null>(initialNetWorthBreakdown);
+  const [percentageIncrease, setPercentageIncrease] = useState<number | null>(
+    initialPercentageIncrease
+  );
+  const [financialMetrics, setFinancialMetricsState] =
+    useState<FinancialMetrics | null>(initialFinancialMetrics);
+
+  // These setters are kept for demo mode to update data dynamically
   const setNetWorthData = useCallback(
     (
       netWorth: number,
@@ -80,12 +97,9 @@ export function NetWorthProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const setFinancialMetricsCallback = useCallback(
-    (metrics: FinancialMetrics) => {
-      setFinancialMetrics(metrics);
-    },
-    []
-  );
+  const setFinancialMetrics = useCallback((metrics: FinancialMetrics) => {
+    setFinancialMetricsState(metrics);
+  }, []);
 
   return (
     <NetWorthContext.Provider
@@ -95,7 +109,7 @@ export function NetWorthProvider({ children }: { children: ReactNode }) {
         percentageIncrease,
         financialMetrics,
         setNetWorthData,
-        setFinancialMetrics: setFinancialMetricsCallback,
+        setFinancialMetrics,
       }}
     >
       {children}
@@ -110,3 +124,6 @@ export function useNetWorth() {
   }
   return context;
 }
+
+// Export types for use elsewhere
+export type { NetWorthBreakdown, FinancialMetrics };

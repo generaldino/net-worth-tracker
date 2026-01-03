@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo } from "react";
 import { useNetWorth } from "@/contexts/net-worth-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
@@ -85,18 +85,11 @@ export function FinancialMetricsNavbar({
 }: FinancialMetricsNavbarProps) {
   const { financialMetrics } = useNetWorth();
   const { displayCurrency } = useDisplayCurrency();
-  const { getRate, fetchRates } = useExchangeRates();
+  const { getRate } = useExchangeRates();
   const { isMasked } = useMasking();
 
-  // Fetch rates for the latest month when component mounts
-  useEffect(() => {
-    if (displayCurrency !== "BASE" && financialMetrics?.latestMonth) {
-      const month = /^\d{4}-\d{2}$/.test(financialMetrics.latestMonth)
-        ? financialMetrics.latestMonth
-        : financialMetrics.latestMonth.substring(0, 7);
-      fetchRates([month]);
-    }
-  }, [displayCurrency, financialMetrics?.latestMonth, fetchRates]);
+  // Rates are now pre-fetched server-side and passed to ExchangeRatesProvider
+  // No useEffect needed for initial rate fetching!
 
   const targetCurrency =
     displayCurrency === "BASE" ? "GBP" : (displayCurrency as Currency);
