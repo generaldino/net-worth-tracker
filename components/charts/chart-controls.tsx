@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useRef,
   useCallback,
+  useTransition,
 } from "react";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartData, ChartType } from "@/components/charts/types";
@@ -51,6 +52,9 @@ export function ChartControls({
   const { convertChartData } = useChartCurrencyConverter();
   const { setProjectionData, setSelectedScenarioId } = useProjection();
   
+  // useTransition for smooth chart type transitions (React 18 best practice)
+  const [isPending, startTransition] = useTransition();
+  
   // URL-based state for shareable chart views
   const [chartType, setChartTypeUrl] = useUrlState<ChartType>("chart", "total");
   const [timePeriod, setTimePeriodUrl] = useUrlState<TimePeriod>("period", "1Y");
@@ -76,16 +80,20 @@ export function ChartControls({
   }, []);
   
   // Clear hidden cards when chart type changes
+  // Uses useTransition for smooth loading state during chart type switch
   const handleChartTypeChange = useCallback((newChartType: ChartType) => {
-    setChartTypeUrl(newChartType);
-    setClickedData(null);
-    setHiddenCards(new Set()); // Reset hidden cards when switching chart type
-    // Clear projection scenario when switching away from projection chart
-    if (newChartType !== "projection") {
-      setProjectionData(null);
-      setSelectedScenarioId(null);
-    }
-  }, [setChartTypeUrl, setProjectionData, setSelectedScenarioId]);
+    // Wrap state updates in startTransition for smooth skeleton display
+    startTransition(() => {
+      setChartTypeUrl(newChartType);
+      setClickedData(null);
+      setHiddenCards(new Set()); // Reset hidden cards when switching chart type
+      // Clear projection scenario when switching away from projection chart
+      if (newChartType !== "projection") {
+        setProjectionData(null);
+        setSelectedScenarioId(null);
+      }
+    });
+  }, [setChartTypeUrl, setProjectionData, setSelectedScenarioId, startTransition]);
 
   // Store initial data in a ref to prevent unnecessary re-renders
   // This ref will only be set once on mount and won't trigger re-renders
@@ -424,7 +432,7 @@ export function ChartControls({
           chartData={chartData}
           clickedData={clickedData}
           setClickedData={setClickedData}
-          isLoading={isLoading}
+          isLoading={isLoading || isPending}
           timePeriod={timePeriod}
           onTimePeriodChange={setTimePeriodUrl}
           allocationOptions={

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useTransition } from "react";
 import type { TimePeriod } from "@/lib/types";
 import { ClickedData, ChartType } from "@/components/charts/types";
 import { ChartDisplay } from "@/components/charts/chart-display";
@@ -13,6 +13,9 @@ import { getDemoChartData } from "@/lib/demo-data";
 export function DemoChartSection() {
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
+
+  // useTransition for smooth chart type transitions (React 18 best practice)
+  const [isPending, startTransition] = useTransition();
 
   const [chartType, setChartType] = useState<ChartType>("total");
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("1Y");
@@ -36,11 +39,14 @@ export function DemoChartSection() {
   }, []);
 
   // Clear hidden cards when chart type changes
+  // Uses useTransition for smooth loading state during chart type switch
   const handleChartTypeChange = useCallback((newChartType: ChartType) => {
-    setChartType(newChartType);
-    setClickedData(null);
-    setHiddenCards(new Set());
-  }, []);
+    startTransition(() => {
+      setChartType(newChartType);
+      setClickedData(null);
+      setHiddenCards(new Set());
+    });
+  }, [startTransition]);
 
   // Allocation chart options
   const [allocationViewType, setAllocationViewType] = useState<
@@ -155,7 +161,7 @@ export function DemoChartSection() {
           chartData={chartData}
           clickedData={clickedData}
           setClickedData={setClickedData}
-          isLoading={false}
+          isLoading={isPending}
           timePeriod={timePeriod}
           onTimePeriodChange={setTimePeriod}
           allocationOptions={
