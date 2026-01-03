@@ -20,6 +20,7 @@ import type { AccountType } from "@/lib/types";
 import { ChartTypeSelector } from "./controls/chart-type-selector";
 import { ProjectionCalculator } from "@/components/projections/projection-calculator";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { useUrlState } from "@/hooks/use-url-state";
 
 const accountCategories = ["Cash", "Investments"];
 
@@ -49,8 +50,11 @@ export function ChartControls({
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
   const { setProjectionData, setSelectedScenarioId } = useProjection();
-  const [chartType, setChartType] = useState<ChartType>("total");
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("1Y");
+  
+  // URL-based state for shareable chart views
+  const [chartType, setChartTypeUrl] = useUrlState<ChartType>("chart", "total");
+  const [timePeriod, setTimePeriodUrl] = useUrlState<TimePeriod>("period", "1Y");
+  
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
   const [rawChartData, setRawChartData] = useState<ChartData>(initialData);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,7 +77,7 @@ export function ChartControls({
   
   // Clear hidden cards when chart type changes
   const handleChartTypeChange = useCallback((newChartType: ChartType) => {
-    setChartType(newChartType);
+    setChartTypeUrl(newChartType);
     setClickedData(null);
     setHiddenCards(new Set()); // Reset hidden cards when switching chart type
     // Clear projection scenario when switching away from projection chart
@@ -81,7 +85,7 @@ export function ChartControls({
       setProjectionData(null);
       setSelectedScenarioId(null);
     }
-  }, [setProjectionData, setSelectedScenarioId]);
+  }, [setChartTypeUrl, setProjectionData, setSelectedScenarioId]);
 
   // Store initial data in a ref to prevent unnecessary re-renders
   // This ref will only be set once on mount and won't trigger re-renders
@@ -422,7 +426,7 @@ export function ChartControls({
           setClickedData={setClickedData}
           isLoading={isLoading}
           timePeriod={timePeriod}
-          onTimePeriodChange={setTimePeriod}
+          onTimePeriodChange={setTimePeriodUrl}
           allocationOptions={
             chartType === "allocation"
               ? {
