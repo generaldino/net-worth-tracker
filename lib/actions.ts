@@ -13,7 +13,7 @@ import { getUserId } from "@/lib/auth-helpers";
 import { getAccessibleUserIds } from "@/app/actions/sharing";
 import type { Currency } from "@/lib/fx-rates";
 import type { AccountType } from "@/lib/types";
-import { fetchAndSaveExchangeRatesForMonth } from "@/lib/fx-rates-server";
+import { fetchAndSaveExchangeRatesForMonth, convertCurrency as convertCurrencyServer } from "@/lib/fx-rates-server";
 
 export async function calculateNetWorth() {
   try {
@@ -493,16 +493,25 @@ export async function getFinancialMetrics() {
     }
 
     // Calculate current net worth for latest month
+    // Convert all balances to GBP before summing (matching chart logic)
     // Use Math.abs for liabilities to handle both positive and negative balance conventions
-    const currentNetWorth = allAccounts.reduce((total, account) => {
+    let currentNetWorth = 0;
+    for (const account of allAccounts) {
       const entry = latestMonthEntries.find((e) => e.accountId === account.id);
       const balance = Number(entry?.endingBalance || 0);
+      const accountCurrency = (account.currency || "GBP") as Currency;
+      
+      // Convert balance to GBP
+      const balanceInGBP = accountCurrency === "GBP" 
+        ? balance 
+        : await convertCurrencyServer(balance, accountCurrency, "GBP", latestMonth);
 
       if (account.type === "Credit_Card" || account.type === "Loan") {
-        return total - Math.abs(balance);
+        currentNetWorth -= Math.abs(balanceInGBP);
+      } else {
+        currentNetWorth += balanceInGBP;
       }
-      return total + balance;
-    }, 0);
+    }
 
     // Get all entries ordered for All Time calculations (for both income/expenditure and net worth)
     const allEntriesOrdered = await db
@@ -591,17 +600,26 @@ export async function getFinancialMetrics() {
 
       if (firstMonthEntries.length > 0 && firstMonth !== latestMonth) {
         // Use Math.abs for liabilities to handle both positive and negative balance conventions
-        const firstNetWorth = allAccounts.reduce((total, account) => {
+        // Convert all balances to GBP before summing (matching chart logic)
+        let firstNetWorth = 0;
+        for (const account of allAccounts) {
           const entry = firstMonthEntries.find(
             (e) => e.accountId === account.id
           );
           const balance = Number(entry?.endingBalance || 0);
+          const accountCurrency = (account.currency || "GBP") as Currency;
+          
+          // Convert balance to GBP
+          const balanceInGBP = accountCurrency === "GBP" 
+            ? balance 
+            : await convertCurrencyServer(balance, accountCurrency, "GBP", firstMonth);
 
           if (account.type === "Credit_Card" || account.type === "Loan") {
-            return total - Math.abs(balance);
+            firstNetWorth -= Math.abs(balanceInGBP);
+          } else {
+            firstNetWorth += balanceInGBP;
           }
-          return total + balance;
-        }, 0);
+        }
 
         netWorthAllTime = firstNetWorth;
 
@@ -621,17 +639,26 @@ export async function getFinancialMetrics() {
 
         if (januaryEntries.length > 0) {
           // Use Math.abs for liabilities to handle both positive and negative balance conventions
-          const januaryNetWorth = allAccounts.reduce((total, account) => {
+          // Convert all balances to GBP before summing (matching chart logic)
+          let januaryNetWorth = 0;
+          for (const account of allAccounts) {
             const entry = januaryEntries.find(
               (e) => e.accountId === account.id
             );
             const balance = Number(entry?.endingBalance || 0);
+            const accountCurrency = (account.currency || "GBP") as Currency;
+            
+            // Convert balance to GBP
+            const balanceInGBP = accountCurrency === "GBP" 
+              ? balance 
+              : await convertCurrencyServer(balance, accountCurrency, "GBP", ytdStartMonth);
 
             if (account.type === "Credit_Card" || account.type === "Loan") {
-              return total - Math.abs(balance);
+              januaryNetWorth -= Math.abs(balanceInGBP);
+            } else {
+              januaryNetWorth += balanceInGBP;
             }
-            return total + balance;
-          }, 0);
+          }
 
           if (januaryNetWorth !== 0) {
             netWorthPercentageYTD =
