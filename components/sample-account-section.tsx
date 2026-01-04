@@ -1137,7 +1137,7 @@ function MonthlyHistoryTable({
                 </th>
                 <th className="text-right p-2 font-medium">
                   <FieldHeader
-                    label="Internal Transfers"
+                    label="Internal Transfers Out"
                     tooltip="Money transferred to other accounts you own"
                   />
                 </th>
@@ -1855,7 +1855,7 @@ function AddEntryDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="internalTransfersOut">
-                    Internal Transfers
+                    Internal Transfers Out
                   </Label>
                   <Input
                     id="internalTransfersOut"
@@ -2075,7 +2075,7 @@ function EditEntryDialog({
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-internalTransfersOut">
-                    Internal Transfers
+                    Internal Transfers Out
                   </Label>
                   <Input
                     id="edit-internalTransfersOut"
