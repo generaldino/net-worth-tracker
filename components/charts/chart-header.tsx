@@ -2,7 +2,10 @@
 
 import React from "react";
 import { ChartType } from "@/components/charts/types";
-import { formatCurrencyAmount, formatPercentage as formatPercentageUtil } from "@/lib/fx-rates";
+import {
+  formatCurrencyAmount,
+  formatPercentage as formatPercentageUtil,
+} from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 import { useMemo } from "react";
@@ -114,7 +117,7 @@ export function ChartHeader({
       .filter((item) => item.absValue > 0); // Only show non-zero values
 
     // Sort by account type hierarchy, then by value within category
-    return sortAccountTypesByHierarchy(items).slice(0, 8); // Show top 8 account types
+    return sortAccountTypesByHierarchy(items);
   }, [chartType, displayData]);
 
   const accountTypesForProjection = useMemo(() => {
@@ -130,7 +133,7 @@ export function ChartHeader({
       .filter((item) => item.absValue > 0); // Only show non-zero values
 
     // Sort by account type hierarchy, then by value within category
-    return sortAccountTypesByHierarchy(items).slice(0, 8); // Show top 8 account types
+    return sortAccountTypesByHierarchy(items);
   }, [chartType, displayData]);
 
   // Early return after all hooks - but still render headerControls even if no data
@@ -161,9 +164,7 @@ export function ChartHeader({
     return isMasked ? "••••••" : formatCurrencyAmount(value, chartCurrency);
   };
 
-  const formatPercentage = (
-    value: number | undefined
-  ): string => {
+  const formatPercentage = (value: number | undefined): string => {
     if (value === undefined) return "—";
     return formatPercentageUtil(value, { showSign: true });
   };
@@ -231,17 +232,21 @@ export function ChartHeader({
         const isPercentage = totalOptions?.viewType === "percentage";
 
         // Calculate adjusted net worth excluding hidden cards
-        const adjustedNetWorth = hiddenCards.size > 0
-          ? accountTypesForTotal
-              .filter((item) => !hiddenCards.has(item.name))
-              .reduce((sum, item) => sum + item.value, 0)
-          : fullNetWorth;
+        const adjustedNetWorth =
+          hiddenCards.size > 0
+            ? accountTypesForTotal
+                .filter((item) => !hiddenCards.has(item.name))
+                .reduce((sum, item) => sum + item.value, 0)
+            : fullNetWorth;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                NET WORTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
+                NET WORTH{" "}
+                {hiddenCards.size > 0 && (
+                  <span className="text-xs opacity-60">(filtered)</span>
+                )}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
@@ -317,20 +322,26 @@ export function ChartHeader({
         // No sorting needed - fixed order above
 
         // Calculate adjusted net worth excluding hidden cards
-        const adjustedNetWorth = hiddenCards.size > 0
-          ? secondaryMetrics
-              .filter((item) => !hiddenCards.has(item.name))
-              .reduce((sum, item) => {
-                // Assets are positive, Liabilities should be subtracted
-                return item.name === "Liabilities" ? sum - item.value : sum + item.value;
-              }, 0)
-          : fullNetWorth;
+        const adjustedNetWorth =
+          hiddenCards.size > 0
+            ? secondaryMetrics
+                .filter((item) => !hiddenCards.has(item.name))
+                .reduce((sum, item) => {
+                  // Assets are positive, Liabilities should be subtracted
+                  return item.name === "Liabilities"
+                    ? sum - item.value
+                    : sum + item.value;
+                }, 0)
+            : fullNetWorth;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                NET WORTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
+                NET WORTH{" "}
+                {hiddenCards.size > 0 && (
+                  <span className="text-xs opacity-60">(filtered)</span>
+                )}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
@@ -458,17 +469,21 @@ export function ChartHeader({
         // No sorting needed - fixed logical order above
 
         // Calculate adjusted total excluding hidden cards
-        const adjustedTotalGrowth = hiddenCards.size > 0
-          ? secondaryMetrics
-              .filter((item) => !hiddenCards.has(item.name))
-              .reduce((sum, item) => sum + item.value, 0)
-          : fullTotalGrowth;
+        const adjustedTotalGrowth =
+          hiddenCards.size > 0
+            ? secondaryMetrics
+                .filter((item) => !hiddenCards.has(item.name))
+                .reduce((sum, item) => sum + item.value, 0)
+            : fullTotalGrowth;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                TOTAL GROWTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
+                TOTAL GROWTH{" "}
+                {hiddenCards.size > 0 && (
+                  <span className="text-xs opacity-60">(filtered)</span>
+                )}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
@@ -536,7 +551,9 @@ export function ChartHeader({
       }
 
       case "waterfall": {
-        const fullEndingBalance = displayData.metrics["Ending Balance"] as number;
+        const fullEndingBalance = displayData.metrics[
+          "Ending Balance"
+        ] as number;
         const startingBalance = displayData.metrics[
           "Starting Balance"
         ] as number;
@@ -592,18 +609,24 @@ export function ChartHeader({
 
         // Calculate adjusted ending balance excluding hidden cards
         // For waterfall: Starting Balance + visible changes = Adjusted Ending
-        const adjustedEndingBalance = hiddenCards.size > 0
-          ? (hiddenCards.has("Starting Balance") ? 0 : (startingBalance || 0)) +
-            (hiddenCards.has("Savings from Income") ? 0 : (savingsFromIncome || 0)) +
-            (hiddenCards.has("Interest Earned") ? 0 : (interestEarned || 0)) +
-            (hiddenCards.has("Capital Gains") ? 0 : (capitalGains || 0))
-          : fullEndingBalance;
+        const adjustedEndingBalance =
+          hiddenCards.size > 0
+            ? (hiddenCards.has("Starting Balance") ? 0 : startingBalance || 0) +
+              (hiddenCards.has("Savings from Income")
+                ? 0
+                : savingsFromIncome || 0) +
+              (hiddenCards.has("Interest Earned") ? 0 : interestEarned || 0) +
+              (hiddenCards.has("Capital Gains") ? 0 : capitalGains || 0)
+            : fullEndingBalance;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                ENDING BALANCE {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
+                ENDING BALANCE{" "}
+                {hiddenCards.size > 0 && (
+                  <span className="text-xs opacity-60">(filtered)</span>
+                )}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
@@ -682,25 +705,36 @@ export function ChartHeader({
 
         // For savings rate, recalculate based on visible metrics
         // Savings Rate = (Income - Expenditure) / Income * 100
-        const visibleIncome = hiddenCards.has("Total Income") ? 0 : (totalIncome || 0);
-        const visibleExpenditure = hiddenCards.has("Total Expenditure") ? 0 : (totalExpenditure || 0);
-        const adjustedSavingsRate = hiddenCards.size > 0 && visibleIncome > 0
-          ? ((visibleIncome - visibleExpenditure) / visibleIncome) * 100
-          : fullSavingsRate;
+        const visibleIncome = hiddenCards.has("Total Income")
+          ? 0
+          : totalIncome || 0;
+        const visibleExpenditure = hiddenCards.has("Total Expenditure")
+          ? 0
+          : totalExpenditure || 0;
+        const adjustedSavingsRate =
+          hiddenCards.size > 0 && visibleIncome > 0
+            ? ((visibleIncome - visibleExpenditure) / visibleIncome) * 100
+            : fullSavingsRate;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                SAVINGS RATE {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
+                SAVINGS RATE{" "}
+                {hiddenCards.size > 0 && (
+                  <span className="text-xs opacity-60">(filtered)</span>
+                )}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold font-mono tabular-nums ${
                   adjustedSavingsRate >= 0 ? "text-green-600" : "text-red-600"
                 }`}
               >
-                {adjustedSavingsRate !== undefined && !isNaN(adjustedSavingsRate)
-                  ? `${adjustedSavingsRate >= 0 ? "+" : ""}${Math.round(adjustedSavingsRate)}%`
+                {adjustedSavingsRate !== undefined &&
+                !isNaN(adjustedSavingsRate)
+                  ? `${adjustedSavingsRate >= 0 ? "+" : ""}${Math.round(
+                      adjustedSavingsRate
+                    )}%`
                   : "—"}
               </div>
             </div>
@@ -742,17 +776,21 @@ export function ChartHeader({
         const isPercentage = projectionOptions?.viewType === "percentage";
 
         // Calculate adjusted net worth excluding hidden cards
-        const adjustedNetWorth = hiddenCards.size > 0
-          ? accountTypesForProjection
-              .filter((item) => !hiddenCards.has(item.name))
-              .reduce((sum, item) => sum + item.value, 0)
-          : fullNetWorth;
+        const adjustedNetWorth =
+          hiddenCards.size > 0
+            ? accountTypesForProjection
+                .filter((item) => !hiddenCards.has(item.name))
+                .reduce((sum, item) => sum + item.value, 0)
+            : fullNetWorth;
 
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                PROJECTED NET WORTH {hiddenCards.size > 0 && <span className="text-xs opacity-60">(filtered)</span>}
+                PROJECTED NET WORTH{" "}
+                {hiddenCards.size > 0 && (
+                  <span className="text-xs opacity-60">(filtered)</span>
+                )}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
@@ -810,7 +848,9 @@ export function ChartHeader({
         <div className="mb-3 flex items-center gap-2">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full text-sm">
             <span className="text-primary">📌</span>
-            <span className="font-medium text-primary">{pinnedData?.month}</span>
+            <span className="font-medium text-primary">
+              {pinnedData?.month}
+            </span>
             <button
               onClick={onClearPinned}
               className="ml-1 p-0.5 hover:bg-primary/20 rounded-full transition-colors"
