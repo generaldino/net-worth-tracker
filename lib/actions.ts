@@ -1111,6 +1111,22 @@ export async function addMonthlyEntry(
   }
 ) {
   try {
+    // Get the account to check its type
+    const account = await db
+      .select()
+      .from(accountsTable)
+      .where(eq(accountsTable.id, accountId))
+      .limit(1);
+
+    if (account.length === 0) {
+      return {
+        success: false,
+        error: "Account not found",
+      };
+    }
+
+    const accountType = account[0].type;
+
     // Check if an entry already exists for this account and month
     const existingEntry = await db
       .select()
@@ -1130,10 +1146,20 @@ export async function addMonthlyEntry(
       };
     }
 
-    // Compute expenditure: cashOut - internalTransfersOut - debtPayments
-    const internalTransfersOut = entry.internalTransfersOut || 0;
-    const debtPayments = entry.debtPayments || 0;
-    const expenditure = entry.cashOut - internalTransfersOut - debtPayments;
+    // Expenditure only applies to Current and Credit_Card accounts
+    // For other account types (Stock, Savings, Pension, etc.), expenditure is always 0
+    const shouldCalculateExpenditure =
+      accountType === "Current" || accountType === "Credit_Card";
+
+    const internalTransfersOut = shouldCalculateExpenditure
+      ? entry.internalTransfersOut || 0
+      : 0;
+    const debtPayments = shouldCalculateExpenditure
+      ? entry.debtPayments || 0
+      : 0;
+    const expenditure = shouldCalculateExpenditure
+      ? Math.max(0, entry.cashOut - internalTransfersOut - debtPayments)
+      : 0;
 
     // Insert the new entry
     const newEntry = {
@@ -1142,10 +1168,10 @@ export async function addMonthlyEntry(
       endingBalance: entry.endingBalance.toString(),
       cashIn: entry.cashIn.toString(),
       cashOut: entry.cashOut.toString(),
-      income: (entry.income || 0).toString(),
+      income: shouldCalculateExpenditure ? (entry.income || 0).toString() : "0",
       internalTransfersOut: internalTransfersOut.toString(),
       debtPayments: debtPayments.toString(),
-      expenditure: Math.max(0, expenditure).toString(), // Ensure non-negative
+      expenditure: expenditure.toString(),
     };
 
     await db.insert(monthlyEntries).values(newEntry);
@@ -1188,6 +1214,22 @@ export async function updateMonthlyEntry(
   }
 ) {
   try {
+    // Get the account to check its type
+    const account = await db
+      .select()
+      .from(accountsTable)
+      .where(eq(accountsTable.id, accountId))
+      .limit(1);
+
+    if (account.length === 0) {
+      return {
+        success: false,
+        error: "Account not found",
+      };
+    }
+
+    const accountType = account[0].type;
+
     // Check if the entry exists
     const existingEntry = await db
       .select()
@@ -1207,10 +1249,20 @@ export async function updateMonthlyEntry(
       };
     }
 
-    // Compute expenditure: cashOut - internalTransfersOut - debtPayments
-    const internalTransfersOut = entry.internalTransfersOut || 0;
-    const debtPayments = entry.debtPayments || 0;
-    const expenditure = entry.cashOut - internalTransfersOut - debtPayments;
+    // Expenditure only applies to Current and Credit_Card accounts
+    // For other account types (Stock, Savings, Pension, etc.), expenditure is always 0
+    const shouldCalculateExpenditure =
+      accountType === "Current" || accountType === "Credit_Card";
+
+    const internalTransfersOut = shouldCalculateExpenditure
+      ? entry.internalTransfersOut || 0
+      : 0;
+    const debtPayments = shouldCalculateExpenditure
+      ? entry.debtPayments || 0
+      : 0;
+    const expenditure = shouldCalculateExpenditure
+      ? Math.max(0, entry.cashOut - internalTransfersOut - debtPayments)
+      : 0;
 
     // Update the entry
     await db
@@ -1219,10 +1271,12 @@ export async function updateMonthlyEntry(
         endingBalance: entry.endingBalance.toString(),
         cashIn: entry.cashIn.toString(),
         cashOut: entry.cashOut.toString(),
-        income: (entry.income || 0).toString(),
+        income: shouldCalculateExpenditure
+          ? (entry.income || 0).toString()
+          : "0",
         internalTransfersOut: internalTransfersOut.toString(),
         debtPayments: debtPayments.toString(),
-        expenditure: Math.max(0, expenditure).toString(), // Ensure non-negative
+        expenditure: expenditure.toString(),
         updatedAt: new Date(),
       })
       .where(
