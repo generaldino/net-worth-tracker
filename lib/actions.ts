@@ -13,7 +13,11 @@ import { getUserId } from "@/lib/auth-helpers";
 import { getAccessibleUserIds } from "@/app/actions/sharing";
 import type { Currency } from "@/lib/fx-rates";
 import type { AccountType } from "@/lib/types";
-import { fetchAndSaveExchangeRatesForMonth, convertCurrency as convertCurrencyServer } from "@/lib/fx-rates-server";
+import {
+  fetchAndSaveExchangeRatesForMonth,
+  convertCurrency as convertCurrencyServer,
+  getExchangeRates,
+} from "@/lib/fx-rates-server";
 
 export async function calculateNetWorth() {
   try {
@@ -393,7 +397,39 @@ export async function getFinancialMetrics() {
       expenditureBreakdownAllTime.push({ currency, amount });
     });
 
-    // Calculate totals (will be converted on client side)
+    // Get exchange rates for the latest month to convert all currencies to GBP
+    const fxRates = await getExchangeRates(latestMonth);
+
+    // Helper function to convert currency amount to GBP
+    const convertToGBP = (amount: number, currency: Currency): number => {
+      if (currency === "GBP") return amount;
+      // Rates are stored as: 1 GBP = X currency
+      // So to convert from currency to GBP, divide by the rate
+      const rate = fxRates.rates[currency];
+      if (!rate || rate === 0) return amount; // Fallback
+      return amount / rate;
+    };
+
+    // Calculate totals converted to GBP for accurate rate calculations
+    let incomeYTDInGBP = 0;
+    let incomeAllTimeInGBP = 0;
+    let expenditureYTDInGBP = 0;
+    let expenditureAllTimeInGBP = 0;
+
+    incomeByCurrencyYTD.forEach((amount, currency) => {
+      incomeYTDInGBP += convertToGBP(amount, currency);
+    });
+    incomeByCurrencyAllTime.forEach((amount, currency) => {
+      incomeAllTimeInGBP += convertToGBP(amount, currency);
+    });
+    expenditureByCurrencyYTD.forEach((amount, currency) => {
+      expenditureYTDInGBP += convertToGBP(amount, currency);
+    });
+    expenditureByCurrencyAllTime.forEach((amount, currency) => {
+      expenditureAllTimeInGBP += convertToGBP(amount, currency);
+    });
+
+    // Calculate raw totals (for backward compatibility - these are in mixed currencies)
     const incomeYTD = Array.from(incomeByCurrencyYTD.values()).reduce(
       (sum, val) => sum + val,
       0
@@ -413,7 +449,12 @@ export async function getFinancialMetrics() {
     const savingsYTD = incomeYTD - expenditureYTD;
     const savingsAllTime = incomeAllTime - expenditureAllTime;
 
-    // Calculate Savings Rate and Spending Rate (more meaningful than percentage changes)
+    // Calculate GBP-converted totals for savings
+    const savingsYTDInGBP = incomeYTDInGBP - expenditureYTDInGBP;
+    const savingsAllTimeInGBP = incomeAllTimeInGBP - expenditureAllTimeInGBP;
+
+    // Calculate Savings Rate and Spending Rate using GBP-converted values
+    // This ensures accurate percentage calculations across multiple currencies
     // Savings Rate = (Saved / Earned) × 100
     // Spending Rate = (Spent / Earned) × 100
     let savingsRateYTD: number | null = null;
@@ -421,14 +462,15 @@ export async function getFinancialMetrics() {
     let spendingRateYTD: number | null = null;
     let spendingRateAllTime: number | null = null;
 
-    if (incomeYTD !== 0) {
-      savingsRateYTD = (savingsYTD / incomeYTD) * 100;
-      spendingRateYTD = (expenditureYTD / incomeYTD) * 100;
+    if (incomeYTDInGBP !== 0) {
+      savingsRateYTD = (savingsYTDInGBP / incomeYTDInGBP) * 100;
+      spendingRateYTD = (expenditureYTDInGBP / incomeYTDInGBP) * 100;
     }
 
-    if (incomeAllTime !== 0) {
-      savingsRateAllTime = (savingsAllTime / incomeAllTime) * 100;
-      spendingRateAllTime = (expenditureAllTime / incomeAllTime) * 100;
+    if (incomeAllTimeInGBP !== 0) {
+      savingsRateAllTime = (savingsAllTimeInGBP / incomeAllTimeInGBP) * 100;
+      spendingRateAllTime =
+        (expenditureAllTimeInGBP / incomeAllTimeInGBP) * 100;
     }
 
     // Calculate YTD and All Time percentage changes (not YoY) - keeping for Net Worth
@@ -500,11 +542,17 @@ export async function getFinancialMetrics() {
       const entry = latestMonthEntries.find((e) => e.accountId === account.id);
       const balance = Number(entry?.endingBalance || 0);
       const accountCurrency = (account.currency || "GBP") as Currency;
-      
+
       // Convert balance to GBP
-      const balanceInGBP = accountCurrency === "GBP" 
-        ? balance 
-        : await convertCurrencyServer(balance, accountCurrency, "GBP", latestMonth);
+      const balanceInGBP =
+        accountCurrency === "GBP"
+          ? balance
+          : await convertCurrencyServer(
+              balance,
+              accountCurrency,
+              "GBP",
+              latestMonth
+            );
 
       if (account.type === "Credit_Card" || account.type === "Loan") {
         currentNetWorth -= Math.abs(balanceInGBP);
@@ -608,11 +656,17 @@ export async function getFinancialMetrics() {
           );
           const balance = Number(entry?.endingBalance || 0);
           const accountCurrency = (account.currency || "GBP") as Currency;
-          
+
           // Convert balance to GBP
-          const balanceInGBP = accountCurrency === "GBP" 
-            ? balance 
-            : await convertCurrencyServer(balance, accountCurrency, "GBP", firstMonth);
+          const balanceInGBP =
+            accountCurrency === "GBP"
+              ? balance
+              : await convertCurrencyServer(
+                  balance,
+                  accountCurrency,
+                  "GBP",
+                  firstMonth
+                );
 
           if (account.type === "Credit_Card" || account.type === "Loan") {
             firstNetWorth -= Math.abs(balanceInGBP);
@@ -647,11 +701,17 @@ export async function getFinancialMetrics() {
             );
             const balance = Number(entry?.endingBalance || 0);
             const accountCurrency = (account.currency || "GBP") as Currency;
-            
+
             // Convert balance to GBP
-            const balanceInGBP = accountCurrency === "GBP" 
-              ? balance 
-              : await convertCurrencyServer(balance, accountCurrency, "GBP", ytdStartMonth);
+            const balanceInGBP =
+              accountCurrency === "GBP"
+                ? balance
+                : await convertCurrencyServer(
+                    balance,
+                    accountCurrency,
+                    "GBP",
+                    ytdStartMonth
+                  );
 
             if (account.type === "Credit_Card" || account.type === "Loan") {
               januaryNetWorth -= Math.abs(balanceInGBP);
@@ -1541,14 +1601,38 @@ export async function getChartData(
       return monthData;
     });
 
-    // Calculate growth by source over time (raw values, no conversion)
+    // Pre-fetch exchange rates for all months to avoid repeated DB calls
+    const monthRatesMap = new Map<
+      string,
+      { rates: Record<Currency, number> }
+    >();
+    for (const month of filteredMonths) {
+      const rates = await getExchangeRates(month);
+      monthRatesMap.set(month, rates);
+    }
+
+    // Helper function to convert amount to GBP using cached rates
+    const convertToGBPForMonth = (
+      amount: number,
+      currency: Currency,
+      monthKey: string
+    ): number => {
+      if (currency === "GBP") return amount;
+      const fxRates = monthRatesMap.get(monthKey);
+      if (!fxRates) return amount;
+      const rate = fxRates.rates[currency];
+      if (!rate || rate === 0) return amount;
+      return amount / rate;
+    };
+
+    // Calculate growth by source over time (values converted to GBP for accurate calculations)
     const sourceData = filteredMonths.map((month) => {
       let interestEarned = 0;
       let capitalGains = 0;
       let totalWorkIncome = 0;
       let totalExpenditure = 0;
 
-      // Per-account breakdowns (with currency info)
+      // Per-account breakdowns (with currency info - amounts stored in original currency)
       const savingsAccounts: Array<{
         accountId: string;
         name: string;
@@ -1584,23 +1668,32 @@ export async function getChartData(
         // Add income to total (only from Current accounts)
         if (account.type === "Current") {
           const income = Number(entry.income || 0);
-          totalWorkIncome += income;
+          // Convert to GBP before adding to total for accurate rate calculations
+          totalWorkIncome += convertToGBPForMonth(
+            income,
+            accountCurrency,
+            month
+          );
 
-          // Track accounts that received income for breakdown
+          // Track accounts that received income for breakdown (keep in original currency)
           if (income > 0) {
             savingsAccounts.push({
               accountId: account.id,
               name: account.name,
               type: account.type,
-              amount: income, // Show income in breakdown
+              amount: income, // Show income in breakdown in original currency
               currency: accountCurrency,
               owner: account.owner || "Unknown",
             });
           }
 
-          // Add expenditure from Current accounts
+          // Add expenditure from Current accounts (convert to GBP)
           const expenditure = Number(entry.expenditure || 0);
-          totalExpenditure += expenditure;
+          totalExpenditure += convertToGBPForMonth(
+            expenditure,
+            accountCurrency,
+            month
+          );
         }
 
         // Add Credit Card expenditure to total expenditure (spending on cards is expenditure)
@@ -1608,17 +1701,25 @@ export async function getChartData(
         // (though credit cards typically won't have internal transfers or debt payments)
         if (account.type === "Credit_Card") {
           const expenditure = Number(entry.expenditure || 0);
-          totalExpenditure += expenditure;
+          totalExpenditure += convertToGBPForMonth(
+            expenditure,
+            accountCurrency,
+            month
+          );
         }
 
-        // Calculate interest earned (if applicable)
+        // Calculate interest earned (if applicable) - convert to GBP
         if (account.type === "Savings" && entry.accountGrowth > 0) {
-          interestEarned += entry.accountGrowth;
+          interestEarned += convertToGBPForMonth(
+            entry.accountGrowth,
+            accountCurrency,
+            month
+          );
           interestAccounts.push({
             accountId: account.id,
             name: account.name,
             type: account.type,
-            amount: entry.accountGrowth,
+            amount: entry.accountGrowth, // Keep in original currency for breakdown
             currency: accountCurrency,
             owner: account.owner || "Unknown",
           });
@@ -1632,19 +1733,23 @@ export async function getChartData(
           account.type !== "Credit_Card" &&
           account.type !== "Loan"
         ) {
-          capitalGains += entry.accountGrowth;
+          capitalGains += convertToGBPForMonth(
+            entry.accountGrowth,
+            accountCurrency,
+            month
+          );
           capitalGainsAccounts.push({
             accountId: account.id,
             name: account.name,
             type: account.type,
-            amount: entry.accountGrowth,
+            amount: entry.accountGrowth, // Keep in original currency for breakdown
             currency: accountCurrency,
             owner: account.owner || "Unknown",
           });
         }
       });
 
-      // Calculate savings from income: Income - Expenditure
+      // Calculate savings from income: Income - Expenditure (both already in GBP)
       // This represents the net cash saved from work income (after spending)
       // This is a cash flow calculation, not based on net worth changes
       const savingsFromIncome = totalWorkIncome - totalExpenditure;
@@ -2241,7 +2346,16 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
  * Returns data in the format expected by ExchangeRatesProvider
  */
 export async function getInitialExchangeRates(): Promise<
-  Record<string, { date: string; gbpRate: number; eurRate: number; usdRate: number; aedRate: number }>
+  Record<
+    string,
+    {
+      date: string;
+      gbpRate: number;
+      eurRate: number;
+      usdRate: number;
+      aedRate: number;
+    }
+  >
 > {
   try {
     // Generate months for the last 24 months (covers most chart views)
@@ -2255,9 +2369,18 @@ export async function getInitialExchangeRates(): Promise<
     }
 
     const rates = await fetchExchangeRatesForMonths(months);
-    
+
     // Convert to the format expected by ExchangeRatesProvider
-    const result: Record<string, { date: string; gbpRate: number; eurRate: number; usdRate: number; aedRate: number }> = {};
+    const result: Record<
+      string,
+      {
+        date: string;
+        gbpRate: number;
+        eurRate: number;
+        usdRate: number;
+        aedRate: number;
+      }
+    > = {};
     rates.forEach((rate) => {
       result[rate.date] = {
         date: rate.date,
@@ -2267,7 +2390,7 @@ export async function getInitialExchangeRates(): Promise<
         aedRate: Number(rate.aedRate),
       };
     });
-    
+
     return result;
   } catch (error) {
     console.error("Error getting initial exchange rates:", error);
