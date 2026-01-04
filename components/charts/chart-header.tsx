@@ -55,6 +55,8 @@ function sortAccountTypesByHierarchy<
 interface ChartHeaderProps {
   chartType: ChartType;
   hoveredData: HoveredData | null;
+  pinnedData?: HoveredData | null;
+  onClearPinned?: () => void;
   latestData: HoveredData | null;
   chartCurrency: Currency;
   totalOptions?: {
@@ -81,6 +83,8 @@ export interface HoveredData {
 export function ChartHeader({
   chartType,
   hoveredData,
+  pinnedData,
+  onClearPinned,
   latestData,
   chartCurrency,
   totalOptions,
@@ -92,7 +96,9 @@ export function ChartHeader({
   onToggleHidden,
 }: ChartHeaderProps) {
   const { isMasked } = useMasking();
-  const displayData = hoveredData || latestData;
+  // Priority: pinned data > hovered data > latest data
+  const displayData = pinnedData || hoveredData || latestData;
+  const isPinned = !!pinnedData;
 
   // Extract account types for total and projection charts - must be called before early return
   const accountTypesForTotal = useMemo(() => {
@@ -799,6 +805,40 @@ export function ChartHeader({
 
   return (
     <div className="mb-4 w-full">
+      {/* Pinned Month Indicator */}
+      {isPinned && (
+        <div className="mb-3 flex items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full text-sm">
+            <span className="text-primary">📌</span>
+            <span className="font-medium text-primary">{pinnedData?.month}</span>
+            <button
+              onClick={onClearPinned}
+              className="ml-1 p-0.5 hover:bg-primary/20 rounded-full transition-colors"
+              aria-label="Clear pinned month"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-primary"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            Click chart to change • Click again to unpin
+          </span>
+        </div>
+      )}
+
       {/* Primary metrics */}
       <div className="w-full">{renderMetrics()}</div>
 

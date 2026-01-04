@@ -107,6 +107,7 @@ export function ChartDisplay({
 
   // Hover state management - all hooks must be called before any early returns
   const [hoveredData, setHoveredData] = useState<HoveredData | null>(null);
+  const [pinnedData, setPinnedData] = useState<HoveredData | null>(null);
   const [hoveredCardName, setHoveredCardName] = useState<string | null>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const isTouchingRef = useRef(false);
@@ -119,6 +120,11 @@ export function ChartDisplay({
     month: null,
     active: false,
   });
+
+  // Clear pinned data when chart type or time period changes
+  useEffect(() => {
+    setPinnedData(null);
+  }, [chartType, timePeriod]);
 
   // Touch event handlers for mobile
   useEffect(() => {
@@ -292,6 +298,230 @@ export function ChartDisplay({
     } else {
       setClickedData({ month, data, chartType });
     }
+  };
+
+  // Handle click-to-pin: toggle pinning a month's data for the header cards
+  const handlePinToggle = (month: string) => {
+    // If clicking the same month that's already pinned, unpin it
+    if (pinnedData?.month === month) {
+      setPinnedData(null);
+      return;
+    }
+
+    // Extract the data for this month based on chart type
+    let pinData: HoveredData | null = null;
+
+    switch (chartType) {
+      case "total": {
+        const monthNetWorth = chartData.netWorthData.find(
+          (d) => d.month === month
+        );
+        const accountTypeData = chartData.accountTypeData.find(
+          (d) => d.month === month
+        );
+        if (monthNetWorth) {
+          const metrics: Record<string, number | string> = {
+            "Net Worth": monthNetWorth.netWorth,
+          };
+          if (accountTypeData) {
+            const netWorth = monthNetWorth.netWorth;
+            const absNetWorth = Math.abs(netWorth);
+            Object.keys(accountTypeData).forEach((key) => {
+              if (
+                key !== "month" &&
+                key !== "monthKey" &&
+                typeof accountTypeData[key] === "number"
+              ) {
+                const balance = accountTypeData[key] as number;
+                if (totalOptions?.viewType === "percentage") {
+                  metrics[key] =
+                    absNetWorth > 0 ? (balance / absNetWorth) * 100 : 0;
+                } else {
+                  metrics[key] = balance;
+                }
+              }
+            });
+          }
+          pinData = {
+            date: month,
+            month,
+            primaryValue: monthNetWorth.netWorth,
+            metrics,
+          };
+        }
+        break;
+      }
+      case "assets-vs-liabilities": {
+        const monthData = chartData.netWorthData.find((d) => d.month === month);
+        if (monthData) {
+          const assets =
+            monthData.accountBalances
+              ?.filter((acc) => !acc.isLiability)
+              .reduce((sum, acc) => sum + acc.balance, 0) || 0;
+          const liabilities =
+            monthData.accountBalances
+              ?.filter((acc) => acc.isLiability)
+              .reduce((sum, acc) => sum + Math.abs(acc.balance), 0) || 0;
+          pinData = {
+            date: month,
+            month,
+            primaryValue: monthData.netWorth,
+            metrics: {
+              Assets: assets,
+              Liabilities: liabilities,
+              "Net Worth": monthData.netWorth,
+            },
+          };
+        }
+        break;
+      }
+      case "monthly-growth-rate": {
+        const monthIndex = chartData.netWorthData.findIndex(
+          (d) => d.month === month
+        );
+        if (monthIndex > 0) {
+          const current = chartData.netWorthData[monthIndex];
+          const previous = chartData.netWorthData[monthIndex - 1];
+          const growthRate =
+            previous.netWorth !== 0
+              ? ((current.netWorth - previous.netWorth) /
+                  Math.abs(previous.netWorth)) *
+                100
+              : 0;
+          pinData = {
+            date: month,
+            month,
+            primaryValue: growthRate,
+            metrics: {
+              "Growth Rate": growthRate,
+              netWorth: current.netWorth,
+            },
+          };
+        }
+        break;
+      }
+      case "by-account": {
+        const monthData = chartData.accountData.find((d) => d.month === month);
+        if (monthData) {
+          let total = 0;
+          const metrics: Record<string, number | string> = {};
+          Object.keys(monthData).forEach((key) => {
+            if (
+              key !== "month" &&
+              key !== "monthKey" &&
+              typeof monthData[key] === "number"
+            ) {
+              const val = monthData[key] as number;
+              total += val;
+              metrics[key] = val;
+            }
+          });
+          pinData = {
+            date: month,
+            month,
+            primaryValue: total,
+            metrics: { ...metrics, Total: total },
+          };
+        }
+        break;
+      }
+      case "by-wealth-source": {
+        const monthData = chartData.sourceData.find((d) => d.month === month);
+        if (monthData) {
+          const savings = monthData["Savings from Income"] || 0;
+          const interest = monthData["Interest Earned"] || 0;
+          const gains = monthData["Capital Gains"] || 0;
+          pinData = {
+            date: month,
+            month,
+            primaryValue: savings + interest + gains,
+            metrics: {
+              "Savings from Income": savings,
+              "Interest Earned": interest,
+              "Capital Gains": gains,
+            },
+          };
+        }
+        break;
+      }
+      case "waterfall": {
+        const monthIndex = chartData.sourceData.findIndex(
+          (d) => d.month === month
+        );
+        const monthSource = chartData.sourceData[monthIndex];
+        const monthNetWorth = chartData.netWorthData[monthIndex];
+        const prevNetWorth =
+          monthIndex > 0
+            ? chartData.netWorthData[monthIndex - 1]?.netWorth
+            : monthNetWorth?.netWorth || 0;
+        if (monthSource && monthNetWorth) {
+          pinData = {
+            date: month,
+            month,
+            primaryValue: monthNetWorth.netWorth,
+            metrics: {
+              "Starting Balance": prevNetWorth,
+              "Savings from Income": monthSource["Savings from Income"] || 0,
+              "Interest Earned": monthSource["Interest Earned"] || 0,
+              "Capital Gains": monthSource["Capital Gains"] || 0,
+              "Ending Balance": monthNetWorth.netWorth,
+            },
+          };
+        }
+        break;
+      }
+      case "savings-rate": {
+        const monthData = chartData.sourceData.find((d) => d.month === month);
+        if (monthData) {
+          pinData = {
+            date: month,
+            month,
+            primaryValue: monthData["Savings Rate"] || 0,
+            metrics: {
+              "Savings Rate": monthData["Savings Rate"] || 0,
+              "Total Income": monthData["Total Income"] || 0,
+              "Total Expenditure": monthData["Total Expenditure"] || 0,
+              "Savings from Income": monthData["Savings from Income"] || 0,
+            },
+          };
+        }
+        break;
+      }
+      case "projection": {
+        if (projectionDataFromContext?.projectionData) {
+          const monthData = projectionDataFromContext.projectionData.find(
+            (d) => d.month === month
+          );
+          if (monthData) {
+            const metrics: Record<string, number | string> = {
+              "Net Worth": monthData.netWorth,
+            };
+            monthData.accountBalances.forEach((acc) => {
+              const current = (metrics[acc.accountType] as number) || 0;
+              metrics[acc.accountType] = current + acc.balance;
+            });
+            // Format the month for display (convert "2024-12" to "Dec 2024")
+            const formattedMonth = new Date(month + "-01").toLocaleDateString(
+              "en-GB",
+              { month: "short", year: "numeric" }
+            );
+            pinData = {
+              date: formattedMonth,
+              month: formattedMonth,
+              primaryValue: monthData.netWorth,
+              metrics,
+            };
+          }
+        }
+        break;
+      }
+    }
+    setPinnedData(pinData);
+  };
+
+  // Clear pinned data handler
+  const handleClearPinned = () => {
+    setPinnedData(null);
   };
 
   // Helper to extract hovered data from chart payload
@@ -715,10 +945,6 @@ export function ChartDisplay({
       return dateA.getTime() - dateB.getTime();
     });
 
-    console.log("[Cumulative Calculation] Starting cumulative calculation");
-    console.log("[Cumulative Calculation] Total months:", sortedData.length);
-    console.log("[Cumulative Calculation] Monthly values:");
-
     for (const item of sortedData) {
       const cumulativeItem: typeof item = {
         ...item,
@@ -731,28 +957,8 @@ export function ChartDisplay({
         runningTotals[source] += monthlyValue;
         cumulativeItem[source] = runningTotals[source];
       }
-
-      console.log(
-        `[Cumulative Calculation] ${item.month} (${item.monthKey}):`,
-        {
-          monthly: monthlyValues,
-          cumulative: { ...runningTotals },
-        }
-      );
-
       cumulativeData.push(cumulativeItem);
     }
-
-    console.log(
-      "[Cumulative Calculation] Final cumulative totals:",
-      runningTotals
-    );
-    console.log(
-      "[Cumulative Calculation] Total cumulative:",
-      runningTotals["Savings from Income"] +
-        runningTotals["Interest Earned"] +
-        runningTotals["Capital Gains"]
-    );
 
     return cumulativeData;
   }, [chartType, chartData.sourceData, byWealthSourceOptions?.viewType]);
@@ -880,7 +1086,15 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={totalChartData} margin={margins}>
+              <AreaChart
+                data={totalChartData}
+                margin={margins}
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.month) {
+                    handlePinToggle(data.activePayload[0].payload.month);
+                  }
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -952,11 +1166,7 @@ export function ChartDisplay({
                             monthKey: string;
                             [key: string]: string | number;
                           };
-                          const netWorth = payload["Net Worth"] as number;
-                          handleBarClick(
-                            { month: payload.month, netWorth },
-                            payload.month
-                          );
+                          handlePinToggle(payload.month);
                         }
                       }}
                       style={{ cursor: isHidden ? "default" : "pointer" }}
@@ -1021,7 +1231,15 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={assetsVsLiabilitiesData} margin={margins}>
+              <AreaChart
+                data={assetsVsLiabilitiesData}
+                margin={margins}
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.month) {
+                    handlePinToggle(data.activePayload[0].payload.month);
+                  }
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -1120,15 +1338,7 @@ export function ChartDisplay({
                         Liabilities: number;
                         "Net Worth": number;
                       };
-                      handleBarClick(
-                        {
-                          month: payload.month,
-                          Assets: payload.Assets,
-                          Liabilities: payload.Liabilities,
-                          "Net Worth": payload["Net Worth"],
-                        },
-                        payload.month
-                      );
+                      handlePinToggle(payload.month);
                     }
                   }}
                   style={{ cursor: "pointer" }}
@@ -1178,7 +1388,15 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={growthRateData} margin={margins}>
+              <BarChart
+                data={growthRateData}
+                margin={margins}
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.month) {
+                    handlePinToggle(data.activePayload[0].payload.month);
+                  }
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -1223,14 +1441,7 @@ export function ChartDisplay({
                         "Growth Rate": number;
                         netWorth: number;
                       };
-                      handleBarClick(
-                        {
-                          month: payload.month,
-                          "Growth Rate": payload["Growth Rate"],
-                          netWorth: payload.netWorth,
-                        },
-                        payload.month
-                      );
+                      handlePinToggle(payload.month);
                     }
                   }}
                   style={{ cursor: "pointer" }}
@@ -1299,6 +1510,11 @@ export function ChartDisplay({
                 data={chartData.accountData}
                 margin={margins}
                 barCategoryGap="20%"
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.month) {
+                    handlePinToggle(data.activePayload[0].payload.month);
+                  }
+                }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
@@ -1356,7 +1572,7 @@ export function ChartDisplay({
                         fill={getUniqueColor(index)}
                         maxBarSize={accountBarSize}
                         stackId={stackId}
-                        onClick={(data) => handleBarClick(data, data.month)}
+                        onClick={(data) => handlePinToggle(data.month)}
                         style={{ cursor: "pointer" }}
                         isAnimationActive={false}
                       />
@@ -1394,7 +1610,15 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dataToUse} margin={margins}>
+              <AreaChart
+                data={dataToUse}
+                margin={margins}
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.month) {
+                    handlePinToggle(data.activePayload[0].payload.month);
+                  }
+                }}
+              >
                 <defs>
                   {sourceKeys.map((source, index) => (
                     <linearGradient
@@ -1495,7 +1719,7 @@ export function ChartDisplay({
                               [key: string]: string | number | undefined;
                             };
                             if (payload.month) {
-                              handleBarClick(payload, payload.month);
+                              handlePinToggle(payload.month);
                             }
                           }
                         }}
@@ -1662,14 +1886,8 @@ export function ChartDisplay({
                     fill="#8884d8"
                     dataKey="value"
                     isAnimationActive={false}
-                    onClick={(data) => {
-                      handleBarClick(
-                        {
-                          month: selectedMonthData.month,
-                          [data.name]: data.value,
-                        },
-                        selectedMonthData.month
-                      );
+                    onClick={() => {
+                      handlePinToggle(selectedMonthData.month);
                     }}
                   >
                     {allocationData.map((entry, index) => {
@@ -1802,7 +2020,15 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={waterfallData} margin={margins}>
+              <BarChart
+                data={waterfallData}
+                margin={margins}
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.month) {
+                    handlePinToggle(data.activePayload[0].payload.month);
+                  }
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -1878,7 +2104,7 @@ export function ChartDisplay({
                         [key: string]: string | number | undefined;
                       };
                       if (payload.month) {
-                        handleBarClick(payload, payload.month);
+                        handlePinToggle(payload.month);
                       }
                     }
                   }}
@@ -1914,7 +2140,7 @@ export function ChartDisplay({
                         [key: string]: string | number | undefined;
                       };
                       if (payload.month) {
-                        handleBarClick(payload, payload.month);
+                        handlePinToggle(payload.month);
                       }
                     }
                   }}
@@ -1948,7 +2174,7 @@ export function ChartDisplay({
                         [key: string]: string | number | undefined;
                       };
                       if (payload.month) {
-                        handleBarClick(payload, payload.month);
+                        handlePinToggle(payload.month);
                       }
                     }
                   }}
@@ -1989,16 +2215,6 @@ export function ChartDisplay({
                 : 0,
           }));
 
-        // Debug logging for savings rate chart
-        if (process.env.NODE_ENV === "development") {
-          console.log(
-            "[Savings Rate Chart] Data points:",
-            savingsRateData.length
-          );
-          console.log("[Savings Rate Chart] YAxes configured: left, right");
-          console.log("[Savings Rate Chart] Hovered data:", hoveredData);
-        }
-
         if (!savingsRateData || savingsRateData.length === 0) {
           return (
             <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center">
@@ -2035,7 +2251,15 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={savingsRateData} margin={margins}>
+              <ComposedChart
+                data={savingsRateData}
+                margin={margins}
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.month) {
+                    handlePinToggle(data.activePayload[0].payload.month);
+                  }
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -2119,11 +2343,7 @@ export function ChartDisplay({
                         month: string;
                         monthKey: string;
                       };
-                      setClickedData({
-                        month: payload.month,
-                        data: payload,
-                        chartType: "savings-rate",
-                      });
+                      handlePinToggle(payload.month);
                     }
                   }}
                   style={{
@@ -2158,11 +2378,7 @@ export function ChartDisplay({
                         month: string;
                         monthKey: string;
                       };
-                      setClickedData({
-                        month: payload.month,
-                        data: payload,
-                        chartType: "savings-rate",
-                      });
+                      handlePinToggle(payload.month);
                     }
                   }}
                   style={{
@@ -2188,11 +2404,7 @@ export function ChartDisplay({
                         month: string;
                         monthKey: string;
                       };
-                      setClickedData({
-                        month: payload.month,
-                        data: payload,
-                        chartType: "savings-rate",
-                      });
+                      handlePinToggle(payload.month);
                     }
                   }}
                   style={{ cursor: "pointer" }}
@@ -2347,7 +2559,15 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={projectionChartData} margin={margins}>
+              <AreaChart
+                data={projectionChartData}
+                margin={margins}
+                onClick={(data) => {
+                  if (data?.activePayload?.[0]?.payload?.monthKey) {
+                    handlePinToggle(data.activePayload[0].payload.monthKey);
+                  }
+                }}
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" hide={true} />
                 <YAxis
@@ -2412,6 +2632,17 @@ export function ChartDisplay({
                       fill={getUniqueColor(index)}
                       fillOpacity={opacity}
                       isAnimationActive={false}
+                      onClick={(data) => {
+                        if ("payload" in data) {
+                          const payload = data.payload as {
+                            month: string;
+                            monthKey: string;
+                            [key: string]: string | number;
+                          };
+                          handlePinToggle(payload.monthKey);
+                        }
+                      }}
+                      style={{ cursor: isHidden ? "default" : "pointer" }}
                     />
                   );
                 })}
@@ -2434,6 +2665,8 @@ export function ChartDisplay({
       <ChartHeader
         chartType={chartType}
         hoveredData={hoveredData}
+        pinnedData={pinnedData}
+        onClearPinned={handleClearPinned}
         latestData={latestData}
         chartCurrency={chartCurrency}
         totalOptions={totalOptions}
