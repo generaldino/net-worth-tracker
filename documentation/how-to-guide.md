@@ -117,11 +117,19 @@ Employee stock options or option positions.
 
 ### Liability Accounts
 
+> **Balance Convention**: Enter **POSITIVE** amounts for liability accounts. The ending balance represents how much you owe (e.g., enter `25000` for a $25,000 loan, not `-25000`). The app automatically treats these as liabilities and subtracts them from your net worth.
+
 #### Credit Card
 
 Credit card balances.
 
 **When to use**: Track your credit card debt. The ending balance represents what you owe.
+
+**Fields tracked**:
+
+- Ending Balance: Amount you owe (enter as **positive** number)
+- Cash In: Payments made to the card (reduces what you owe)
+- Cash Out: New spending on the card (increases what you owe)
 
 **Important notes**:
 
@@ -137,14 +145,50 @@ Personal loans, mortgages, car loans, etc.
 
 **Fields tracked**:
 
-- Ending Balance: Remaining principal owed
+- Ending Balance: Remaining principal owed (enter as **positive** number)
 - Cash In: Loan payments (principal + interest)
 - Cash Out: Drawdowns (typically 0 for standard loans)
 
 **Important notes**:
 
+- Enter the loan balance as a **positive** number (e.g., `25000` for a $25,000 loan)
 - Loan payments from your Current account should NOT be counted as Expenditure on your Current account
-- The app treats loans as liabilities (reducing net worth)
+- The app automatically treats loans as liabilities (subtracting from net worth)
+
+### Physical Assets
+
+#### Asset
+
+Physical assets like vehicles, property, jewelry, or other valuable items.
+
+**When to use**: Track the value of physical assets that contribute to your net worth. Common uses include:
+
+- Vehicles (cars, motorcycles, boats)
+- Real estate (if not tracked elsewhere)
+- Valuable collectibles or jewelry
+- Security deposits (rental apartments)
+
+**Fields tracked**:
+
+- Ending Balance: Current market value of the asset
+- Cash In: Proceeds from selling (partially or fully), typically 0
+- Cash Out: Capital improvements that add value, typically 0
+- Account Growth: Appreciation or depreciation (automatically calculated)
+
+**Important notes**:
+
+- Update the ending balance monthly to reflect depreciation (vehicles lose ~1-2% per month) or appreciation (property in rising markets)
+- The initial purchase is NOT recorded as Cash Out here - that happens from your Current account
+- For financed assets (like cars), create BOTH an Asset account (for the car's value) and a Loan account (for what you owe). Your equity is the difference.
+- For security deposits, simply set the ending balance to the deposit amount - it stays constant until you move out
+
+**Example - Tracking a Financed Car:**
+
+| Account           | Initial Balance | What it represents |
+| ----------------- | --------------- | ------------------ |
+| Car Loan          | -$25,000        | Amount you owe     |
+| Car Value (Asset) | +$30,000        | Car's market value |
+| **Your Equity**   | **+$5,000**     | Your down payment  |
 
 ---
 

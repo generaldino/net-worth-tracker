@@ -272,9 +272,11 @@ export function ChartDisplay({
         const assets = item.accountBalances
           .filter((acc) => !acc.isLiability)
           .reduce((sum, acc) => sum + acc.balance, 0);
+        // Use Math.abs to handle both positive and negative balance conventions
+        // Liabilities should display as positive values on the chart
         const liabilities = item.accountBalances
           .filter((acc) => acc.isLiability)
-          .reduce((sum, acc) => sum + acc.balance, 0);
+          .reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
         return {
           month: item.month,
           monthKey: item.monthKey,
@@ -461,10 +463,11 @@ export function ChartDisplay({
           latest.accountBalances
             ?.filter((acc) => !acc.isLiability)
             .reduce((sum, acc) => sum + acc.balance, 0) || 0;
+        // Use Math.abs to handle both positive and negative balance conventions
         const liabilities =
           latest.accountBalances
             ?.filter((acc) => acc.isLiability)
-            .reduce((sum, acc) => sum + acc.balance, 0) || 0;
+            .reduce((sum, acc) => sum + Math.abs(acc.balance), 0) || 0;
         return {
           date: latest.month,
           month: latest.month,
@@ -969,9 +972,10 @@ export function ChartDisplay({
             .filter((acc) => !acc.isLiability)
             .reduce((sum, acc) => sum + acc.balance, 0);
 
+          // Use Math.abs to handle both positive and negative balance conventions
           const liabilities = item.accountBalances
             .filter((acc) => acc.isLiability)
-            .reduce((sum, acc) => sum + acc.balance, 0);
+            .reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
 
           // Net Worth = Assets - Liabilities
           const netWorth = assets - liabilities;

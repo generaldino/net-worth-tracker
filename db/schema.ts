@@ -22,6 +22,7 @@ export const accountTypeEnum = pgEnum("account_type", [
   "Stock_options",
   "Credit_Card",
   "Loan",
+  "Asset",
 ]);
 
 export const accountCategoryEnum = pgEnum("account_category", [

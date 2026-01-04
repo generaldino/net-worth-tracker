@@ -188,18 +188,18 @@ function generateDemoEntries(): Record<string, MonthlyEntry[]> {
       incomeBase: 5,
     },
     "demo-credit-1": {
-      baseBalance: -1200,
-      monthlyGrowth: 20,
+      baseBalance: 1200, // Positive: amount owed
+      monthlyGrowth: -20, // Negative growth means paying down
       volatility: 800,
-      cashInBase: 1500,
-      cashOutBase: 1600,
+      cashInBase: 1500, // Payments made
+      cashOutBase: 1600, // New spending
       incomeBase: 0,
     },
     "demo-loan-1": {
-      baseBalance: -8500,
-      monthlyGrowth: 350,
+      baseBalance: 8500, // Positive: amount owed
+      monthlyGrowth: -350, // Negative growth means paying down
       volatility: 0,
-      cashInBase: 350,
+      cashInBase: 350, // Loan payments
       cashOutBase: 0,
       incomeBase: 0,
     },

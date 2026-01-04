@@ -316,6 +316,33 @@ export const fieldExplanations: FieldExplanations = {
         "The change in options value that isn't explained by cash flows. This is automatically calculated and represents changes in underlying stock price or time value.",
     },
   },
+  Asset: {
+    endingBalance: {
+      title: "Ending Balance",
+      description:
+        "The current market value of your physical asset at the end of the month (e.g., car value, property value). Update this monthly to reflect depreciation or appreciation.",
+    },
+    cashIn: {
+      title: "Cash In",
+      description:
+        "Money received from selling part or all of the asset, or any value added (e.g., improvements to property). For most assets like vehicles, this will typically be 0 unless you're selling.",
+    },
+    cashOut: {
+      title: "Cash Out",
+      description:
+        "Money spent on the asset during the month (e.g., major improvements or additions). Note: Regular maintenance costs are NOT tracked here - this is for capital improvements that increase the asset's value. The initial purchase/down payment is typically recorded as Cash Out from your Current account, not here.",
+    },
+    cashFlow: {
+      title: "Cash Flow",
+      description:
+        "The net movement of money (Cash In minus Cash Out). For most physical assets, this will be 0 unless you're buying, selling, or making capital improvements.",
+    },
+    accountGrowth: {
+      title: "Account Growth (Depreciation/Appreciation)",
+      description:
+        "The change in asset value that isn't explained by cash flows. This is automatically calculated and represents depreciation (negative for vehicles) or appreciation (positive for property in rising markets). For vehicles, expect negative growth of 1-2% per month on average.",
+    },
+  },
 };
 
 /**

@@ -20,6 +20,8 @@ const ACCOUNT_TYPE_ORDER: Record<string, number> = {
   Crypto: 12,
   Commodity: 13,
   Stock_options: 14,
+  // Physical assets (priority 15-19)
+  Asset: 15,
   // Retirement accounts (priority 20-29)
   Pension: 20,
   // Liabilities (priority 30-39)

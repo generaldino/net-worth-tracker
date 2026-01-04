@@ -43,7 +43,7 @@ export async function calculateNetWorth() {
       .orderBy(desc(monthlyEntries.month));
 
     // Calculate total net worth from the latest entries
-    // Credit cards are liabilities, so subtract their balances
+    // Credit cards and loans are liabilities, so subtract their balances
     const netWorth = allAccounts.reduce((total: number, account: Account) => {
       const latestEntry = latestEntries.find(
         (entry: MonthlyEntry) => entry.accountId === account.id
@@ -51,8 +51,9 @@ export async function calculateNetWorth() {
       const balance = Number(latestEntry?.endingBalance || 0);
 
       // Credit cards and loans are liabilities - subtract from net worth
+      // Use Math.abs to handle both positive and negative balance conventions
       if (account.type === "Credit_Card" || account.type === "Loan") {
-        return total - balance;
+        return total - Math.abs(balance);
       }
 
       // All other accounts are assets - add to net worth
@@ -180,8 +181,9 @@ export async function getFirstEntryNetWorth() {
         const balance = Number(entryForAccount?.endingBalance || 0);
 
         // Credit cards and loans are liabilities - subtract from net worth
+        // Use Math.abs to handle both positive and negative balance conventions
         if (account.type === "Credit_Card" || account.type === "Loan") {
-          return total - balance;
+          return total - Math.abs(balance);
         }
 
         // All other accounts are assets - add to net worth
@@ -491,12 +493,13 @@ export async function getFinancialMetrics() {
     }
 
     // Calculate current net worth for latest month
+    // Use Math.abs for liabilities to handle both positive and negative balance conventions
     const currentNetWorth = allAccounts.reduce((total, account) => {
       const entry = latestMonthEntries.find((e) => e.accountId === account.id);
       const balance = Number(entry?.endingBalance || 0);
 
       if (account.type === "Credit_Card" || account.type === "Loan") {
-        return total - balance;
+        return total - Math.abs(balance);
       }
       return total + balance;
     }, 0);
@@ -587,6 +590,7 @@ export async function getFinancialMetrics() {
       );
 
       if (firstMonthEntries.length > 0 && firstMonth !== latestMonth) {
+        // Use Math.abs for liabilities to handle both positive and negative balance conventions
         const firstNetWorth = allAccounts.reduce((total, account) => {
           const entry = firstMonthEntries.find(
             (e) => e.accountId === account.id
@@ -594,7 +598,7 @@ export async function getFinancialMetrics() {
           const balance = Number(entry?.endingBalance || 0);
 
           if (account.type === "Credit_Card" || account.type === "Loan") {
-            return total - balance;
+            return total - Math.abs(balance);
           }
           return total + balance;
         }, 0);
@@ -616,6 +620,7 @@ export async function getFinancialMetrics() {
         );
 
         if (januaryEntries.length > 0) {
+          // Use Math.abs for liabilities to handle both positive and negative balance conventions
           const januaryNetWorth = allAccounts.reduce((total, account) => {
             const entry = januaryEntries.find(
               (e) => e.accountId === account.id
@@ -623,7 +628,7 @@ export async function getFinancialMetrics() {
             const balance = Number(entry?.endingBalance || 0);
 
             if (account.type === "Credit_Card" || account.type === "Loan") {
-              return total - balance;
+              return total - Math.abs(balance);
             }
             return total + balance;
           }, 0);

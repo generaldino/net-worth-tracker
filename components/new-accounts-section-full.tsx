@@ -72,7 +72,8 @@ type AccountType =
   | "Commodity"
   | "Stock_options"
   | "Credit_Card"
-  | "Loan";
+  | "Loan"
+  | "Asset";
 type AccountCategory = "Cash" | "Investments";
 type Currency = "GBP" | "EUR" | "USD" | "AED";
 type TimePeriod = "1M" | "3M" | "6M" | "1Y" | "YTD" | "ALL";
@@ -229,6 +230,8 @@ const accountTypeColors: Record<AccountType, string> = {
   Credit_Card:
     "bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30",
   Loan: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30",
+  Asset:
+    "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-500/30",
 };
 
 const currencySymbols: Record<
@@ -1363,6 +1366,7 @@ function AddAccountDialog({
                   <SelectItem value="Stock_options">Stock Options</SelectItem>
                   <SelectItem value="Credit_Card">Credit Card</SelectItem>
                   <SelectItem value="Loan">Loan</SelectItem>
+                  <SelectItem value="Asset">Asset</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1566,6 +1570,7 @@ function EditAccountDialog({
                   <SelectItem value="Stock_options">Stock Options</SelectItem>
                   <SelectItem value="Credit_Card">Credit Card</SelectItem>
                   <SelectItem value="Loan">Loan</SelectItem>
+                  <SelectItem value="Asset">Asset</SelectItem>
                 </SelectContent>
               </Select>
             </div>

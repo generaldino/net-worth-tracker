@@ -42,9 +42,8 @@ export function GoogleSignInButton({
     return (
       <Button
         variant="outline"
-        size="sm"
         onClick={handleSignIn}
-        className="gap-2 text-sm h-9 hover:bg-accent"
+        className="gap-2 text-sm font-medium px-6 py-3 h-auto hover:bg-accent"
         disabled={isLoading}
       >
         {isLoading ? (

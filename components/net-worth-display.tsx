@@ -48,11 +48,12 @@ export function NetWorthDisplay({
       : netWorthBreakdown.monthKey.substring(0, 7);
 
     // Convert each account balance and sum them
+    // Use Math.abs for liabilities to handle both positive and negative balance conventions
     const convertedTotal = netWorthBreakdown.accountBalances.reduce(
       (sum, acc) => {
         const accountCurrency = acc.currency as Currency;
         if (accountCurrency === targetCurrency) {
-          return sum + (acc.isLiability ? -acc.balance : acc.balance);
+          return sum + (acc.isLiability ? -Math.abs(acc.balance) : acc.balance);
         }
 
         // Get exchange rates
@@ -61,15 +62,15 @@ export function NetWorthDisplay({
 
         if (fromRate === null || toRate === null) {
           // Rates not loaded yet, return original balance
-          return sum + (acc.isLiability ? -acc.balance : acc.balance);
+          return sum + (acc.isLiability ? -Math.abs(acc.balance) : acc.balance);
         }
 
         // Convert: amount in fromCurrency -> GBP -> toCurrency
         let amountInGbp: number;
         if (accountCurrency === "GBP") {
-          amountInGbp = acc.balance;
+          amountInGbp = Math.abs(acc.balance);
         } else {
-          amountInGbp = acc.balance / fromRate;
+          amountInGbp = Math.abs(acc.balance) / fromRate;
         }
 
         let amountInTarget: number;

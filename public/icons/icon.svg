@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#000" rx="102"/>
+  
+  <!-- Money bag - main body -->
+  <path d="M256 432c-88 0-128-60-128-140 0-70 45-110 75-130l-12-15c-8-10-6-22 4-28l40-22c6-4 14-4 20 0l40 22c10 6 12 18 4 28l-12 15c30 20 75 60 75 130 0 80-40 140-128 140z" fill="#404040"/>
+  
+  <!-- Bag tie/neck -->
+  <ellipse cx="256" cy="145" rx="45" ry="12" fill="#404040"/>
+  
+  <!-- Bag top opening flare left -->
+  <path d="M211 97c-15-5-35-12-40-25 8-20 35-8 50 0z" fill="#404040"/>
+  
+  <!-- Bag top opening flare right -->
+  <path d="M301 97c15-5 35-12 40-25-8-20-35-8-50 0z" fill="#404040"/>
+  
+  <!-- Dollar sign -->
+  <text x="256" y="330" font-family="Arial, Helvetica, sans-serif" font-size="140" font-weight="bold" fill="white" text-anchor="middle">$</text>
+</svg>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Generate PWA Icons</title>
+    <style>
+      body {
+        font-family: system-ui;
+        padding: 40px;
+        background: #1a1a1a;
+        color: white;
+        text-align: center;
+      }
+      canvas {
+        border: 1px solid #333;
+        margin: 10px;
+        border-radius: 20px;
+      }
+      button {
+        background: #0070f3;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin: 20px;
+      }
+      button:hover {
+        background: #0060df;
+      }
+      .preview {
+        margin: 20px 0;
+      }
+      h1 {
+        margin-bottom: 10px;
+      }
+      p {
+        color: #888;
+        margin-bottom: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>💰 PWA Icon Generator</h1>
+    <p>Click the button to download your icons</p>
+
+    <div class="preview">
+      <canvas id="canvas192" width="192" height="192"></canvas>
+      <canvas id="canvas512" width="512" height="512"></canvas>
+    </div>
+
+    <button onclick="downloadIcons()">Download Icons</button>
+
+    <script>
+      const emoji = "💰";
+      const sizes = [192, 512];
+
+      function drawIcon(canvasId, size) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext("2d");
+
+        // Black background
+        ctx.fillStyle = "#000000";
+        ctx.beginPath();
+        ctx.roundRect(0, 0, size, size, size * 0.2);
+        ctx.fill();
+
+        // Draw emoji
+        ctx.font = `${
+          size * 0.65
+        }px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(emoji, size / 2, size / 2 + size * 0.03);
+      }
+
+      function downloadCanvas(canvas, filename) {
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+
+      function downloadIcons() {
+        downloadCanvas(document.getElementById("canvas192"), "icon-192.png");
+        setTimeout(() => {
+          downloadCanvas(document.getElementById("canvas512"), "icon-512.png");
+        }, 500);
+      }
+
+      // Draw on load
+      drawIcon("canvas192", 192);
+      drawIcon("canvas512", 512);
+    </script>
+  </body>
+</html>
