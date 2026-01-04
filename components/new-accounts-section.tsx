@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   MoreVertical,
   Plus,
   Edit2,
@@ -1458,16 +1457,16 @@ function AccountRowDesktop({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem 
-                  className="text-sm" 
+                <DropdownMenuItem
+                  className="text-sm"
                   onClick={onMoveUp}
                   disabled={isFirst}
                 >
                   <ArrowUp className="h-3.5 w-3.5 mr-2" />
                   Move Up
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="text-sm" 
+                <DropdownMenuItem
+                  className="text-sm"
                   onClick={onMoveDown}
                   disabled={isLast}
                 >
@@ -1714,16 +1713,16 @@ function AccountCardMobile({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem 
-              className="text-sm" 
+            <DropdownMenuItem
+              className="text-sm"
               onClick={onMoveUp}
               disabled={isFirst}
             >
               <ArrowUp className="h-3.5 w-3.5 mr-2" />
               Move Up
             </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="text-sm" 
+            <DropdownMenuItem
+              className="text-sm"
               onClick={onMoveDown}
               disabled={isLast}
             >

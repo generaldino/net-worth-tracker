@@ -891,7 +891,8 @@ export async function createAccount(data: {
     | "Commodity"
     | "Stock_options"
     | "Credit_Card"
-    | "Loan";
+    | "Loan"
+    | "Asset";
   category: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
@@ -950,7 +951,8 @@ export async function updateAccount(data: {
     | "Commodity"
     | "Stock_options"
     | "Credit_Card"
-    | "Loan";
+    | "Loan"
+    | "Asset";
   category: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
