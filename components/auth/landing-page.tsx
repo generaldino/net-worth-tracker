@@ -55,7 +55,7 @@ export function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-12">
-                <GoogleSignInButton />
+                <GoogleSignInButton compact />
                 <Link
                   href="/demo"
                   className="inline-flex items-center justify-center px-6 py-3 text-sm font-medium border border-border rounded-lg hover:bg-accent transition-colors"
@@ -537,7 +537,7 @@ export function LandingPage() {
               }
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <GoogleSignInButton />
+              <GoogleSignInButton compact />
             </div>
             <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
