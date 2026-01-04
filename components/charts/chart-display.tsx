@@ -688,42 +688,42 @@ export function ChartDisplay({
     if (chartType !== "by-wealth-source") {
       return null;
     }
-    
+
     const isCumulative = byWealthSourceOptions?.viewType === "cumulative";
     if (!isCumulative) {
       return chartData.sourceData;
     }
-    
+
     // Calculate cumulative values
     const sourceKeys = [
       "Savings from Income",
       "Interest Earned",
       "Capital Gains",
     ] as const;
-    
+
     const cumulativeData = [];
     const runningTotals: Record<string, number> = {
       "Savings from Income": 0,
       "Interest Earned": 0,
       "Capital Gains": 0,
     };
-    
+
     // Sort data chronologically (oldest first)
     const sortedData = [...chartData.sourceData].sort((a, b) => {
       const dateA = new Date(a.month);
       const dateB = new Date(b.month);
       return dateA.getTime() - dateB.getTime();
     });
-    
+
     console.log("[Cumulative Calculation] Starting cumulative calculation");
     console.log("[Cumulative Calculation] Total months:", sortedData.length);
     console.log("[Cumulative Calculation] Monthly values:");
-    
+
     for (const item of sortedData) {
       const cumulativeItem: typeof item = {
         ...item,
       };
-      
+
       const monthlyValues: Record<string, number> = {};
       for (const source of sourceKeys) {
         const monthlyValue = (item[source] as number) || 0;
@@ -731,22 +731,29 @@ export function ChartDisplay({
         runningTotals[source] += monthlyValue;
         cumulativeItem[source] = runningTotals[source];
       }
-      
-      console.log(`[Cumulative Calculation] ${item.month} (${item.monthKey}):`, {
-        monthly: monthlyValues,
-        cumulative: { ...runningTotals },
-      });
-      
+
+      console.log(
+        `[Cumulative Calculation] ${item.month} (${item.monthKey}):`,
+        {
+          monthly: monthlyValues,
+          cumulative: { ...runningTotals },
+        }
+      );
+
       cumulativeData.push(cumulativeItem);
     }
-    
-    console.log("[Cumulative Calculation] Final cumulative totals:", runningTotals);
-    console.log("[Cumulative Calculation] Total cumulative:", 
-      runningTotals["Savings from Income"] + 
-      runningTotals["Interest Earned"] + 
-      runningTotals["Capital Gains"]
+
+    console.log(
+      "[Cumulative Calculation] Final cumulative totals:",
+      runningTotals
     );
-    
+    console.log(
+      "[Cumulative Calculation] Total cumulative:",
+      runningTotals["Savings from Income"] +
+        runningTotals["Interest Earned"] +
+        runningTotals["Capital Gains"]
+    );
+
     return cumulativeData;
   }, [chartType, chartData.sourceData, byWealthSourceOptions?.viewType]);
 
@@ -911,7 +918,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 12,
                     }}
                   />
@@ -920,8 +927,14 @@ export function ChartDisplay({
                   const isHovered = hoveredCardName === type;
                   const hasHover = hoveredCardName !== null;
                   const isHidden = hiddenCards.has(type);
-                  const opacity = isHidden ? 0 : hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
-                  
+                  const opacity = isHidden
+                    ? 0
+                    : hasHover
+                    ? isHovered
+                      ? 0.9
+                      : 0.2
+                    : 0.6;
+
                   return (
                     <Area
                       key={type}
@@ -1046,7 +1059,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 12,
                     }}
                   />
@@ -1055,7 +1068,9 @@ export function ChartDisplay({
                   type="monotone"
                   dataKey="Assets"
                   stackId="1"
-                  stroke={hiddenCards.has("Assets") ? "transparent" : CHART_GREEN}
+                  stroke={
+                    hiddenCards.has("Assets") ? "transparent" : CHART_GREEN
+                  }
                   fill={CHART_GREEN}
                   fillOpacity={
                     hiddenCards.has("Assets")
@@ -1073,7 +1088,9 @@ export function ChartDisplay({
                   type="monotone"
                   dataKey="Liabilities"
                   stackId="1"
-                  stroke={hiddenCards.has("Liabilities") ? "transparent" : CHART_RED}
+                  stroke={
+                    hiddenCards.has("Liabilities") ? "transparent" : CHART_RED
+                  }
                   fill={CHART_RED}
                   fillOpacity={
                     hiddenCards.has("Liabilities")
@@ -1191,7 +1208,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 12,
                     }}
                   />
@@ -1318,7 +1335,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 12,
                     }}
                   />
@@ -1358,10 +1375,10 @@ export function ChartDisplay({
           "Interest Earned",
           "Capital Gains",
         ] as const;
-        
+
         // Use pre-calculated wealth source data (from top-level useMemo)
         const dataToUse = wealthSourceData || chartData.sourceData;
-        
+
         return (
           <ChartContainer
             config={sourceKeys.reduce(
@@ -1438,7 +1455,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 12,
                     }}
                   />
@@ -1451,14 +1468,22 @@ export function ChartDisplay({
                     const isHovered = hoveredCardName === source;
                     const hasHover = hoveredCardName !== null;
                     const isHidden = hiddenCards.has(source);
-                    const opacity = isHidden ? 0 : hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
-                    
+                    const opacity = isHidden
+                      ? 0
+                      : hasHover
+                      ? isHovered
+                        ? 0.9
+                        : 0.2
+                      : 0.6;
+
                     return (
                       <Area
                         key={source}
                         type="monotone"
                         dataKey={source}
-                        stroke={isHidden ? "transparent" : getUniqueColor(index)}
+                        stroke={
+                          isHidden ? "transparent" : getUniqueColor(index)
+                        }
                         fill={`url(#${source.replace(/\s+/g, "")}Gradient)`}
                         fillOpacity={opacity}
                         strokeWidth={2}
@@ -1547,9 +1572,7 @@ export function ChartDisplay({
             const data = payload[0];
             const fill = data.payload?.fill || COLORS[0];
             const percentage =
-              totalAllocation > 0
-                ? (data.value / totalAllocation) * 100
-                : 0;
+              totalAllocation > 0 ? (data.value / totalAllocation) * 100 : 0;
             return (
               <div className="bg-background border border-border rounded-lg p-3 shadow-lg">
                 <p className="font-medium mb-2">{data.name}</p>
@@ -1563,7 +1586,9 @@ export function ChartDisplay({
                       ? "••••••"
                       : formatCurrencyAmount(data.value, chartCurrency)}
                   </span>
-                  <span className="text-muted-foreground">({formatPercentage(percentage)})</span>
+                  <span className="text-muted-foreground">
+                    ({formatPercentage(percentage)})
+                  </span>
                 </div>
               </div>
             );
@@ -1651,11 +1676,17 @@ export function ChartDisplay({
                       const isHovered = hoveredCardName === entry.name;
                       const hasHover = hoveredCardName !== null;
                       const isHidden = hiddenCards.has(entry.name);
-                      const opacity = isHidden ? 0.1 : hasHover ? (isHovered ? 1 : 0.3) : 1;
-                      
+                      const opacity = isHidden
+                        ? 0.1
+                        : hasHover
+                        ? isHovered
+                          ? 1
+                          : 0.3
+                        : 1;
+
                       return (
-                        <Cell 
-                          key={`cell-${index}`} 
+                        <Cell
+                          key={`cell-${index}`}
                           fill={entry.fill}
                           fillOpacity={opacity}
                         />
@@ -1809,7 +1840,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 12,
                     }}
                   />
@@ -1824,7 +1855,11 @@ export function ChartDisplay({
                 {/* Savings from Income */}
                 <Bar
                   dataKey="Savings from Income"
-                  fill={hiddenCards.has("Savings from Income") ? "transparent" : COLORS[0]}
+                  fill={
+                    hiddenCards.has("Savings from Income")
+                      ? "transparent"
+                      : COLORS[0]
+                  }
                   fillOpacity={
                     hiddenCards.has("Savings from Income")
                       ? 0
@@ -1847,12 +1882,20 @@ export function ChartDisplay({
                       }
                     }
                   }}
-                  style={{ cursor: hiddenCards.has("Savings from Income") ? "default" : "pointer" }}
+                  style={{
+                    cursor: hiddenCards.has("Savings from Income")
+                      ? "default"
+                      : "pointer",
+                  }}
                 />
                 {/* Interest Earned */}
                 <Bar
                   dataKey="Interest Earned"
-                  fill={hiddenCards.has("Interest Earned") ? "transparent" : COLORS[1]}
+                  fill={
+                    hiddenCards.has("Interest Earned")
+                      ? "transparent"
+                      : COLORS[1]
+                  }
                   fillOpacity={
                     hiddenCards.has("Interest Earned")
                       ? 0
@@ -1875,12 +1918,18 @@ export function ChartDisplay({
                       }
                     }
                   }}
-                  style={{ cursor: hiddenCards.has("Interest Earned") ? "default" : "pointer" }}
+                  style={{
+                    cursor: hiddenCards.has("Interest Earned")
+                      ? "default"
+                      : "pointer",
+                  }}
                 />
                 {/* Capital Gains - can be negative */}
                 <Bar
                   dataKey="Capital Gains"
-                  fill={hiddenCards.has("Capital Gains") ? "transparent" : COLORS[2]}
+                  fill={
+                    hiddenCards.has("Capital Gains") ? "transparent" : COLORS[2]
+                  }
                   fillOpacity={
                     hiddenCards.has("Capital Gains")
                       ? 0
@@ -1903,7 +1952,11 @@ export function ChartDisplay({
                       }
                     }
                   }}
-                  style={{ cursor: hiddenCards.has("Capital Gains") ? "default" : "pointer" }}
+                  style={{
+                    cursor: hiddenCards.has("Capital Gains")
+                      ? "default"
+                      : "pointer",
+                  }}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -2034,7 +2087,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 10,
                     }}
                   />
@@ -2043,7 +2096,11 @@ export function ChartDisplay({
                 <Bar
                   dataKey="Total Expenditure"
                   yAxisId="left"
-                  fill={hiddenCards.has("Total Expenditure") ? "transparent" : CHART_RED}
+                  fill={
+                    hiddenCards.has("Total Expenditure")
+                      ? "transparent"
+                      : CHART_RED
+                  }
                   fillOpacity={
                     hiddenCards.has("Total Expenditure")
                       ? 0
@@ -2069,12 +2126,20 @@ export function ChartDisplay({
                       });
                     }
                   }}
-                  style={{ cursor: hiddenCards.has("Total Expenditure") ? "default" : "pointer" }}
+                  style={{
+                    cursor: hiddenCards.has("Total Expenditure")
+                      ? "default"
+                      : "pointer",
+                  }}
                 />
                 <Bar
                   dataKey="Savings from Income"
                   yAxisId="left"
-                  fill={hiddenCards.has("Savings from Income") ? "transparent" : COLORS[1]}
+                  fill={
+                    hiddenCards.has("Savings from Income")
+                      ? "transparent"
+                      : COLORS[1]
+                  }
                   fillOpacity={
                     hiddenCards.has("Savings from Income")
                       ? 0
@@ -2100,7 +2165,11 @@ export function ChartDisplay({
                       });
                     }
                   }}
-                  style={{ cursor: hiddenCards.has("Savings from Income") ? "default" : "pointer" }}
+                  style={{
+                    cursor: hiddenCards.has("Savings from Income")
+                      ? "default"
+                      : "pointer",
+                  }}
                 />
                 {/* Savings Rate Line */}
                 <Line
@@ -2109,9 +2178,7 @@ export function ChartDisplay({
                   yAxisId="right"
                   stroke="#9333EA"
                   strokeWidth={3}
-                  strokeOpacity={
-                    hoveredCardName !== null ? 0.3 : 1
-                  }
+                  strokeOpacity={hoveredCardName !== null ? 0.3 : 1}
                   dot={{ fill: "#9333EA", r: 4 }}
                   activeDot={{ r: 6 }}
                   isAnimationActive={false}
@@ -2318,7 +2385,7 @@ export function ChartDisplay({
                       value: hoveredData.date || hoveredData.month,
                       position: "top",
                       offset: 5,
-                      fill: "hsl(var(--foreground))",
+                      fill: "var(--foreground)",
                       fontSize: 12,
                     }}
                   />
@@ -2327,8 +2394,14 @@ export function ChartDisplay({
                   const isHovered = hoveredCardName === type;
                   const hasHover = hoveredCardName !== null;
                   const isHidden = hiddenCards.has(type);
-                  const opacity = isHidden ? 0 : hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
-                  
+                  const opacity = isHidden
+                    ? 0
+                    : hasHover
+                    ? isHovered
+                      ? 0.9
+                      : 0.2
+                    : 0.6;
+
                   return (
                     <Area
                       key={type}
