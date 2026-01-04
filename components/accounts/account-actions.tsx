@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Archive, ArchiveRestore } from "lucide-react";
+import { Edit, Trash2, Archive, ArchiveRestore, ChevronUp, ChevronDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,15 +10,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type Account } from "@/lib/types";
-import { deleteAccount, toggleAccountClosed } from "@/lib/actions";
+import { deleteAccount, toggleAccountClosed, reorderAccount } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 interface AccountActionsProps {
   account: Account;
   onEdit: (account: Account) => void;
   onDelete: (accountId: string) => void;
   stopPropagation?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export function AccountActions({
@@ -26,8 +28,24 @@ export function AccountActions({
   onEdit,
   onDelete,
   stopPropagation,
+  isFirst = false,
+  isLast = false,
 }: AccountActionsProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  const handleReorder = (direction: "up" | "down") => {
+    startTransition(async () => {
+      const result = await reorderAccount(account.id, direction);
+      if (!result.success) {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to reorder account",
+          variant: "destructive",
+        });
+      }
+    });
+  };
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -85,14 +103,38 @@ export function AccountActions({
 
   return (
     <div
-      className="flex items-center gap-2"
+      className="flex items-center gap-1"
       onClick={(e) => stopPropagation && e.stopPropagation()}
     >
+      {/* Reorder buttons */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => handleReorder("up")}
+        disabled={isFirst || isPending}
+        className="h-8 w-8"
+        title="Move up"
+      >
+        <ChevronUp className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => handleReorder("down")}
+        disabled={isLast || isPending}
+        className="h-8 w-8"
+        title="Move down"
+      >
+        <ChevronDown className="h-4 w-4" />
+      </Button>
+      
+      {/* Existing action buttons */}
       <Button
         variant="ghost"
         size="icon"
         onClick={() => onEdit(account)}
         className="h-8 w-8"
+        title="Edit account"
       >
         <Edit className="h-4 w-4" />
       </Button>
@@ -101,6 +143,7 @@ export function AccountActions({
         size="icon"
         onClick={handleToggleClosed}
         className="h-8 w-8"
+        title={account.isClosed ? "Reopen account" : "Close account"}
       >
         {account.isClosed ? (
           <ArchiveRestore className="h-4 w-4" />
@@ -114,6 +157,7 @@ export function AccountActions({
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-destructive hover:text-destructive"
+            title="Delete account"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

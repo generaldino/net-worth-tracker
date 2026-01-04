@@ -404,7 +404,7 @@ export function AccountsTable({
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
-              {filteredAccounts.map((account) => (
+              {filteredAccounts.map((account, index) => (
                 <AccountRow
                   key={account.id}
                   account={account}
@@ -446,6 +446,8 @@ export function AccountsTable({
                   onAddMonth={onAddNewMonth}
                   onEditAccount={setEditingAccount}
                   onDeleteAccount={onDeleteAccount}
+                  isFirst={index === 0}
+                  isLast={index === filteredAccounts.length - 1}
                 />
               ))}
             </div>
@@ -453,7 +455,7 @@ export function AccountsTable({
         </DndContext>
       ) : (
         <div className="space-y-3">
-          {filteredAccounts.map((account) => (
+          {filteredAccounts.map((account, index) => (
             <AccountRow
               key={account.id}
               account={account}
@@ -495,6 +497,8 @@ export function AccountsTable({
               onAddMonth={onAddNewMonth}
               onEditAccount={setEditingAccount}
               onDeleteAccount={onDeleteAccount}
+              isFirst={index === 0}
+              isLast={index === filteredAccounts.length - 1}
             />
           ))}
         </div>

@@ -1930,6 +1930,83 @@ export async function updateAccountDisplayOrder(
   }
 }
 
+export async function reorderAccount(
+  accountId: string,
+  direction: "up" | "down"
+) {
+  try {
+    const userId = await getUserId();
+    if (!userId) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Get all accounts ordered by displayOrder
+    const allAccounts = await db
+      .select({
+        id: accountsTable.id,
+        displayOrder: accountsTable.displayOrder,
+      })
+      .from(accountsTable)
+      .where(eq(accountsTable.userId, userId))
+      .orderBy(asc(accountsTable.displayOrder), asc(accountsTable.createdAt));
+
+    // Find the current account's index
+    const currentIndex = allAccounts.findIndex((acc) => acc.id === accountId);
+    if (currentIndex === -1) {
+      return { success: false, error: "Account not found" };
+    }
+
+    // Calculate the target index
+    const targetIndex =
+      direction === "up" ? currentIndex - 1 : currentIndex + 1;
+
+    // Check bounds
+    if (targetIndex < 0 || targetIndex >= allAccounts.length) {
+      return { success: false, error: "Cannot move account further" };
+    }
+
+    // Get the accounts to swap
+    const currentAccount = allAccounts[currentIndex];
+    const targetAccount = allAccounts[targetIndex];
+
+    // Swap display orders in a transaction
+    await db.transaction(async (tx) => {
+      // Swap the display orders
+      await tx
+        .update(accountsTable)
+        .set({
+          displayOrder: targetAccount.displayOrder,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(accountsTable.id, currentAccount.id),
+            eq(accountsTable.userId, userId)
+          )
+        );
+
+      await tx
+        .update(accountsTable)
+        .set({
+          displayOrder: currentAccount.displayOrder,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(accountsTable.id, targetAccount.id),
+            eq(accountsTable.userId, userId)
+          )
+        );
+    });
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error) {
+    console.error("Error reordering account:", error);
+    return { success: false, error: "Failed to reorder account" };
+  }
+}
+
 // Helper function to escape CSV values
 function escapeCSV(
   value: string | number | boolean | null | undefined

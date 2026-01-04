@@ -58,6 +58,8 @@ interface AccountRowProps {
   onAddMonth: (accountId: string, month: string, entry: MonthlyEntry) => void;
   onEditAccount: (account: Account) => void;
   onDeleteAccount: (accountId: string) => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export function AccountRow({
@@ -74,11 +76,13 @@ export function AccountRow({
   onEditAccount,
   onDeleteAccount,
   displayCurrency,
+  isFirst = false,
+  isLast = false,
 }: AccountRowProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { isMasked } = useMasking();
   const accountCurrency = (account.currency || "GBP") as Currency;
-  
+
   // If displayCurrency matches accountCurrency, no conversion needed
   const needsConversion = displayCurrency !== accountCurrency;
 
@@ -96,7 +100,7 @@ export function AccountRow({
 
   // Drag and drop - only enable on client to avoid hydration issues
   const [isClient, setIsClient] = useState(false);
-  
+
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -169,20 +173,20 @@ export function AccountRow({
                   onEdit={onEditAccount}
                   onDelete={onDeleteAccount}
                   stopPropagation
+                  isFirst={isFirst}
+                  isLast={isLast}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm mt-3">
                 <div>
                   <span className="text-muted-foreground">Current Value:</span>
                   <div className="font-medium text-lg">
-                    {isMasked ? (
-                      "••••••"
-                    ) : (
-                      formatCurrencyAmount(
-                        convertedCurrentValue,
-                        displayCurrency
-                      )
-                    )}
+                    {isMasked
+                      ? "••••••"
+                      : formatCurrencyAmount(
+                          convertedCurrentValue,
+                          displayCurrency
+                        )}
                   </div>
                   {needsConversion && !isMasked && (
                     <div className="text-xs text-muted-foreground mt-1">
@@ -223,7 +227,9 @@ export function AccountRow({
                       <Archive className="h-4 w-4 text-muted-foreground shrink-0" />
                     )}
                   </div>
-                  <div className="text-muted-foreground text-sm truncate">{account.owner}</div>
+                  <div className="text-muted-foreground text-sm truncate">
+                    {account.owner}
+                  </div>
                   <div className="min-w-0">
                     <AccountTypeBadge account={account} />
                   </div>
@@ -243,7 +249,10 @@ export function AccountRow({
                         </div>
                         {needsConversion && (
                           <div className="text-xs text-muted-foreground truncate">
-                            {formatCurrencyAmount(currentValue, accountCurrency)}
+                            {formatCurrencyAmount(
+                              currentValue,
+                              accountCurrency
+                            )}
                           </div>
                         )}
                       </div>
@@ -263,6 +272,8 @@ export function AccountRow({
                 onEdit={onEditAccount}
                 onDelete={onDeleteAccount}
                 stopPropagation
+                isFirst={isFirst}
+                isLast={isLast}
               />
             </div>
           </div>

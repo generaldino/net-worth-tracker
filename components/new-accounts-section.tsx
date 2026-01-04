@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   MoreVertical,
   Plus,
   Edit2,
@@ -14,6 +15,8 @@ import {
   Download,
   Filter,
   Info,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +87,7 @@ import {
   addMonthlyEntry,
   updateMonthlyEntry,
   deleteMonthlyEntry,
+  reorderAccount,
 } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
@@ -578,7 +582,7 @@ export function NewAccountsSection({
               </tr>
             </thead>
             <tbody>
-              {filteredAccounts.map((account) => (
+              {filteredAccounts.map((account, index) => (
                 <AccountRowDesktop
                   key={account.id}
                   account={account}
@@ -644,6 +648,34 @@ export function NewAccountsSection({
                     setSelectedEntry({ accountId: account.id, entry });
                     setShowDeleteEntryDialog(true);
                   }}
+                  onMoveUp={async () => {
+                    if (isDemo) return;
+                    const result = await reorderAccount(account.id, "up");
+                    if (result.success) {
+                      router.refresh();
+                    } else {
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: result.error || "Failed to move account",
+                      });
+                    }
+                  }}
+                  onMoveDown={async () => {
+                    if (isDemo) return;
+                    const result = await reorderAccount(account.id, "down");
+                    if (result.success) {
+                      router.refresh();
+                    } else {
+                      toast({
+                        variant: "destructive",
+                        title: "Error",
+                        description: result.error || "Failed to move account",
+                      });
+                    }
+                  }}
+                  isFirst={index === 0}
+                  isLast={index === filteredAccounts.length - 1}
                 />
               ))}
             </tbody>
@@ -652,7 +684,7 @@ export function NewAccountsSection({
 
         {/* Mobile view */}
         <div className="md:hidden divide-y">
-          {filteredAccounts.map((account) => (
+          {filteredAccounts.map((account, index) => (
             <AccountCardMobile
               key={account.id}
               account={account}
@@ -710,6 +742,34 @@ export function NewAccountsSection({
                 setSelectedEntry({ accountId: account.id, entry });
                 setShowEditEntryDialog(true);
               }}
+              onMoveUp={async () => {
+                if (isDemo) return;
+                const result = await reorderAccount(account.id, "up");
+                if (result.success) {
+                  router.refresh();
+                } else {
+                  toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: result.error || "Failed to move account",
+                  });
+                }
+              }}
+              onMoveDown={async () => {
+                if (isDemo) return;
+                const result = await reorderAccount(account.id, "down");
+                if (result.success) {
+                  router.refresh();
+                } else {
+                  toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: result.error || "Failed to move account",
+                  });
+                }
+              }}
+              isFirst={index === 0}
+              isLast={index === filteredAccounts.length - 1}
             />
           ))}
         </div>
@@ -1246,6 +1306,10 @@ interface AccountRowDesktopProps {
   onAddEntry: () => void;
   onEditEntry: (entry: MonthlyEntry) => void;
   onDeleteEntry: (entry: MonthlyEntry) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
 }
 
 function AccountRowDesktop({
@@ -1264,6 +1328,10 @@ function AccountRowDesktop({
   onAddEntry,
   onEditEntry,
   onDeleteEntry,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
 }: AccountRowDesktopProps) {
   const accountCurrency = (account.currency || "GBP") as Currency;
   const effectiveDisplayCurrency =
@@ -1390,6 +1458,22 @@ function AccountRowDesktop({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  className="text-sm" 
+                  onClick={onMoveUp}
+                  disabled={isFirst}
+                >
+                  <ArrowUp className="h-3.5 w-3.5 mr-2" />
+                  Move Up
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="text-sm" 
+                  onClick={onMoveDown}
+                  disabled={isLast}
+                >
+                  <ArrowDown className="h-3.5 w-3.5 mr-2" />
+                  Move Down
+                </DropdownMenuItem>
                 <DropdownMenuItem className="text-sm" onClick={onEdit}>
                   <Edit2 className="h-3.5 w-3.5 mr-2" />
                   Edit Account
@@ -1548,6 +1632,10 @@ interface AccountCardMobileProps {
   onToggleClosed: () => void;
   onAddEntry: () => void;
   onEditEntry: (entry: MonthlyEntry) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  isFirst: boolean;
+  isLast: boolean;
 }
 
 function AccountCardMobile({
@@ -1564,6 +1652,10 @@ function AccountCardMobile({
   onToggleClosed,
   onAddEntry,
   onEditEntry,
+  onMoveUp,
+  onMoveDown,
+  isFirst,
+  isLast,
 }: AccountCardMobileProps) {
   const accountCurrency = (account.currency || "GBP") as Currency;
   const effectiveDisplayCurrency =
@@ -1622,6 +1714,22 @@ function AccountCardMobile({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem 
+              className="text-sm" 
+              onClick={onMoveUp}
+              disabled={isFirst}
+            >
+              <ArrowUp className="h-3.5 w-3.5 mr-2" />
+              Move Up
+            </DropdownMenuItem>
+            <DropdownMenuItem 
+              className="text-sm" 
+              onClick={onMoveDown}
+              disabled={isLast}
+            >
+              <ArrowDown className="h-3.5 w-3.5 mr-2" />
+              Move Down
+            </DropdownMenuItem>
             <DropdownMenuItem className="text-sm" onClick={onEdit}>
               <Edit2 className="h-3.5 w-3.5 mr-2" />
               Edit Account
