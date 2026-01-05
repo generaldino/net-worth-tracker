@@ -27,7 +27,13 @@ import {
   type HoveredData,
 } from "@/components/charts/chart-header";
 import { PeriodSelector } from "./period-selector";
-import { COLORS, CHART_GREEN, CHART_RED, getUniqueColor } from "./constants";
+import {
+  COLORS,
+  CHART_GREEN,
+  CHART_RED,
+  getUniqueColor,
+  getAccountTypeColor,
+} from "./constants";
 import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
@@ -934,10 +940,10 @@ export function ChartDisplay({
           },
         };
 
-        totalAccountTypesArray.forEach((type, index) => {
+        totalAccountTypesArray.forEach((type) => {
           totalChartConfig[type] = {
             label: formatAccountTypeName(type),
-            color: getUniqueColor(index),
+            color: getAccountTypeColor(type),
           };
         });
 
@@ -1047,10 +1053,11 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                {totalAccountTypesArray.map((type, index) => {
+                {totalAccountTypesArray.map((type) => {
                   const isHovered = hoveredCardName === type;
                   const hasHover = hoveredCardName !== null;
                   const isHidden = hiddenCards.has(type);
+                  const accountTypeColor = getAccountTypeColor(type);
                   const opacity = isHidden
                     ? 0
                     : hasHover
@@ -1065,8 +1072,8 @@ export function ChartDisplay({
                       type="monotone"
                       dataKey={type}
                       stackId="total"
-                      stroke={isHidden ? "transparent" : getUniqueColor(index)}
-                      fill={getUniqueColor(index)}
+                      stroke={isHidden ? "transparent" : accountTypeColor}
+                      fill={accountTypeColor}
                       fillOpacity={opacity}
                       isAnimationActive={false}
                       onClick={(data) => {
@@ -1682,10 +1689,10 @@ export function ChartDisplay({
               typeof value === "number" &&
               (value as number) > 0 // Only include positive values (assets)
           )
-          .map(([name, value], index) => ({
+          .map(([name, value]) => ({
             name,
             value: value as number, // Already positive, no need for Math.abs
-            fill: getUniqueColor(index),
+            fill: getAccountTypeColor(name),
           }))
           .sort((a, b) => b.value - a.value); // Sort by value descending
 
@@ -2397,10 +2404,10 @@ export function ChartDisplay({
           },
         };
 
-        projectionAccountTypesArray.forEach((type, index) => {
+        projectionAccountTypesArray.forEach((type) => {
           projectionChartConfig[type] = {
             label: formatAccountTypeName(type),
-            color: getUniqueColor(index),
+            color: getAccountTypeColor(type),
           };
         });
 
@@ -2510,10 +2517,11 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                {projectionAccountTypesArray.map((type, index) => {
+                {projectionAccountTypesArray.map((type) => {
                   const isHovered = hoveredCardName === type;
                   const hasHover = hoveredCardName !== null;
                   const isHidden = hiddenCards.has(type);
+                  const accountTypeColor = getAccountTypeColor(type);
                   const opacity = isHidden
                     ? 0
                     : hasHover
@@ -2528,8 +2536,8 @@ export function ChartDisplay({
                       type="monotone"
                       dataKey={type}
                       stackId="projection"
-                      stroke={isHidden ? "transparent" : getUniqueColor(index)}
-                      fill={getUniqueColor(index)}
+                      stroke={isHidden ? "transparent" : accountTypeColor}
+                      fill={accountTypeColor}
                       fillOpacity={opacity}
                       isAnimationActive={false}
                       onClick={(data) => {

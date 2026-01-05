@@ -20,6 +20,41 @@ export const SOURCE_KEYS = [
 ];
 
 /**
+ * Map account types to their hex colors matching Tailwind colors used in account type badges
+ * These colors match the -500 variants used in the accounts table badges
+ */
+export const ACCOUNT_TYPE_COLORS: Record<string, string> = {
+  Current: "#3b82f6",      // blue-500
+  Savings: "#22c55e",       // green-500
+  Investment: "#8b5cf6",    // violet-500
+  Stock: "#6366f1",         // indigo-500
+  Crypto: "#f97316",        // orange-500
+  Pension: "#64748b",       // slate-500
+  Commodity: "#f59e0b",     // amber-500
+  Stock_options: "#ec4899", // pink-500
+  Credit_Card: "#ef4444",   // red-500
+  Loan: "#f43f5e",          // rose-500
+  Asset: "#0ea5e9",         // sky-500
+};
+
+/**
+ * Checks if a string is a known account type
+ */
+export function isAccountType(type: string): boolean {
+  return type in ACCOUNT_TYPE_COLORS;
+}
+
+/**
+ * Gets the color for an account type based on the account type badges used in the accounts table
+ * Falls back to getUniqueColor if the account type is not found
+ */
+export function getAccountTypeColor(accountType: string): string {
+  // Normalize account type name (preserve underscores as they are in the mapping)
+  const normalized = accountType.trim();
+  return ACCOUNT_TYPE_COLORS[normalized] || getUniqueColor(0);
+}
+
+/**
  * Generates a unique color for each index by creating variations of base colors
  * Ensures each item gets a distinct color even when there are more items than base colors
  */

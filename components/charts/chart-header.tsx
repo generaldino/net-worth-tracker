@@ -9,7 +9,14 @@ import {
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 import { useMemo } from "react";
-import { COLORS, CHART_GREEN, CHART_RED, getUniqueColor } from "./constants";
+import {
+  COLORS,
+  CHART_GREEN,
+  CHART_RED,
+  getUniqueColor,
+  getAccountTypeColor,
+  isAccountType,
+} from "./constants";
 import { NetWorthCards } from "@/components/sample-card";
 
 // Account type ordering hierarchy for consistent sorting
@@ -199,19 +206,25 @@ export function ChartHeader({
         if (metricName === "Total Expenditure") return CHART_RED;
         if (metricName === "Savings from Income") return COLORS[1];
         return "";
+      case "allocation":
+        // For allocation chart, when showing account types, use account type colors
+        // Check if this metric name is an account type
+        if (isAccountType(metricName)) {
+          return getAccountTypeColor(metricName);
+        }
+        // If it's not an account type (e.g., category view), fallback to index-based color
+        if (index !== undefined) {
+          return getUniqueColor(index);
+        }
+        return "";
       case "total":
       case "projection":
-        // For account types, colors are assigned based on alphabetical order in the chart
-        // So we need to find the alphabetical index of this account type
-        if (allMetricNames && allMetricNames.length > 0) {
-          // Create a sorted copy to get alphabetical order
-          const sortedNames = [...allMetricNames].sort();
-          const alphabeticalIndex = sortedNames.indexOf(metricName);
-          if (alphabeticalIndex >= 0) {
-            return getUniqueColor(alphabeticalIndex);
-          }
+        // For account types, use the account type color mapping to match the badges in the accounts table
+        // Check if this metric name is an account type
+        if (isAccountType(metricName)) {
+          return getAccountTypeColor(metricName);
         }
-        // Fallback to index if allMetricNames not provided
+        // If it's not an account type (e.g., "Net Worth"), fallback to index-based color
         if (index !== undefined) {
           return getUniqueColor(index);
         }
