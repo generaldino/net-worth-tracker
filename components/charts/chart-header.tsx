@@ -180,8 +180,7 @@ export function ChartHeader({
   const getMetricColor = (
     chartType: ChartType,
     metricName: string,
-    index?: number,
-    allMetricNames?: string[]
+    index?: number
   ): string => {
     switch (chartType) {
       case "assets-vs-liabilities":
@@ -280,8 +279,8 @@ export function ChartHeader({
                   netWorth={adjustedNetWorth}
                   assets={accountTypesForTotal}
                   chartCurrency={chartCurrency}
-                  getColor={(name, index, allNames) =>
-                    getMetricColor(chartType, name, index, allNames)
+                  getColor={(name, index) =>
+                    getMetricColor(chartType, name, index)
                   }
                   allAccountTypeNames={
                     displayData.metrics
@@ -375,8 +374,8 @@ export function ChartHeader({
                   netWorth={adjustedNetWorth}
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
-                  getColor={(name, index, allNames) =>
-                    getMetricColor(chartType, name, index, allNames)
+                  getColor={(name, index) =>
+                    getMetricColor(chartType, name, index)
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
@@ -517,8 +516,8 @@ export function ChartHeader({
                   netWorth={adjustedTotalGrowth}
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
-                  getColor={(name, index, allNames) =>
-                    getMetricColor(chartType, name, index, allNames)
+                  getColor={(name, index) =>
+                    getMetricColor(chartType, name, index)
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
@@ -577,8 +576,8 @@ export function ChartHeader({
                   netWorth={total}
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
-                  getColor={(name, index, allNames) =>
-                    getMetricColor(chartType, name, index, allNames)
+                  getColor={(name, index) =>
+                    getMetricColor(chartType, name, index)
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
@@ -692,8 +691,8 @@ export function ChartHeader({
                   netWorth={adjustedEndingBalance}
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
-                  getColor={(name, index, allNames) =>
-                    getMetricColor(chartType, name, index, allNames)
+                  getColor={(name, index) =>
+                    getMetricColor(chartType, name, index)
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
@@ -796,8 +795,8 @@ export function ChartHeader({
                   }
                   assets={secondaryMetrics}
                   chartCurrency={chartCurrency}
-                  getColor={(name, index, allNames) =>
-                    getMetricColor(chartType, name, index, allNames)
+                  getColor={(name, index) =>
+                    getMetricColor(chartType, name, index)
                   }
                   allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
                   isPercentageView={false}
@@ -856,8 +855,8 @@ export function ChartHeader({
                   netWorth={adjustedNetWorth}
                   assets={accountTypesForProjection}
                   chartCurrency={chartCurrency}
-                  getColor={(name, index, allNames) =>
-                    getMetricColor(chartType, name, index, allNames)
+                  getColor={(name, index) =>
+                    getMetricColor(chartType, name, index)
                   }
                   allAccountTypeNames={
                     displayData.metrics
@@ -888,42 +887,6 @@ export function ChartHeader({
 
   return (
     <div className="mb-4 w-full">
-      {/* Pinned Month Indicator */}
-      {isPinned && (
-        <div className="mb-3 flex items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full text-sm">
-            <span className="text-primary">📌</span>
-            <span className="font-medium text-primary">
-              {pinnedData?.month}
-            </span>
-            <button
-              onClick={onClearPinned}
-              className="ml-1 p-0.5 hover:bg-primary/20 rounded-full transition-colors"
-              aria-label="Clear pinned month"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="text-primary"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            Click chart to change • Click again to unpin
-          </span>
-        </div>
-      )}
-
       {/* Primary metrics */}
       <div className="w-full">{renderMetrics()}</div>
 
@@ -932,9 +895,42 @@ export function ChartHeader({
         className="w-full mt-3 min-h-[40px] overflow-x-auto overflow-y-hidden -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth touch-pan-x"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        {headerControls && (
-          <div className="flex gap-2 pb-1" style={{ width: "max-content" }}>
+        {(headerControls || isPinned) && (
+          <div
+            className="flex gap-2 pb-1 items-center"
+            style={{ width: "max-content" }}
+          >
             {headerControls}
+            {/* Pinned Month Indicator - inline with controls */}
+            {isPinned && (
+              <div className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-full text-sm">
+                <span className="text-primary">📌</span>
+                <span className="font-medium text-primary">
+                  {pinnedData?.month}
+                </span>
+                <button
+                  onClick={onClearPinned}
+                  className="ml-1 p-0.5 hover:bg-primary/20 rounded-full transition-colors"
+                  aria-label="Clear pinned month"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-primary"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
