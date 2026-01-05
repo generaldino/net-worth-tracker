@@ -274,8 +274,15 @@ export function AppSidebar({ name, email, avatarUrl }: AppSidebarProps) {
               className="cursor-pointer"
               tooltip={state === "collapsed" ? "Wealth Tracker" : undefined}
             >
-              <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500">
-                <span className="text-lg">💰</span>
+              <div className="flex size-8 items-center justify-center rounded-lg">
+                <Image
+                  src="/icon.svg"
+                  alt="Wealth Tracker"
+                  width={32}
+                  height={32}
+                  className="size-full object-contain"
+                  priority
+                />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">Wealth Tracker</span>
