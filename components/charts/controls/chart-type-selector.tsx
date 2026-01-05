@@ -32,7 +32,7 @@ export function ChartTypeSelector({
         </SelectItem>
         <SelectItem value="by-wealth-source">By Wealth Source</SelectItem>
         <SelectItem value="monthly-growth-rate">Monthly Growth Rate</SelectItem>
-        <SelectItem value="allocation">Allocation</SelectItem>
+        <SelectItem value="allocation">Asset Allocation</SelectItem>
         <SelectItem value="waterfall">Waterfall (Net Worth Changes)</SelectItem>
         <SelectItem value="savings-rate">Savings Rate</SelectItem>
         <SelectItem value="projection">Projection</SelectItem>

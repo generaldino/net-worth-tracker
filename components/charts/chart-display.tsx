@@ -685,21 +685,28 @@ export function ChartDisplay({
           ? sourceData.find((d) => d.month === allocationOptions.selectedMonth)
           : sourceData[sourceData.length - 1];
         if (!selected) return null;
+        // Calculate total of assets only (exclude liabilities)
         let total = 0;
+        const metrics: Record<string, number | string> = {};
         Object.keys(selected).forEach((key) => {
           if (
             key !== "month" &&
             key !== "monthKey" &&
-            typeof selected[key] === "number"
+            key !== "Credit_Card" &&
+            key !== "Loan" &&
+            typeof selected[key] === "number" &&
+            (selected[key] as number) > 0 // Only sum positive values (assets)
           ) {
-            total += Math.abs(selected[key] as number);
+            const value = selected[key] as number;
+            total += value;
+            metrics[key] = value;
           }
         });
         return {
           date: selected.month,
           month: selected.month,
           primaryValue: total,
-          metrics: {},
+          metrics,
         };
       }
       case "waterfall": {
@@ -1664,22 +1671,27 @@ export function ChartDisplay({
           );
         }
 
-        // Extract values (exclude month and monthKey)
+        // Extract values (exclude month, monthKey, and liabilities)
+        // For asset allocation, only show assets (exclude Credit_Card and Loan)
         const allocationData = Object.entries(selectedMonthData)
           .filter(
-            ([key]) =>
+            ([key, value]) =>
               key !== "month" &&
               key !== "monthKey" &&
-              typeof selectedMonthData[key] === "number" &&
-              Math.abs(selectedMonthData[key] as number) > 0
+              key !== "Credit_Card" &&
+              key !== "Loan" &&
+              typeof value === "number" &&
+              (value as number) > 0 // Only include positive values (assets)
           )
           .map(([name, value], index) => ({
             name,
-            value: Math.abs(value as number),
+            value: value as number, // Already positive, no need for Math.abs
             fill: getUniqueColor(index),
           }))
           .sort((a, b) => b.value - a.value); // Sort by value descending
 
+        // Total should be sum of all assets only (excludes liabilities)
+        // This total is used for all percentage calculations - percentages are % of total assets
         const totalAllocation = allocationData.reduce(
           (sum, item) => sum + item.value,
           0
@@ -1754,11 +1766,12 @@ export function ChartDisplay({
         };
 
         // Calculate responsive sizes based on screen width
+        // Pie chart is now centered since cards are displayed below instead of legend on the side
         const isMobile = width && width < 640;
         const isTablet = width && width >= 640 && width < 1024;
         const outerRadius = isMobile ? 90 : isTablet ? 120 : 140;
         const innerRadius = isMobile ? 45 : isTablet ? 60 : 70;
-        const cxPosition = isMobile ? "45%" : isTablet ? "38%" : "35%";
+        const cxPosition = "50%"; // Center the pie chart
         const chartHeight = isMobile ? "280px" : isTablet ? "360px" : "450px";
 
         return (
@@ -1816,22 +1829,6 @@ export function ChartDisplay({
                     })}
                   </Pie>
                   <Tooltip content={<CustomPieTooltip />} />
-                  <Legend
-                    verticalAlign="middle"
-                    align={isMobile ? "right" : "right"}
-                    layout="vertical"
-                    wrapperStyle={isMobile ? { paddingLeft: "10px" } : {}}
-                    iconSize={isMobile ? 12 : 14}
-                    formatter={(value, entry) => {
-                      const entryValue = (entry.payload as { value?: number })
-                        ?.value;
-                      const percentage =
-                        totalAllocation > 0 && entryValue
-                          ? (entryValue / totalAllocation) * 100
-                          : 0;
-                      return `${value} (${formatPercentage(percentage)})`;
-                    }}
-                  />
                 </PieChart>
               </ResponsiveContainer>
             </ChartContainer>

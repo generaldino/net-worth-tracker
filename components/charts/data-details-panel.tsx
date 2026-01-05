@@ -143,18 +143,28 @@ export function DataDetailsPanel({
       {chartType === "allocation" && (
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground mb-2">
-            Allocation Breakdown:
+            Asset Allocation Breakdown:
           </div>
           {Object.entries(data)
             .filter(
               ([key, value]) =>
-                key !== "month" && typeof value === "number" && value > 0
+                key !== "month" &&
+                key !== "Credit_Card" &&
+                key !== "Loan" &&
+                typeof value === "number" &&
+                (value as number) > 0 // Only show assets (positive values)
             )
             .sort(([, a], [, b]) => (b as number) - (a as number))
             .map(([key, value], index) => {
+              // Calculate total of assets only (exclude liabilities)
               const total = Object.entries(data)
                 .filter(
-                  ([k, v]) => k !== "month" && typeof v === "number" && v > 0
+                  ([k, v]) =>
+                    k !== "month" &&
+                    k !== "Credit_Card" &&
+                    k !== "Loan" &&
+                    typeof v === "number" &&
+                    (v as number) > 0
                 )
                 .reduce((sum, [, v]) => sum + (v as number), 0);
               const percentage =

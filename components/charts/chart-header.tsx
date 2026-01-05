@@ -524,11 +524,26 @@ export function ChartHeader({
 
       case "allocation": {
         const total = displayData.primaryValue || 0;
+        // Convert metrics to assets format for NetWorthCards
+        const secondaryMetrics = Object.entries(displayData.metrics || {})
+          .filter(
+            ([, value]) => typeof value === "number" && value > 0 // Only include assets (positive values)
+          )
+          .map(([name, value]) => ({
+            name,
+            value: value as number,
+            absValue: Math.abs(value as number),
+          }))
+          .sort((a, b) => b.value - a.value); // Sort by value descending
+
         return (
           <div className="space-y-3">
             <div>
               <div className="text-xs sm:text-sm text-muted-foreground">
-                TOTAL VALUE
+                TOTAL ASSETS{" "}
+                {hiddenCards.size > 0 && (
+                  <span className="text-xs opacity-60">(filtered)</span>
+                )}
               </div>
               <div
                 className={`text-2xl sm:text-3xl font-bold ${
@@ -544,7 +559,24 @@ export function ChartHeader({
               <div className="text-xs text-muted-foreground mb-2">
                 BREAKDOWN
               </div>
-              <div className="min-h-[70px]"></div>
+              {secondaryMetrics.length > 0 ? (
+                <NetWorthCards
+                  netWorth={total}
+                  assets={secondaryMetrics}
+                  chartCurrency={chartCurrency}
+                  getColor={(name, index, allNames) =>
+                    getMetricColor(chartType, name, index, allNames)
+                  }
+                  allAccountTypeNames={secondaryMetrics.map((m) => m.name)}
+                  isPercentageView={false}
+                  hoveredCardName={hoveredCardName}
+                  onCardHover={onCardHover}
+                  hiddenCards={hiddenCards}
+                  onToggleHidden={onToggleHidden}
+                />
+              ) : (
+                <div className="min-h-[70px]"></div>
+              )}
             </div>
           </div>
         );
