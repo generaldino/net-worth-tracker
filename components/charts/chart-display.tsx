@@ -18,7 +18,6 @@ import {
   Pie,
   Cell,
   ReferenceLine,
-  Legend,
   Tooltip,
 } from "recharts";
 import { ChartType, ChartData, ClickedData } from "@/components/charts/types";

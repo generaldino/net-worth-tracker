@@ -133,7 +133,7 @@ export function FinancialMetricsNavbar({
       financialMetrics.latestMonth,
       getRate
     );
-  }, [displayCurrency, financialMetrics, targetCurrency, getRate]);
+  }, [financialMetrics, targetCurrency, getRate]);
 
   const incomeAllTimeConverted = useMemo(() => {
     if (!financialMetrics) return 0;
@@ -144,7 +144,7 @@ export function FinancialMetricsNavbar({
       financialMetrics.latestMonth,
       getRate
     );
-  }, [displayCurrency, financialMetrics, targetCurrency, getRate]);
+  }, [financialMetrics, targetCurrency, getRate]);
 
   const expenditureYTDConverted = useMemo(() => {
     if (!financialMetrics) return 0;
@@ -155,7 +155,7 @@ export function FinancialMetricsNavbar({
       financialMetrics.latestMonth,
       getRate
     );
-  }, [displayCurrency, financialMetrics, targetCurrency, getRate]);
+  }, [financialMetrics, targetCurrency, getRate]);
 
   const expenditureAllTimeConverted = useMemo(() => {
     if (!financialMetrics) return 0;
@@ -166,7 +166,7 @@ export function FinancialMetricsNavbar({
       financialMetrics.latestMonth,
       getRate
     );
-  }, [displayCurrency, financialMetrics, targetCurrency, getRate]);
+  }, [financialMetrics, targetCurrency, getRate]);
 
   // Convert savings amounts
   // Savings = Income - Expenditure, so convert both and subtract
