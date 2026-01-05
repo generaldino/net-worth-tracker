@@ -261,6 +261,16 @@ export function AppSidebar({ name, email, avatarUrl }: AppSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { state } = useSidebar();
+  const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine if we should use dark icon
+  const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
+  const iconSrc = isDark ? "/icon-dark.svg" : "/icon-light.svg";
 
   return (
     <Sidebar collapsible="offcanvas" className="border-r">
@@ -276,7 +286,7 @@ export function AppSidebar({ name, email, avatarUrl }: AppSidebarProps) {
             >
               <div className="flex size-8 items-center justify-center rounded-lg">
                 <Image
-                  src="/icon.svg"
+                  src={iconSrc}
                   alt="Wealth Tracker"
                   width={32}
                   height={32}
