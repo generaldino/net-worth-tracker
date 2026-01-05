@@ -52,8 +52,13 @@ function convertCurrencyAmount(
     const toRate = getRate(monthKey, targetCurrency);
 
     if (fromRate === null || toRate === null) {
-      // Rates not loaded yet, return original amount
-      return total + amount;
+      // Rates not loaded yet - if currencies match, return amount; otherwise skip conversion
+      // This prevents incorrect values when rates aren't available
+      if (itemCurrency === targetCurrency) {
+        return total + amount;
+      }
+      // Skip this item if we can't convert (better than showing wrong value)
+      return total;
     }
 
     // Convert: amount in fromCurrency -> GBP -> toCurrency
@@ -120,7 +125,8 @@ export function FinancialMetricsNavbar({
 
   const incomeYTDConverted = useMemo(() => {
     if (!financialMetrics) return 0;
-    if (displayCurrency === "BASE") return financialMetrics.incomeYTD;
+    // Always convert using breakdown arrays to ensure accurate currency conversion
+    // Even for BASE (GBP), we need to convert from mixed currencies to GBP
     return convertCurrencyAmount(
       financialMetrics.incomeBreakdownYTD,
       targetCurrency,
@@ -131,7 +137,7 @@ export function FinancialMetricsNavbar({
 
   const incomeAllTimeConverted = useMemo(() => {
     if (!financialMetrics) return 0;
-    if (displayCurrency === "BASE") return financialMetrics.incomeAllTime;
+    // Always convert using breakdown arrays to ensure accurate currency conversion
     return convertCurrencyAmount(
       financialMetrics.incomeBreakdownAllTime,
       targetCurrency,
@@ -142,7 +148,7 @@ export function FinancialMetricsNavbar({
 
   const expenditureYTDConverted = useMemo(() => {
     if (!financialMetrics) return 0;
-    if (displayCurrency === "BASE") return financialMetrics.expenditureYTD;
+    // Always convert using breakdown arrays to ensure accurate currency conversion
     return convertCurrencyAmount(
       financialMetrics.expenditureBreakdownYTD,
       targetCurrency,
@@ -153,7 +159,7 @@ export function FinancialMetricsNavbar({
 
   const expenditureAllTimeConverted = useMemo(() => {
     if (!financialMetrics) return 0;
-    if (displayCurrency === "BASE") return financialMetrics.expenditureAllTime;
+    // Always convert using breakdown arrays to ensure accurate currency conversion
     return convertCurrencyAmount(
       financialMetrics.expenditureBreakdownAllTime,
       targetCurrency,
