@@ -73,7 +73,11 @@ function DemoToggle() {
     <SidebarMenuButton
       onClick={toggleDemoMode}
       tooltip={state === "collapsed" ? "Demo Mode" : undefined}
-      className={`w-full ${isDemoMode ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20" : ""}`}
+      className={`w-full ${
+        isDemoMode
+          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+          : ""
+      }`}
     >
       <FlaskConical className="size-4" />
       <span>Demo Mode</span>

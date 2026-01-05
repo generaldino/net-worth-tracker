@@ -1,15 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="600" height="600">
-  <!-- Rounded rectangle background -->
-  <rect x="0" y="0" width="24" height="24" rx="6" ry="6" fill="black" />
-
-  <!-- Car icon with white strokes, scaled and centered -->
-  <g fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-    transform="translate(3.7, 3.7) scale(0.74)">
-    <path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8" />
-    <path d="M7 14h.01" />
-    <path d="M17 14h.01" />
-    <rect width="18" height="8" x="3" y="10" rx="2" />
-    <path d="M5 18v2" />
-    <path d="M19 18v2" />
-  </g>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="1024" height="1024" fill="white"/>
+<path d="M608.458 396.25C608.458 396.25 579.941 357.667 511.996 357.667C376.957 357.667 376.957 512 511.996 512C647.037 512 647.041 666.334 512 666.334C454.125 666.334 415.541 627.75 415.541 627.75" stroke="black" stroke-width="60" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M512 319.083V704.916" stroke="black" stroke-width="60" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M859.25 512C859.25 703.782 703.782 859.25 512 859.25C320.219 859.25 164.75 703.782 164.75 512C164.75 320.219 320.219 164.75 512 164.75C703.782 164.75 859.25 320.219 859.25 512Z" stroke="black" stroke-width="60"/>
 </svg>
