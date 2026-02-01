@@ -18,6 +18,7 @@ I'm building a modern web app and want it built using server actions, as much po
 - React Query (@tanstack/react-query)
 - Components from chadcn
 - /app folder is used in a standard way as any nextjs project
+- Project is currently hosted on vercel
 
 #### Project Structure
 
