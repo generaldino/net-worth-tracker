@@ -41,7 +41,7 @@ export async function getExchangeRates(
       dateToUse = getLastDayOfMonth(forDate);
     }
 
-    // Try to get rates from database
+    // Try to get rates from database (exact match on calendar last day)
     if (dateToUse) {
       const storedRate = await db
         .select()
@@ -62,6 +62,32 @@ export async function getExchangeRates(
           },
           date: rate.date,
         };
+      }
+
+      // Fallback: find any rate within the same month (handles trading-day dates)
+      if (forDate) {
+        const { like } = await import("drizzle-orm");
+        const monthRate = await db
+          .select()
+          .from(exchangeRates)
+          .where(like(exchangeRates.date, `${forDate}%`))
+          .orderBy(desc(exchangeRates.date))
+          .limit(1);
+
+        if (monthRate.length > 0) {
+          const rate = monthRate[0];
+          console.log("[DEBUG] getExchangeRates - found DB rate by month prefix for", forDate, "→", rate.date, "rates:", { EUR: rate.eurRate, USD: rate.usdRate, AED: rate.aedRate });
+          return {
+            base: "GBP",
+            rates: {
+              GBP: Number(rate.gbpRate),
+              EUR: Number(rate.eurRate),
+              USD: Number(rate.usdRate),
+              AED: Number(rate.aedRate),
+            },
+            date: rate.date,
+          };
+        }
       }
     }
 

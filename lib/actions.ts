@@ -2390,7 +2390,7 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
         return lastDay.toISOString().split("T")[0];
       });
 
-      // Fetch all rates from database
+      // Fetch rates matching exact last-day dates
       const rates = await db
         .select()
         .from(exchangeRates)
@@ -2405,6 +2405,41 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
           aedRate: rate.aedRate,
         })),
       );
+
+      // Fallback: if some months had no exact match, find rates by month prefix
+      // This handles cases where rates are stored with trading-day dates instead of calendar last day
+      if (results.length < months.length) {
+        const foundDates = new Set(results.map((r) => r.date));
+        const missingMonths = months.filter((month) => {
+          const [year, monthNum] = month.split("-").map(Number);
+          const lastDay = new Date(year, monthNum, 0);
+          const dateStr = lastDay.toISOString().split("T")[0];
+          return !foundDates.has(dateStr);
+        });
+
+        if (missingMonths.length > 0) {
+          const { like } = await import("drizzle-orm");
+          for (const month of missingMonths) {
+            const monthRates = await db
+              .select()
+              .from(exchangeRates)
+              .where(like(exchangeRates.date, `${month}%`))
+              .orderBy(desc(exchangeRates.date))
+              .limit(1);
+
+            if (monthRates.length > 0) {
+              const rate = monthRates[0];
+              results.push({
+                date: rate.date,
+                gbpRate: rate.gbpRate,
+                eurRate: rate.eurRate,
+                usdRate: rate.usdRate,
+                aedRate: rate.aedRate,
+              });
+            }
+          }
+        }
+      }
     }
 
     // Always include the latest rate for current value conversions
