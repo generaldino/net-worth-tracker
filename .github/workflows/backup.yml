@@ -1,0 +1,38 @@
+name: Monthly Database Backup
+
+on:
+  schedule:
+    # Runs at midnight UTC on the 1st of every month
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCS_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Run pg_dump and upload to GCS
+        env:
+          DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          TIMESTAMP=$(date +%Y-%m-%d)
+          FILENAME="backup-${TIMESTAMP}.sql"
+
+          pg_dump "${DATABASE_URL}" --no-owner --no-privileges > "${FILENAME}"
+
+          gsutil cp "${FILENAME}" "gs://${{ vars.GCS_BUCKET_NAME }}/${FILENAME}"
+
+          echo "Backup uploaded: ${FILENAME}"
