@@ -20,7 +20,8 @@ const HEXARATE_BASE_URL = "https://hexarate.paikama.co";
  */
 function getLastDayOfMonth(month: string): string {
   const [year, monthNum] = month.split("-").map(Number);
-  const lastDay = new Date(year, monthNum, 0);
+  // Use Date.UTC to avoid timezone shifts
+  const lastDay = new Date(Date.UTC(year, monthNum, 0));
   const result = lastDay.toISOString().split("T")[0];
   console.log("[DEBUG] getLastDayOfMonth -", month, "→", result, "(raw Date:", lastDay.toString(), ")");
   return result;

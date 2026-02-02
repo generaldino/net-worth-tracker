@@ -162,7 +162,8 @@ export function useExchangeRates() {
  */
 function getLastDayOfMonth(month: string): string {
   const [year, monthNum] = month.split("-").map(Number);
-  const lastDay = new Date(year, monthNum, 0);
+  // Use Date.UTC to avoid timezone shifts in the browser
+  const lastDay = new Date(Date.UTC(year, monthNum, 0));
   return lastDay.toISOString().split("T")[0];
 }
 

@@ -2383,10 +2383,10 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
     }> = [];
 
     if (months.length > 0) {
-      // Convert months to last day of month dates
+      // Convert months to last day of month dates (use UTC to avoid timezone shifts)
       const dates = months.map((month) => {
         const [year, monthNum] = month.split("-").map(Number);
-        const lastDay = new Date(year, monthNum, 0);
+        const lastDay = new Date(Date.UTC(year, monthNum, 0));
         return lastDay.toISOString().split("T")[0];
       });
 
@@ -2412,7 +2412,7 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
         const foundDates = new Set(results.map((r) => r.date));
         const missingMonths = months.filter((month) => {
           const [year, monthNum] = month.split("-").map(Number);
-          const lastDay = new Date(year, monthNum, 0);
+          const lastDay = new Date(Date.UTC(year, monthNum, 0));
           const dateStr = lastDay.toISOString().split("T")[0];
           return !foundDates.has(dateStr);
         });
