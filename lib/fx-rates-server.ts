@@ -29,7 +29,7 @@ function getLastDayOfMonth(month: string): string {
  * Falls back to latest rates if date not found, then to API if needed
  */
 export async function getExchangeRates(
-  forDate?: string // Format: "YYYY-MM" for monthly entries
+  forDate?: string, // Format: "YYYY-MM" for monthly entries
 ): Promise<ExchangeRates> {
   try {
     let dateToUse: string | undefined;
@@ -105,7 +105,8 @@ export async function getExchangeRates(
       },
       date: data.date,
     };
-  } catch (error) {
+  } catch {}
+  {
     // Silently fallback to 1:1 rates - this is expected when no rates are stored yet
 
     // Fallback to 1:1 rates if everything fails
@@ -130,18 +131,18 @@ export async function convertCurrency(
   amount: number,
   fromCurrency: Currency,
   toCurrency: Currency,
-  forMonth?: string // Format: "YYYY-MM" for historical conversion
+  forMonth?: string, // Format: "YYYY-MM" for historical conversion
 ): Promise<number> {
   if (fromCurrency === toCurrency) {
     return amount;
   }
 
   const rates = await getExchangeRates(forMonth);
-  
+
   // Rates are stored as: 1 GBP = X EUR, 1 GBP = Y USD, etc.
   // To convert from EUR to GBP: divide by rates.rates.EUR
   // To convert from GBP to EUR: multiply by rates.rates.EUR
-  
+
   // Convert to GBP first
   let amountInGbp: number;
   if (fromCurrency === "GBP") {
@@ -150,7 +151,7 @@ export async function convertCurrency(
     // If fromCurrency is EUR, and rates.rates.EUR = 1.15, then 1 EUR = 1/1.15 GBP
     amountInGbp = amount / rates.rates[fromCurrency];
   }
-  
+
   // Convert from GBP to target currency
   let amountInTarget: number;
   if (toCurrency === "GBP") {
@@ -173,7 +174,7 @@ export async function convertCurrency(
 async function fetchCurrencyPairRate(
   base: string,
   target: string,
-  date: string
+  date: string,
 ): Promise<number | null> {
   try {
     const url = `${HEXARATE_BASE_URL}/api/rates/${base}/${target}/${date}`;
@@ -192,7 +193,7 @@ async function fetchCurrencyPairRate(
     // HexaRate returns: { status_code: 200, data: { base: "GBP", target: "EUR", mid: 1.15, ... } }
     const rate = data.data?.mid || data.mid || data.rate || null;
     return rate ? Number(rate) : null;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -203,7 +204,7 @@ async function fetchCurrencyPairRate(
  * @returns true if rates were successfully fetched and saved, false otherwise
  */
 export async function fetchAndSaveExchangeRatesForMonth(
-  month: string
+  month: string,
 ): Promise<boolean> {
   try {
     // Get the last day of the month
@@ -247,7 +248,7 @@ export async function fetchAndSaveExchangeRatesForMonth(
     });
 
     console.log(
-      `✓ Successfully fetched and saved FX rates for ${month} (${dateStr})`
+      `✓ Successfully fetched and saved FX rates for ${month} (${dateStr})`,
     );
     return true;
   } catch (error) {
@@ -255,4 +256,3 @@ export async function fetchAndSaveExchangeRatesForMonth(
     return false;
   }
 }
-
