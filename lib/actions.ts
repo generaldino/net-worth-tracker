@@ -1,23 +1,23 @@
 "use server";
 
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { getAccessibleUserIds } from "@/app/actions/sharing";
 import { db } from "@/db";
+import type { Account, MonthlyEntry } from "@/db/schema";
 import {
   financialAccounts as accountsTable,
   monthlyEntries,
   projectionScenarios,
 } from "@/db/schema";
-import { desc, asc, eq, and, inArray } from "drizzle-orm";
-import type { Account, MonthlyEntry } from "@/db/schema";
-import { revalidatePath } from "next/cache";
 import { getUserId } from "@/lib/auth-helpers";
-import { getAccessibleUserIds } from "@/app/actions/sharing";
 import type { Currency } from "@/lib/fx-rates";
-import type { AccountType } from "@/lib/types";
 import {
-  fetchAndSaveExchangeRatesForMonth,
   convertCurrency as convertCurrencyServer,
+  fetchAndSaveExchangeRatesForMonth,
   getExchangeRates,
 } from "@/lib/fx-rates-server";
+import type { AccountType } from "@/lib/types";
 
 export async function calculateNetWorth() {
   try {
@@ -50,7 +50,7 @@ export async function calculateNetWorth() {
     // Credit cards and loans are liabilities, so subtract their balances
     const netWorth = allAccounts.reduce((total: number, account: Account) => {
       const latestEntry = latestEntries.find(
-        (entry: MonthlyEntry) => entry.accountId === account.id
+        (entry: MonthlyEntry) => entry.accountId === account.id,
       );
       const balance = Number(latestEntry?.endingBalance || 0);
 
@@ -111,7 +111,7 @@ export async function getNetWorthBreakdown() {
     // Calculate net worth breakdown with currency info
     const accountBalances = allAccounts.map((account: Account) => {
       const latestEntry = latestEntries.find(
-        (entry: MonthlyEntry) => entry.accountId === account.id
+        (entry: MonthlyEntry) => entry.accountId === account.id,
       );
       const balance = Number(latestEntry?.endingBalance || 0);
 
@@ -172,7 +172,7 @@ export async function getFirstEntryNetWorth() {
 
     // Get all entries for the earliest month
     const firstMonthEntries = allEntries.filter(
-      (entry) => entry.month === earliestMonth
+      (entry) => entry.month === earliestMonth,
     );
 
     // Calculate net worth for the first entry month
@@ -180,7 +180,7 @@ export async function getFirstEntryNetWorth() {
       (total: number, account: Account) => {
         // Find the entry for this account in the earliest month
         const entryForAccount = firstMonthEntries.find(
-          (entry: MonthlyEntry) => entry.accountId === account.id
+          (entry: MonthlyEntry) => entry.accountId === account.id,
         );
         const balance = Number(entryForAccount?.endingBalance || 0);
 
@@ -193,7 +193,7 @@ export async function getFirstEntryNetWorth() {
         // All other accounts are assets - add to net worth
         return total + balance;
       },
-      0
+      0,
     );
 
     return {
@@ -350,7 +350,7 @@ export async function getFinancialMetrics() {
 
     // Get latest month entries for net worth calculation
     const latestMonthEntries = entries.filter(
-      (entry) => entry.month === latestMonth
+      (entry) => entry.month === latestMonth,
     );
 
     entries.forEach((entry) => {
@@ -432,18 +432,18 @@ export async function getFinancialMetrics() {
     // Calculate raw totals (for backward compatibility - these are in mixed currencies)
     const incomeYTD = Array.from(incomeByCurrencyYTD.values()).reduce(
       (sum, val) => sum + val,
-      0
+      0,
     );
     const incomeAllTime = Array.from(incomeByCurrencyAllTime.values()).reduce(
       (sum, val) => sum + val,
-      0
+      0,
     );
     const expenditureYTD = Array.from(expenditureByCurrencyYTD.values()).reduce(
       (sum, val) => sum + val,
-      0
+      0,
     );
     const expenditureAllTime = Array.from(
-      expenditureByCurrencyAllTime.values()
+      expenditureByCurrencyAllTime.values(),
     ).reduce((sum, val) => sum + val, 0);
 
     const savingsYTD = incomeYTD - expenditureYTD;
@@ -510,10 +510,10 @@ export async function getFinancialMetrics() {
 
       const januaryIncome = Array.from(januaryIncomeByCurrency.values()).reduce(
         (sum, val) => sum + val,
-        0
+        0,
       );
       const januaryExpenditure = Array.from(
-        januaryExpenditureByCurrency.values()
+        januaryExpenditureByCurrency.values(),
       ).reduce((sum, val) => sum + val, 0);
       const januarySavings = januaryIncome - januaryExpenditure;
 
@@ -551,7 +551,7 @@ export async function getFinancialMetrics() {
               balance,
               accountCurrency,
               "GBP",
-              latestMonth
+              latestMonth,
             );
 
       if (account.type === "Credit_Card" || account.type === "Loan") {
@@ -601,17 +601,17 @@ export async function getFinancialMetrics() {
             const current = firstMonthExpenditureByCurrency.get(currency) || 0;
             firstMonthExpenditureByCurrency.set(
               currency,
-              current + expenditure
+              current + expenditure,
             );
           }
         }
       });
 
       const firstMonthIncome = Array.from(
-        firstMonthIncomeByCurrency.values()
+        firstMonthIncomeByCurrency.values(),
       ).reduce((sum, val) => sum + val, 0);
       const firstMonthExpenditure = Array.from(
-        firstMonthExpenditureByCurrency.values()
+        firstMonthExpenditureByCurrency.values(),
       ).reduce((sum, val) => sum + val, 0);
       const firstMonthSavings = firstMonthIncome - firstMonthExpenditure;
 
@@ -643,7 +643,7 @@ export async function getFinancialMetrics() {
       // Get first entry month for all-time comparison
       const firstMonth = allEntriesOrdered[0].month;
       const firstMonthEntries = allEntriesOrdered.filter(
-        (entry) => entry.month === firstMonth
+        (entry) => entry.month === firstMonth,
       );
 
       if (firstMonthEntries.length > 0 && firstMonth !== latestMonth) {
@@ -652,7 +652,7 @@ export async function getFinancialMetrics() {
         let firstNetWorth = 0;
         for (const account of allAccounts) {
           const entry = firstMonthEntries.find(
-            (e) => e.accountId === account.id
+            (e) => e.accountId === account.id,
           );
           const balance = Number(entry?.endingBalance || 0);
           const accountCurrency = (account.currency || "GBP") as Currency;
@@ -665,7 +665,7 @@ export async function getFinancialMetrics() {
                   balance,
                   accountCurrency,
                   "GBP",
-                  firstMonth
+                  firstMonth,
                 );
 
           if (account.type === "Credit_Card" || account.type === "Loan") {
@@ -688,7 +688,7 @@ export async function getFinancialMetrics() {
       if (latestMonth.startsWith(currentYear)) {
         const ytdStartMonth = `${currentYear}-01`;
         const januaryEntries = allEntriesOrdered.filter(
-          (entry) => entry.month === ytdStartMonth
+          (entry) => entry.month === ytdStartMonth,
         );
 
         if (januaryEntries.length > 0) {
@@ -697,7 +697,7 @@ export async function getFinancialMetrics() {
           let januaryNetWorth = 0;
           for (const account of allAccounts) {
             const entry = januaryEntries.find(
-              (e) => e.accountId === account.id
+              (e) => e.accountId === account.id,
             );
             const balance = Number(entry?.endingBalance || 0);
             const accountCurrency = (account.currency || "GBP") as Currency;
@@ -710,7 +710,7 @@ export async function getFinancialMetrics() {
                     balance,
                     accountCurrency,
                     "GBP",
-                    ytdStartMonth
+                    ytdStartMonth,
                   );
 
             if (account.type === "Credit_Card" || account.type === "Loan") {
@@ -801,7 +801,7 @@ export async function getAccounts(includeClosed: boolean = false) {
       ? inArray(accountsTable.userId, accessibleUserIds)
       : and(
           inArray(accountsTable.userId, accessibleUserIds),
-          eq(accountsTable.isClosed, false)
+          eq(accountsTable.isClosed, false),
         );
 
     const dbAccounts = await db
@@ -842,8 +842,8 @@ export async function getAccountById(accountId: string) {
       .where(
         and(
           eq(accountsTable.id, accountId),
-          inArray(accountsTable.userId, accessibleUserIds)
-        )
+          inArray(accountsTable.userId, accessibleUserIds),
+        ),
       )
       .limit(1);
 
@@ -948,7 +948,7 @@ export async function getMonthlyData() {
 
       monthlyData[currentMonth].forEach((entry) => {
         const previousEntry = monthlyData[previousMonth].find(
-          (e) => e.accountId === entry.accountId
+          (e) => e.accountId === entry.accountId,
         );
 
         if (previousEntry) {
@@ -1108,7 +1108,7 @@ export async function addMonthlyEntry(
     income: number;
     internalTransfersOut?: number;
     debtPayments?: number;
-  }
+  },
 ) {
   try {
     // Get the account to check its type
@@ -1134,8 +1134,8 @@ export async function addMonthlyEntry(
       .where(
         and(
           eq(monthlyEntries.accountId, accountId),
-          eq(monthlyEntries.month, month)
-        )
+          eq(monthlyEntries.month, month),
+        ),
       )
       .limit(1);
 
@@ -1182,7 +1182,7 @@ export async function addMonthlyEntry(
       // Log error but don't fail the operation
       console.error(
         `Failed to fetch FX rates for month ${month} (non-blocking):`,
-        error
+        error,
       );
     });
 
@@ -1211,7 +1211,7 @@ export async function updateMonthlyEntry(
     income: number;
     internalTransfersOut?: number;
     debtPayments?: number;
-  }
+  },
 ) {
   try {
     // Get the account to check its type
@@ -1237,8 +1237,8 @@ export async function updateMonthlyEntry(
       .where(
         and(
           eq(monthlyEntries.accountId, accountId),
-          eq(monthlyEntries.month, month)
-        )
+          eq(monthlyEntries.month, month),
+        ),
       )
       .limit(1);
 
@@ -1282,8 +1282,8 @@ export async function updateMonthlyEntry(
       .where(
         and(
           eq(monthlyEntries.accountId, accountId),
-          eq(monthlyEntries.month, month)
-        )
+          eq(monthlyEntries.month, month),
+        ),
       );
 
     // Revalidate the page to show the updated data
@@ -1326,8 +1326,8 @@ export async function deleteMonthlyEntry(accountId: string, month: string) {
       .where(
         and(
           eq(monthlyEntries.accountId, accountId),
-          eq(monthlyEntries.month, month)
-        )
+          eq(monthlyEntries.month, month),
+        ),
       );
 
     revalidatePath("/");
@@ -1346,7 +1346,7 @@ export async function getChartData(
   owner: string = "all",
   selectedAccountIds: string[] = [],
   selectedTypes: string[] = [],
-  selectedCategories: string[] = []
+  selectedCategories: string[] = [],
 ) {
   try {
     type Currency = "GBP" | "EUR" | "USD" | "AED";
@@ -1379,21 +1379,21 @@ export async function getChartData(
     // Filter accounts by selected account IDs if specified
     if (selectedAccountIds.length > 0) {
       filteredAccounts = filteredAccounts.filter((account) =>
-        selectedAccountIds.includes(account.id)
+        selectedAccountIds.includes(account.id),
       );
     }
 
     // Filter accounts by selected types if specified
     if (selectedTypes.length > 0) {
       filteredAccounts = filteredAccounts.filter((account) =>
-        selectedTypes.includes(account.type)
+        selectedTypes.includes(account.type),
       );
     }
 
     // Filter accounts by selected categories if specified
     if (selectedCategories.length > 0) {
       filteredAccounts = filteredAccounts.filter((account) =>
-        selectedCategories.includes(account.category)
+        selectedCategories.includes(account.category),
       );
     }
 
@@ -1463,7 +1463,7 @@ export async function getChartData(
 
       monthlyData[currentMonth].forEach((entry) => {
         const previousEntry = monthlyData[previousMonth].find(
-          (e) => e.accountId === entry.accountId
+          (e) => e.accountId === entry.accountId,
         );
 
         if (previousEntry) {
@@ -1484,11 +1484,11 @@ export async function getChartData(
       monthKey: month, // Keep original month key for conversion
       netWorth: monthlyData[month]
         .filter((entry) =>
-          filteredAccounts.some((account) => account.id === entry.accountId)
+          filteredAccounts.some((account) => account.id === entry.accountId),
         )
         .reduce((sum, entry) => {
           const account = filteredAccounts.find(
-            (acc) => acc.id === entry.accountId
+            (acc) => acc.id === entry.accountId,
           );
           // Credit cards and loans are liabilities - subtract from net worth
           if (account?.type === "Credit_Card" || account?.type === "Loan") {
@@ -1500,11 +1500,11 @@ export async function getChartData(
       // Store account currencies for client-side conversion
       accountBalances: monthlyData[month]
         .filter((entry) =>
-          filteredAccounts.some((account) => account.id === entry.accountId)
+          filteredAccounts.some((account) => account.id === entry.accountId),
         )
         .map((entry) => {
           const account = filteredAccounts.find(
-            (acc) => acc.id === entry.accountId
+            (acc) => acc.id === entry.accountId,
           );
           return {
             accountId: entry.accountId,
@@ -1567,19 +1567,22 @@ export async function getChartData(
       };
 
       // Group accounts by type
-      const accountsByType = filteredAccounts.reduce((acc, account) => {
-        if (!acc[account.type]) {
-          acc[account.type] = [];
-        }
-        acc[account.type].push(account);
-        return acc;
-      }, {} as Record<string, typeof filteredAccounts>);
+      const accountsByType = filteredAccounts.reduce(
+        (acc, account) => {
+          if (!acc[account.type]) {
+            acc[account.type] = [];
+          }
+          acc[account.type].push(account);
+          return acc;
+        },
+        {} as Record<string, typeof filteredAccounts>,
+      );
 
       // Calculate total for each account type (raw values)
       Object.entries(accountsByType).forEach(([type, accounts]) => {
         monthData[type] = accounts.reduce((sum, account) => {
           const entry = monthlyData[month].find(
-            (e) => e.accountId === account.id
+            (e) => e.accountId === account.id,
           );
           const balance = entry?.endingBalance || 0;
           // Credit cards and loans are liabilities - subtract from totals
@@ -1618,20 +1621,23 @@ export async function getChartData(
       };
 
       // Group accounts by category
-      const accountsByCategory = filteredAccounts.reduce((acc, account) => {
-        const category = account.category || "Uncategorized";
-        if (!acc[category]) {
-          acc[category] = [];
-        }
-        acc[category].push(account);
-        return acc;
-      }, {} as Record<string, typeof filteredAccounts>);
+      const accountsByCategory = filteredAccounts.reduce(
+        (acc, account) => {
+          const category = account.category || "Uncategorized";
+          if (!acc[category]) {
+            acc[category] = [];
+          }
+          acc[category].push(account);
+          return acc;
+        },
+        {} as Record<string, typeof filteredAccounts>,
+      );
 
       // Calculate total for each category (raw values)
       Object.entries(accountsByCategory).forEach(([category, accounts]) => {
         monthData[category] = accounts.reduce((sum, account) => {
           const entry = monthlyData[month].find(
-            (e) => e.accountId === account.id
+            (e) => e.accountId === account.id,
           );
           const balance = entry?.endingBalance || 0;
           // Credit cards and loans are liabilities - subtract from totals
@@ -1669,7 +1675,7 @@ export async function getChartData(
     const convertToGBPForMonth = (
       amount: number,
       currency: Currency,
-      monthKey: string
+      monthKey: string,
     ): number => {
       if (currency === "GBP") return amount;
       const fxRates = monthRatesMap.get(monthKey);
@@ -1726,7 +1732,7 @@ export async function getChartData(
           totalWorkIncome += convertToGBPForMonth(
             income,
             accountCurrency,
-            month
+            month,
           );
 
           // Track accounts that received income for breakdown (keep in original currency)
@@ -1746,7 +1752,7 @@ export async function getChartData(
           totalExpenditure += convertToGBPForMonth(
             expenditure,
             accountCurrency,
-            month
+            month,
           );
         }
 
@@ -1758,7 +1764,7 @@ export async function getChartData(
           totalExpenditure += convertToGBPForMonth(
             expenditure,
             accountCurrency,
-            month
+            month,
           );
         }
 
@@ -1767,7 +1773,7 @@ export async function getChartData(
           interestEarned += convertToGBPForMonth(
             entry.accountGrowth,
             accountCurrency,
-            month
+            month,
           );
           interestAccounts.push({
             accountId: account.id,
@@ -1790,7 +1796,7 @@ export async function getChartData(
           capitalGains += convertToGBPForMonth(
             entry.accountGrowth,
             accountCurrency,
-            month
+            month,
           );
           capitalGainsAccounts.push({
             accountId: account.id,
@@ -1861,7 +1867,7 @@ export async function getChartData(
 
 function getFilteredMonths(
   months: string[],
-  timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "all"
+  timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "all",
 ): string[] {
   if (months.length === 0) return months;
 
@@ -1881,7 +1887,7 @@ function getFilteredMonths(
       // Go back 3 months from latest month
       const threeMonthsAgo = new Date(latestYear, latestMonthNum - 4, 1);
       return months.filter(
-        (month) => new Date(month + "-01") >= threeMonthsAgo
+        (month) => new Date(month + "-01") >= threeMonthsAgo,
       );
     }
     case "6M": {
@@ -1970,7 +1976,7 @@ export async function getAccountHistory(accountId: string) {
 
 export async function calculateValueChange(
   accountId: string,
-  timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "ALL"
+  timePeriod: "1M" | "3M" | "6M" | "1Y" | "YTD" | "ALL",
 ) {
   try {
     // Get all monthly entries for the account, ordered by month (desc)
@@ -2000,13 +2006,14 @@ export async function calculateValueChange(
       case "1Y":
         previousValue = entries[12] ? Number(entries[12].endingBalance) : 0;
         break;
-      case "YTD":
+      case "YTD": {
         const currentYear = new Date().getFullYear();
         const ytdEntry = entries.find((entry) =>
-          entry.month.startsWith(`${currentYear}-01`)
+          entry.month.startsWith(`${currentYear}-01`),
         );
         previousValue = ytdEntry ? Number(ytdEntry.endingBalance) : 0;
         break;
+      }
       case "ALL":
       default:
         previousValue = entries[entries.length - 1]
@@ -2027,7 +2034,7 @@ export async function calculateValueChange(
 
 export async function toggleAccountClosed(
   accountId: string,
-  isClosed: boolean
+  isClosed: boolean,
 ) {
   try {
     const userId = await getUserId();
@@ -2065,7 +2072,7 @@ export async function getClosedAccounts() {
       .select()
       .from(accountsTable)
       .where(
-        and(eq(accountsTable.userId, userId), eq(accountsTable.isClosed, true))
+        and(eq(accountsTable.userId, userId), eq(accountsTable.isClosed, true)),
       )
       .orderBy(asc(accountsTable.displayOrder), desc(accountsTable.closedAt));
 
@@ -2087,7 +2094,7 @@ export async function getClosedAccounts() {
 }
 
 export async function updateAccountDisplayOrder(
-  accountOrders: Array<{ id: string; displayOrder: number }>
+  accountOrders: Array<{ id: string; displayOrder: number }>,
 ) {
   try {
     const userId = await getUserId();
@@ -2105,7 +2112,7 @@ export async function updateAccountDisplayOrder(
             updatedAt: new Date(),
           })
           .where(
-            and(eq(accountsTable.id, id), eq(accountsTable.userId, userId))
+            and(eq(accountsTable.id, id), eq(accountsTable.userId, userId)),
           );
       }
     });
@@ -2120,7 +2127,7 @@ export async function updateAccountDisplayOrder(
 
 export async function reorderAccount(
   accountId: string,
-  direction: "up" | "down"
+  direction: "up" | "down",
 ) {
   try {
     const userId = await getUserId();
@@ -2169,8 +2176,8 @@ export async function reorderAccount(
         .where(
           and(
             eq(accountsTable.id, currentAccount.id),
-            eq(accountsTable.userId, userId)
-          )
+            eq(accountsTable.userId, userId),
+          ),
         );
 
       await tx
@@ -2182,8 +2189,8 @@ export async function reorderAccount(
         .where(
           and(
             eq(accountsTable.id, targetAccount.id),
-            eq(accountsTable.userId, userId)
-          )
+            eq(accountsTable.userId, userId),
+          ),
         );
     });
 
@@ -2197,7 +2204,7 @@ export async function reorderAccount(
 
 // Helper function to escape CSV values
 function escapeCSV(
-  value: string | number | boolean | null | undefined
+  value: string | number | boolean | null | undefined,
 ): string {
   if (value === null || value === undefined) {
     return "";
@@ -2227,7 +2234,7 @@ export async function exportToCSV(): Promise<string> {
 
     // Create a map of accounts by ID for quick lookup
     const accountsMap = new Map(
-      allAccounts.map((account) => [account.id, account])
+      allAccounts.map((account) => [account.id, account]),
     );
 
     // Define CSV headers
@@ -2363,7 +2370,7 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
           eurRate: rate.eurRate,
           usdRate: rate.usdRate,
           aedRate: rate.aedRate,
-        }))
+        })),
       );
     }
 
@@ -2461,7 +2468,7 @@ export async function convertCurrency(
   amount: number,
   fromCurrency: Currency,
   toCurrency: Currency,
-  forMonth?: string
+  forMonth?: string,
 ): Promise<number> {
   "use server";
 
@@ -2471,14 +2478,13 @@ export async function convertCurrency(
 
   try {
     // Import the server-side conversion function
-    const { convertCurrency: convertCurrencyInternal } = await import(
-      "@/lib/fx-rates-server"
-    );
+    const { convertCurrency: convertCurrencyInternal } =
+      await import("@/lib/fx-rates-server");
     return await convertCurrencyInternal(
       amount,
       fromCurrency,
       toCurrency,
-      forMonth
+      forMonth,
     );
   } catch (error) {
     console.error("Error converting currency:", error);
@@ -2566,7 +2572,7 @@ export async function updateProjectionScenario(
     timePeriodMonths: number;
     growthRates: Record<AccountType, number>;
     savingsAllocation?: Record<AccountType, number>;
-  }
+  },
 ) {
   try {
     const userId = await getUserId();
@@ -2589,8 +2595,8 @@ export async function updateProjectionScenario(
       .where(
         and(
           eq(projectionScenarios.id, id),
-          eq(projectionScenarios.userId, userId)
-        )
+          eq(projectionScenarios.userId, userId),
+        ),
       )
       .returning();
 
@@ -2615,8 +2621,8 @@ export async function deleteProjectionScenario(id: string) {
       .where(
         and(
           eq(projectionScenarios.id, id),
-          eq(projectionScenarios.userId, userId)
-        )
+          eq(projectionScenarios.userId, userId),
+        ),
       );
 
     revalidatePath("/");
@@ -2657,7 +2663,7 @@ export async function calculateProjection(data: {
       (account) =>
         !account.isClosed &&
         account.type !== "Credit_Card" &&
-        account.type !== "Loan"
+        account.type !== "Loan",
     );
 
     // Get accessible account IDs
@@ -2684,7 +2690,7 @@ export async function calculateProjection(data: {
     const currentBalances = new Map<string, number>();
     activeAccounts.forEach((account) => {
       const latestEntry = latestEntries.find(
-        (entry) => entry.accountId === account.id
+        (entry) => entry.accountId === account.id,
       );
       const balance = Number(latestEntry?.endingBalance || 0);
       currentBalances.set(account.id, balance);
@@ -2728,7 +2734,7 @@ export async function calculateProjection(data: {
       // Use user-defined savings allocation
       // Validate that accounts exist for each allocated type
       const allocatedTypes = Object.keys(data.savingsAllocation).filter(
-        (type) => data.savingsAllocation![type as AccountType] > 0
+        (type) => data.savingsAllocation![type as AccountType] > 0,
       ) as AccountType[];
 
       // Check that at least one account exists for each allocated type
@@ -2739,7 +2745,7 @@ export async function calculateProjection(data: {
         const hasAccount = activeAccounts.some((acc) => acc.type === type);
         if (!hasAccount) {
           throw new Error(
-            `No account found for allocated type: ${type}. Please create an account of this type or adjust your savings allocation.`
+            `No account found for allocated type: ${type}. Please create an account of this type or adjust your savings allocation.`,
           );
         }
       }
@@ -2749,7 +2755,7 @@ export async function calculateProjection(data: {
       assetAccountTypes.forEach((type) => {
         accountsByType.set(
           type,
-          activeAccounts.filter((acc) => acc.type === type)
+          activeAccounts.filter((acc) => acc.type === type),
         );
       });
 
@@ -2766,7 +2772,7 @@ export async function calculateProjection(data: {
           // Distribute proportionally among accounts of this type based on current balances
           const typeTotalBalance = typeAccounts.reduce(
             (sum, acc) => sum + (currentBalances.get(acc.id) || 0),
-            0
+            0,
           );
 
           if (typeTotalBalance > 0) {
@@ -2789,7 +2795,7 @@ export async function calculateProjection(data: {
       // Fallback to proportional distribution based on current balances
       const totalBalance = Array.from(currentBalances.values()).reduce(
         (sum, balance) => sum + balance,
-        0
+        0,
       );
 
       if (totalBalance > 0) {
@@ -2837,7 +2843,7 @@ export async function calculateProjection(data: {
       const currentDate = new Date(startDate);
       currentDate.setMonth(startDate.getMonth() + monthIndex);
       const monthKey = `${currentDate.getFullYear()}-${String(
-        currentDate.getMonth() + 1
+        currentDate.getMonth() + 1,
       ).padStart(2, "0")}`;
 
       // Calculate net worth for this month

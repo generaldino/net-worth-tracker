@@ -17,7 +17,9 @@ import { revalidatePath } from "next/cache";
 export async function getAccessibleUserIds(): Promise<string[]> {
   try {
     const currentUserId = await getUserId();
+    console.log("[DEBUG] getAccessibleUserIds - currentUserId:", currentUserId);
     if (!currentUserId) {
+      console.log("[DEBUG] getAccessibleUserIds - no currentUserId, returning []");
       return [];
     }
 
@@ -27,10 +29,13 @@ export async function getAccessibleUserIds(): Promise<string[]> {
       .from(dashboardShares)
       .where(eq(dashboardShares.sharedWithUserId, currentUserId));
 
+    const result = [currentUserId, ...shares.map((s) => s.ownerId)];
+    console.log("[DEBUG] getAccessibleUserIds - shares:", shares.length, "result:", result);
     // Return array: current user ID + all owner IDs of dashboards shared with them
-    return [currentUserId, ...shares.map((s) => s.ownerId)];
+    return result;
   } catch (error) {
     console.error("Error getting accessible user IDs:", error);
+    console.log("[DEBUG] getAccessibleUserIds - ERROR, returning []");
     return [];
   }
 }

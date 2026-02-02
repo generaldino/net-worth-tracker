@@ -21,7 +21,9 @@ const HEXARATE_BASE_URL = "https://hexarate.paikama.co";
 function getLastDayOfMonth(month: string): string {
   const [year, monthNum] = month.split("-").map(Number);
   const lastDay = new Date(year, monthNum, 0);
-  return lastDay.toISOString().split("T")[0];
+  const result = lastDay.toISOString().split("T")[0];
+  console.log("[DEBUG] getLastDayOfMonth -", month, "→", result, "(raw Date:", lastDay.toString(), ")");
+  return result;
 }
 
 /**
@@ -49,6 +51,7 @@ export async function getExchangeRates(
 
       if (storedRate.length > 0) {
         const rate = storedRate[0];
+        console.log("[DEBUG] getExchangeRates - found DB rate for", forDate, "→", dateToUse, "rates:", { EUR: rate.eurRate, USD: rate.usdRate, AED: rate.aedRate });
         return {
           base: "GBP",
           rates: {
@@ -71,6 +74,7 @@ export async function getExchangeRates(
 
     if (latestRate.length > 0) {
       const rate = latestRate[0];
+      console.log("[DEBUG] getExchangeRates - FALLBACK to latest DB rate for", forDate, "→ using date:", rate.date, "rates:", { EUR: rate.eurRate, USD: rate.usdRate, AED: rate.aedRate });
       return {
         base: "GBP",
         rates: {
@@ -84,6 +88,7 @@ export async function getExchangeRates(
     }
 
     // Final fallback: fetch from API (should rarely happen)
+    console.log("[DEBUG] getExchangeRates - FALLBACK to API for", forDate);
     const response = await fetch(`${HEXARATE_API_URL}?base=GBP`, {
       next: { revalidate: 3600 },
     });
@@ -108,6 +113,7 @@ export async function getExchangeRates(
   } catch {}
   {
     // Silently fallback to 1:1 rates - this is expected when no rates are stored yet
+    console.log("[DEBUG] getExchangeRates - ERROR FALLBACK to 1:1 rates for", forDate);
 
     // Fallback to 1:1 rates if everything fails
     return {

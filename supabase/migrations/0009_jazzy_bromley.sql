@@ -1,1 +1,0 @@
-ALTER TABLE "projection_scenarios" ADD COLUMN "savings_allocation" jsonb;

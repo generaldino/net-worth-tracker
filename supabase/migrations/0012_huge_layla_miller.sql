@@ -1,2 +1,0 @@
-ALTER TABLE "monthly_entries" ADD COLUMN "internal_transfers_out" numeric DEFAULT '0' NOT NULL;--> statement-breakpoint
-ALTER TABLE "monthly_entries" ADD COLUMN "debt_payments" numeric DEFAULT '0' NOT NULL;
