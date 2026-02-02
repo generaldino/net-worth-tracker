@@ -1,8 +1,10 @@
-import { auth } from "@/lib/auth";
 import { LandingPage } from "@/components/auth/landing-page";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/theme-provider";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { auth } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await auth();
