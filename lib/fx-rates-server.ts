@@ -84,7 +84,6 @@ export async function getExchangeRates(
     }
 
     // Final fallback: fetch from API (should rarely happen)
-    console.warn("No stored rates found, fetching from API...");
     const response = await fetch(`${HEXARATE_API_URL}?base=GBP`, {
       next: { revalidate: 3600 },
     });
@@ -107,7 +106,7 @@ export async function getExchangeRates(
       date: data.date,
     };
   } catch (error) {
-    console.error("Error fetching exchange rates:", error);
+    // Silently fallback to 1:1 rates - this is expected when no rates are stored yet
 
     // Fallback to 1:1 rates if everything fails
     return {
@@ -186,9 +185,6 @@ async function fetchCurrencyPairRate(
     });
 
     if (!response.ok) {
-      console.warn(
-        `Failed to fetch ${base}/${target} for ${date}: ${response.statusText}`
-      );
       return null;
     }
 
@@ -197,7 +193,6 @@ async function fetchCurrencyPairRate(
     const rate = data.data?.mid || data.mid || data.rate || null;
     return rate ? Number(rate) : null;
   } catch (error) {
-    console.error(`Error fetching ${base}/${target} for ${date}:`, error);
     return null;
   }
 }
@@ -238,9 +233,6 @@ export async function fetchAndSaveExchangeRatesForMonth(
 
     // Check if we got all required rates
     if (!eurRate || !usdRate || !aedRate) {
-      console.warn(
-        `Failed to fetch all rates for ${month}. EUR: ${eurRate}, USD: ${usdRate}, AED: ${aedRate}`
-      );
       return false;
     }
 

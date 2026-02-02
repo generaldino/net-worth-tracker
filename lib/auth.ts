@@ -22,8 +22,6 @@ export const { handlers, signIn, signOut } = nextAuth;
 export async function auth() {
   // Dev bypass: Return hardcoded user in localhost if enabled
   if (isDevBypassEnabled() && DEV_USER_ID) {
-    console.log("🔓 Dev auth bypass enabled");
-
     try {
       const [user] = await db
         .select()
@@ -44,7 +42,7 @@ export async function auth() {
         };
       }
     } catch {
-      console.warn("Dev user not found, using mock");
+      // Silently fall through to mock user
     }
 
     // Return mock user
