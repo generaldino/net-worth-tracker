@@ -1,7 +1,7 @@
 "use client";
 
-import { signinWithGoogle } from "@/app/actions";
 import { Button } from "@/components/ui/button";
+import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -18,22 +18,12 @@ export function GoogleSignInButton({
   const handleSignIn = async () => {
     try {
       setIsLoading(true);
-      const result = await signinWithGoogle();
-
-      if (result?.data) {
-        // Track authentication in localStorage to detect success on redirect back
-        localStorage.setItem("auth_in_progress", "true");
-
-        // Redirect to provider
-        window.location.href = result.data.url;
-      }
-
-      if (result?.error) {
-        console.error("Error signing in with Google", result.error);
-      }
+      await signIn("google", {
+        callbackUrl: "/",
+        redirect: true,
+      });
     } catch (error) {
       console.error("Failed to sign in with Google", error);
-    } finally {
       setIsLoading(false);
     }
   };

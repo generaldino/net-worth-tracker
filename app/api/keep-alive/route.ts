@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { db } from "@/db";
+import { sql } from "drizzle-orm";
 
 // In-memory rate limiting (simple approach for serverless)
 // Note: This works per-instance. For distributed rate limiting across multiple
@@ -68,17 +69,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    // 3. Make minimal Supabase query to keep connection alive
-    const supabase = createClient();
-
-    // Make a simple query to Supabase REST API
-    // This will wake up the Supabase project if it's paused
-    // We use a query that will fail gracefully but still establish a connection
-    await supabase.from("_keep_alive_ping").select("1").limit(0).single();
-
-    // We expect an error (table doesn't exist), but the connection attempt
-    // is what matters - it wakes up Supabase from auto-pause
-    // The error is expected and harmless, so we don't need to handle it
+    // 3. Make minimal database query to keep connection alive
+    // This will wake up the Neon database if it's in a suspended state
+    // We use a simple SELECT query that doesn't depend on any tables
+    await db.execute(sql`SELECT 1`);
 
     return NextResponse.json(
       {

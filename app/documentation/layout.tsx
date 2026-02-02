@@ -80,7 +80,7 @@ export default async function DocumentationLayout({
                     <AppSidebar
                       name={session.user.name}
                       email={session.user.email}
-                      avatarUrl={session.user.avatarUrl}
+                      avatarUrl={session.user.image}
                     />
                     <SidebarInset className="overflow-x-hidden">
                       <Navbar />

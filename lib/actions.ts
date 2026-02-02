@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import {
-  accounts as accountsTable,
+  financialAccounts as accountsTable,
   monthlyEntries,
   projectionScenarios,
 } from "@/db/schema";

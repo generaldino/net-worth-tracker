@@ -1,101 +1,66 @@
-"use server";
-
-import { createClient } from "@/utils/supabase/server";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth-config";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-// Dev bypass: Set DEV_USER_ID in .env.local to enable localhost auth bypass
-// Example: DEV_USER_ID=your-user-uuid-here
+// Dev bypass configuration
 const DEV_USER_ID = process.env.DEV_USER_ID;
 const DEV_USER_EMAIL = process.env.DEV_USER_EMAIL || "dev@localhost.com";
 const DEV_USER_NAME = process.env.DEV_USER_NAME || "Dev User";
 
-/**
- * Check if we're in localhost/development and dev bypass is enabled
- */
 function isDevBypassEnabled(): boolean {
-  if (!DEV_USER_ID) {
-    return false;
-  }
-  
-  // Only allow in development
-  const isDevelopment = process.env.NODE_ENV === "development";
-  return isDevelopment;
+  if (!DEV_USER_ID) return false;
+  return process.env.NODE_ENV === "development";
 }
 
-// Get authenticated user session
+// Create NextAuth instance
+const nextAuth = NextAuth(authConfig);
+export const { handlers, signIn, signOut } = nextAuth;
+
+// Export auth function with dev bypass support
 export async function auth() {
-  try {
-    // Dev bypass: Return hardcoded user in localhost if enabled
-    if (isDevBypassEnabled() && DEV_USER_ID) {
-      console.log("🔓 Dev auth bypass enabled - using hardcoded user");
-      
-      const devUserId = DEV_USER_ID; // Type narrowing
-      
-      // Try to get the dev user from database, or return a mock user
-      try {
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, devUserId))
-          .limit(1);
+  // Dev bypass: Return hardcoded user in localhost if enabled
+  if (isDevBypassEnabled() && DEV_USER_ID) {
+    console.log("🔓 Dev auth bypass enabled");
 
-        if (user) {
-          return {
-            user: {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              avatarUrl: user.avatarUrl,
-            },
-          };
-        }
-      } catch {
-        console.warn("Dev user not found in database, using mock user");
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, DEV_USER_ID))
+        .limit(1);
+
+      if (user) {
+        return {
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            image: user.avatarUrl,
+            isAdmin: user.isAdmin,
+          },
+          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        };
       }
-
-      // Return mock user if not found in database
-      return {
-        user: {
-          id: devUserId,
-          email: DEV_USER_EMAIL,
-          name: DEV_USER_NAME,
-        },
-      };
+    } catch {
+      console.warn("Dev user not found, using mock");
     }
 
-    // Normal auth flow
-    const supabase = await createClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      return null;
-    }
-
-    // Get user from database
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, session.user.email!))
-      .limit(1);
-
-    if (!user) {
-      return null;
-    }
-
+    // Return mock user
     return {
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        avatarUrl: user.avatarUrl,
+        id: DEV_USER_ID,
+        email: DEV_USER_EMAIL,
+        name: DEV_USER_NAME,
+        image: null,
+        isAdmin: false,
       },
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     };
-  } catch (error) {
-    console.error("Auth error:", error);
-    return null;
   }
+
+  // Normal NextAuth flow
+  const session = await nextAuth.auth();
+  return session;
 }

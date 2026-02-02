@@ -8,6 +8,7 @@ import {
   pgEnum,
   integer,
   jsonb,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // Enums
@@ -36,14 +37,17 @@ export const currencyEnum = pgEnum("currency", ["GBP", "EUR", "USD", "AED"]);
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
+  emailVerified: timestamp("emailVerified", { mode: "date" }),
   name: text("name"),
+  image: text("image"),
+  // Legacy fields for backward compatibility
   avatarUrl: text("avatar_url"),
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const accounts = pgTable("accounts", {
+export const financialAccounts = pgTable("accounts", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id")
     .notNull()
@@ -65,7 +69,7 @@ export const monthlyEntries = pgTable("monthly_entries", {
   id: uuid("id").defaultRandom().primaryKey(),
   accountId: uuid("account_id")
     .notNull()
-    .references(() => accounts.id, { onDelete: "cascade" }),
+    .references(() => financialAccounts.id, { onDelete: "cascade" }),
   month: text("month").notNull(), // Format: "YYYY-MM"
   endingBalance: numeric("ending_balance").notNull(),
   cashIn: numeric("cash_in").notNull(),
@@ -129,11 +133,56 @@ export const dashboardInvitations = pgTable("dashboard_invitations", {
   acceptedAt: timestamp("accepted_at"),
 });
 
+// ============================================================================
+// NextAuth.js Tables
+// ============================================================================
+
+export const nextAuthAccounts = pgTable("next_auth_accounts", {
+  userId: uuid("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  provider: text("provider").notNull(),
+  providerAccountId: text("providerAccountId").notNull(),
+  refresh_token: text("refresh_token"),
+  access_token: text("access_token"),
+  expires_at: integer("expires_at"),
+  token_type: text("token_type"),
+  scope: text("scope"),
+  id_token: text("id_token"),
+  session_state: text("session_state"),
+}, (account) => ({
+  compoundKey: primaryKey({
+    columns: [account.provider, account.providerAccountId]
+  }),
+}));
+
+export const nextAuthSessions = pgTable("next_auth_sessions", {
+  sessionToken: text("sessionToken").primaryKey(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+});
+
+export const nextAuthVerificationTokens = pgTable("next_auth_verification_tokens", {
+  identifier: text("identifier").notNull(),
+  token: text("token").notNull(),
+  expires: timestamp("expires", { mode: "date" }).notNull(),
+}, (vt) => ({
+  compoundKey: primaryKey({
+    columns: [vt.identifier, vt.token]
+  }),
+}));
+
+// ============================================================================
 // Types
+// ============================================================================
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
-export type Account = typeof accounts.$inferSelect;
-export type NewAccount = typeof accounts.$inferInsert;
+export type Account = typeof financialAccounts.$inferSelect;
+export type NewAccount = typeof financialAccounts.$inferInsert;
 export type MonthlyEntry = typeof monthlyEntries.$inferSelect;
 export type NewMonthlyEntry = typeof monthlyEntries.$inferInsert;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
@@ -144,6 +193,9 @@ export type DashboardShare = typeof dashboardShares.$inferSelect;
 export type NewDashboardShare = typeof dashboardShares.$inferInsert;
 export type DashboardInvitation = typeof dashboardInvitations.$inferSelect;
 export type NewDashboardInvitation = typeof dashboardInvitations.$inferInsert;
+export type NextAuthAccount = typeof nextAuthAccounts.$inferSelect;
+export type NextAuthSession = typeof nextAuthSessions.$inferSelect;
+export type NextAuthVerificationToken = typeof nextAuthVerificationTokens.$inferSelect;
 
 // Indexes
 export const monthlyEntriesMonthIdx = monthlyEntries.month;

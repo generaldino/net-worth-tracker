@@ -29,8 +29,10 @@ interface Session {
     id: string;
     email: string;
     name: string | null;
-    avatarUrl?: string | null;
+    image?: string | null;
+    isAdmin?: boolean;
   };
+  expires: string;
 }
 
 interface DashboardShellProps {
@@ -87,7 +89,7 @@ async function DashboardProviders({
                   <AppSidebar
                     name={session.user.name}
                     email={session.user.email}
-                    avatarUrl={session.user.avatarUrl ?? null}
+                    avatarUrl={session.user.image ?? null}
                   />
                   <SidebarInset className="overflow-x-hidden">
                     <Navbar />

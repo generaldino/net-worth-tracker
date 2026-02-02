@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/utils/supabase/client";
+import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +29,6 @@ export function ProfileDropdown({
   avatarUrl,
 }: ProfileDropdownProps) {
   const router = useRouter();
-  const supabase = createClient();
   const [imageError, setImageError] = useState(false);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -39,8 +38,10 @@ export function ProfileDropdown({
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
+    await signOut({
+      callbackUrl: "/",
+      redirect: true,
+    });
   };
 
   const initials = name

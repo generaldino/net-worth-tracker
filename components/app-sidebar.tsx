@@ -4,8 +4,8 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { createClient } from "@/utils/supabase/client";
 import { useDemo } from "@/contexts/demo-context";
+import { signOutAction } from "@/app/actions/auth";
 import {
   Home,
   Users,
@@ -165,14 +165,11 @@ function UserMenu({
   email?: string | null;
   avatarUrl?: string | null;
 }) {
-  const router = useRouter();
-  const supabase = createClient();
   const [imageError, setImageError] = useState(false);
   const { state } = useSidebar();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
+    await signOutAction();
   };
 
   const initials = name

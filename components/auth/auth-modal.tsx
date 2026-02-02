@@ -23,18 +23,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       // Clear the flag
       localStorage.removeItem("auth_in_progress");
 
-      // Call onSuccess if the user is authenticated
-      const checkAuth = async () => {
-        const { createClient } = await import("@/utils/supabase/client");
-        const supabase = createClient();
-        const { data } = await supabase.auth.getSession();
-
-        if (data.session) {
-          onSuccess();
-        }
-      };
-
-      checkAuth();
+      // With NextAuth, the session is managed server-side
+      // We can just call onSuccess as the redirect handles auth
+      onSuccess();
     }
   }, [onSuccess]);
 
