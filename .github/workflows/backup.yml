@@ -33,7 +33,7 @@ jobs:
           TIMESTAMP=$(date +%Y-%m-%d)
           FILENAME="backup-${TIMESTAMP}.sql"
 
-          pg_dump "${DATABASE_URL}" --no-owner --no-privileges > "${FILENAME}"
+          /usr/lib/postgresql/17/bin/pg_dump "${DATABASE_URL}" --no-owner --no-privileges > "${FILENAME}"
 
           gsutil cp "${FILENAME}" "gs://${{ vars.GCS_BUCKET_NAME }}/${FILENAME}"
 
