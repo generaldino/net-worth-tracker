@@ -73,6 +73,7 @@ import {
   type AccountType,
   type AccountCategory,
   type ValueTimePeriod,
+  type StaleAccountsData,
 } from "@/lib/types";
 import type { Currency } from "@/lib/fx-rates";
 import type { DisplayCurrency } from "@/components/currency-selector";
@@ -90,6 +91,8 @@ import {
 } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
+import { StaleAccountsBanner } from "@/components/stale-accounts-banner";
+import { StaleAccountsWizard } from "@/components/stale-accounts-wizard";
 import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
 import { createAccount } from "@/lib/actions";
 
@@ -100,6 +103,7 @@ export interface NewAccountsSectionProps {
     | Record<string, { balance: number; monthKey: string } | null>
     | Record<string, number>;
   isDemo?: boolean;
+  staleAccountsData?: StaleAccountsData;
 }
 
 // Calculate value change based on time period
@@ -177,8 +181,10 @@ export function NewAccountsSection({
   accountHistories,
   currentValues: rawCurrentValues,
   isDemo = false,
+  staleAccountsData,
 }: NewAccountsSectionProps) {
   const router = useRouter();
+  const [showStaleWizard, setShowStaleWizard] = React.useState(false);
 
   // Normalize currentValues to always be Record<string, number>
   const currentValues = React.useMemo(() => {
@@ -563,6 +569,13 @@ export function NewAccountsSection({
           )}
         </div>
       </div>
+
+      {!isDemo && staleAccountsData && (
+        <StaleAccountsBanner
+          staleAccountsData={staleAccountsData}
+          onUpdateNow={() => setShowStaleWizard(true)}
+        />
+      )}
 
       <div className="border rounded-lg overflow-hidden">
         {/* Desktop table view - hidden on mobile */}
@@ -955,6 +968,15 @@ export function NewAccountsSection({
           }
         }}
       />
+
+      {!isDemo && staleAccountsData && (
+        <StaleAccountsWizard
+          open={showStaleWizard}
+          onOpenChange={setShowStaleWizard}
+          staleAccountsData={staleAccountsData}
+          onComplete={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }

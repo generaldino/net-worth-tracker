@@ -84,3 +84,16 @@ export const currencyLabels: Record<Currency, string> = {
   USD: "US Dollar (USD)",
   AED: "UAE Dirham (AED)",
 };
+
+export interface StaleAccountEntry {
+  account: Account;
+  missingMonth: string; // "YYYY-MM" format
+  previousBalance: number; // most recent known balance before this month
+  previousMonth: string | null;
+}
+
+export interface StaleAccountsData {
+  staleEntries: StaleAccountEntry[]; // sorted by month desc, then displayOrder
+  missingMonthCount: number; // unique months with gaps
+  missingAccountCount: number; // unique accounts with gaps
+}

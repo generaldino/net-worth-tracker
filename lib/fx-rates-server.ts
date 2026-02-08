@@ -1,8 +1,8 @@
 "use server";
 
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { exchangeRates } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
 
 export type Currency = "GBP" | "EUR" | "USD" | "AED";
 
@@ -23,7 +23,6 @@ function getLastDayOfMonth(month: string): string {
   // Use Date.UTC to avoid timezone shifts
   const lastDay = new Date(Date.UTC(year, monthNum, 0));
   const result = lastDay.toISOString().split("T")[0];
-  console.log("[DEBUG] getLastDayOfMonth -", month, "→", result, "(raw Date:", lastDay.toString(), ")");
   return result;
 }
 
@@ -52,7 +51,6 @@ export async function getExchangeRates(
 
       if (storedRate.length > 0) {
         const rate = storedRate[0];
-        console.log("[DEBUG] getExchangeRates - found DB rate for", forDate, "→", dateToUse, "rates:", { EUR: rate.eurRate, USD: rate.usdRate, AED: rate.aedRate });
         return {
           base: "GBP",
           rates: {
@@ -77,7 +75,6 @@ export async function getExchangeRates(
 
         if (monthRate.length > 0) {
           const rate = monthRate[0];
-          console.log("[DEBUG] getExchangeRates - found DB rate by month prefix for", forDate, "→", rate.date, "rates:", { EUR: rate.eurRate, USD: rate.usdRate, AED: rate.aedRate });
           return {
             base: "GBP",
             rates: {
@@ -101,7 +98,6 @@ export async function getExchangeRates(
 
     if (latestRate.length > 0) {
       const rate = latestRate[0];
-      console.log("[DEBUG] getExchangeRates - FALLBACK to latest DB rate for", forDate, "→ using date:", rate.date, "rates:", { EUR: rate.eurRate, USD: rate.usdRate, AED: rate.aedRate });
       return {
         base: "GBP",
         rates: {
@@ -115,7 +111,6 @@ export async function getExchangeRates(
     }
 
     // Final fallback: fetch from API (should rarely happen)
-    console.log("[DEBUG] getExchangeRates - FALLBACK to API for", forDate);
     const response = await fetch(`${HEXARATE_API_URL}?base=GBP`, {
       next: { revalidate: 3600 },
     });
@@ -138,21 +133,18 @@ export async function getExchangeRates(
       date: data.date,
     };
   } catch {}
-  {
-    // Silently fallback to 1:1 rates - this is expected when no rates are stored yet
-    console.log("[DEBUG] getExchangeRates - ERROR FALLBACK to 1:1 rates for", forDate);
+  // Silently fallback to 1:1 rates - this is expected when no rates are stored yet
 
-    // Fallback to 1:1 rates if everything fails
-    return {
-      base: "GBP",
-      rates: {
-        GBP: 1,
-        EUR: 1,
-        USD: 1,
-        AED: 1,
-      },
-    };
-  }
+  // Fallback to 1:1 rates if everything fails
+  return {
+    base: "GBP",
+    rates: {
+      GBP: 1,
+      EUR: 1,
+      USD: 1,
+      AED: 1,
+    },
+  };
 }
 
 /**

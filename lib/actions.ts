@@ -17,13 +17,13 @@ import {
   fetchAndSaveExchangeRatesForMonth,
   getExchangeRates,
 } from "@/lib/fx-rates-server";
-import type { AccountType } from "@/lib/types";
+import type { AccountType, StaleAccountsData, StaleAccountEntry } from "@/lib/types";
 
 export async function calculateNetWorth() {
   try {
     const accessibleUserIds = await getAccessibleUserIds();
     if (accessibleUserIds.length === 0) {
-      console.log("[DEBUG] calculateNetWorth - no accessible user IDs");
+
       return 0;
     }
 
@@ -32,8 +32,6 @@ export async function calculateNetWorth() {
       .select()
       .from(accountsTable)
       .where(inArray(accountsTable.userId, accessibleUserIds));
-
-    console.log("[DEBUG] calculateNetWorth - accounts:", allAccounts.length, allAccounts.map(a => ({ id: a.id, name: a.name, type: a.type, currency: a.currency })));
 
     // Get accessible account IDs
     const accessibleAccountIds = allAccounts.map((acc) => acc.id);
@@ -48,8 +46,6 @@ export async function calculateNetWorth() {
       .from(monthlyEntries)
       .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
       .orderBy(desc(monthlyEntries.month));
-
-    console.log("[DEBUG] calculateNetWorth - entries:", latestEntries.length, "latest month:", latestEntries[0]?.month);
 
     // Calculate total net worth from the latest entries
     // Credit cards and loans are liabilities, so subtract their balances
@@ -69,7 +65,6 @@ export async function calculateNetWorth() {
       return total + balance;
     }, 0);
 
-    console.log("[DEBUG] calculateNetWorth - result:", netWorth);
     return netWorth;
   } catch (error) {
     console.error("Error calculating net worth:", error);
@@ -252,7 +247,6 @@ export async function getFinancialMetrics() {
       .where(inArray(accountsTable.userId, accessibleUserIds));
 
     const accessibleAccountIds = allAccounts.map((acc) => acc.id);
-    console.log("[DEBUG] getFinancialMetrics - accounts:", allAccounts.length, "ids:", accessibleAccountIds.length);
 
     if (accessibleAccountIds.length === 0) {
       return {
@@ -299,8 +293,6 @@ export async function getFinancialMetrics() {
       .innerJoin(accountsTable, eq(monthlyEntries.accountId, accountsTable.id))
       .where(inArray(monthlyEntries.accountId, accessibleAccountIds))
       .orderBy(desc(monthlyEntries.month));
-
-    console.log("[DEBUG] getFinancialMetrics - entries:", entries.length, "latestMonth:", entries[0]?.month, "currentYear:", entries[0]?.month?.substring(0, 4));
 
     if (entries.length === 0) {
       return {
@@ -738,13 +730,6 @@ export async function getFinancialMetrics() {
         }
       }
     }
-
-    console.log("[DEBUG] getFinancialMetrics - results:", {
-      netWorthYTD: currentNetWorth, netWorthAllTime, incomeYTD, incomeAllTime,
-      expenditureYTD, expenditureAllTime, savingsYTD, savingsAllTime,
-      savingsRateYTD, savingsRateAllTime, latestMonth,
-      fxRatesUsed: { EUR: fxRates.rates.EUR, USD: fxRates.rates.USD, AED: fxRates.rates.AED, date: fxRates.date },
-    });
 
     return {
       netWorthYTD: currentNetWorth,
@@ -1369,10 +1354,7 @@ export async function getChartData(
 
     // Get accessible user IDs to filter data - this is critical for performance and security
     const accessibleUserIds = await getAccessibleUserIds();
-    console.log("[DEBUG] getChartData - timePeriod:", timePeriod, "owner:", owner, "accessibleUserIds:", accessibleUserIds);
-    console.log("[DEBUG] getChartData - server timezone:", new Date().toString(), "ISO:", new Date().toISOString());
     if (accessibleUserIds.length === 0) {
-      console.log("[DEBUG] getChartData - no accessible user IDs, returning empty");
       return {
         netWorthData: [],
         accountData: [],
@@ -1388,8 +1370,6 @@ export async function getChartData(
       .select()
       .from(accountsTable)
       .where(inArray(accountsTable.userId, accessibleUserIds));
-
-    console.log("[DEBUG] getChartData - total accounts from DB:", accounts.length, "names:", accounts.map(a => a.name));
 
     // Filter accounts by owner if specified
     let filteredAccounts =
@@ -1431,12 +1411,6 @@ export async function getChartData(
             .where(inArray(monthlyEntries.accountId, filteredAccountIds))
             .orderBy(desc(monthlyEntries.month))
         : [];
-
-    console.log("[DEBUG] getChartData - filteredAccounts:", filteredAccounts.length, "entries:", entries.length);
-    if (entries.length > 0) {
-      console.log("[DEBUG] getChartData - month range:", entries[entries.length - 1].month, "to", entries[0].month);
-      console.log("[DEBUG] getChartData - sample entries (first 5):", entries.slice(0, 5).map(e => ({ accountId: e.accountId, month: e.month, endingBalance: e.endingBalance, cashIn: e.cashIn, cashOut: e.cashOut })));
-    }
 
     // Transform the data into the required format
     const monthlyData: Record<
@@ -1501,9 +1475,6 @@ export async function getChartData(
     }
 
     const filteredMonths = getFilteredMonths(months, timePeriod);
-    console.log("[DEBUG] getChartData - all months:", months);
-    console.log("[DEBUG] getChartData - filteredMonths:", filteredMonths);
-
     // Calculate net worth over time (raw values, no conversion)
     const netWorthData = filteredMonths.map((month) => ({
       month: new Date(month + "-01").toLocaleDateString("en-GB", {
@@ -1699,8 +1670,6 @@ export async function getChartData(
       const rates = await getExchangeRates(month);
       monthRatesMap.set(month, rates);
     }
-    console.log("[DEBUG] getChartData - FX rates:", Array.from(monthRatesMap.entries()).map(([m, r]) => ({ month: m, EUR: r.rates.EUR, USD: r.rates.USD })));
-
     // Helper function to convert amount to GBP using cached rates
     const convertToGBPForMonth = (
       amount: number,
@@ -1866,9 +1835,6 @@ export async function getChartData(
         },
       };
     });
-
-    console.log("[DEBUG] getChartData - netWorthData:", netWorthData.map(d => ({ month: d.month, monthKey: d.monthKey, netWorth: d.netWorth })));
-    console.log("[DEBUG] getChartData - sourceData sample:", sourceData.slice(0, 3).map(d => ({ month: d.month, monthKey: d.monthKey, income: d["Total Income"], expenditure: d["Total Expenditure"], savings: d["Savings from Income"] })));
 
     return {
       netWorthData,
@@ -2490,15 +2456,12 @@ export async function getInitialExchangeRates(): Promise<
     // Generate months for the last 24 months (covers most chart views)
     const months: string[] = [];
     const now = new Date();
-    console.log("[DEBUG] getInitialExchangeRates - now:", now.toString(), "ISO:", now.toISOString(), "TZ offset:", now.getTimezoneOffset());
     for (let i = 0; i < 24; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
       months.push(`${year}-${month}`);
     }
-    console.log("[DEBUG] getInitialExchangeRates - months:", months);
-
     const rates = await fetchExchangeRatesForMonths(months);
 
     // Convert to the format expected by ExchangeRatesProvider
@@ -2522,11 +2485,9 @@ export async function getInitialExchangeRates(): Promise<
       };
     });
 
-    console.log("[DEBUG] getInitialExchangeRates - rates count:", Object.keys(result).length, "dates:", Object.keys(result));
     return result;
   } catch (error) {
     console.error("Error getting initial exchange rates:", error);
-    console.log("[DEBUG] getInitialExchangeRates - ERROR, returning {}");
     return {};
   }
 }
@@ -2992,5 +2953,158 @@ export async function calculateProjection(data: {
       projectionData: [],
       error: errorMessage,
     };
+  }
+}
+
+export async function getStaleAccounts(): Promise<StaleAccountsData> {
+  try {
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) {
+      return { staleEntries: [], missingMonthCount: 0, missingAccountCount: 0 };
+    }
+
+    // Get all open (non-closed) accounts
+    const openAccounts = await db
+      .select()
+      .from(accountsTable)
+      .where(
+        and(
+          inArray(accountsTable.userId, accessibleUserIds),
+          eq(accountsTable.isClosed, false),
+        ),
+      )
+      .orderBy(asc(accountsTable.displayOrder), asc(accountsTable.createdAt));
+
+    if (openAccounts.length === 0) {
+      return { staleEntries: [], missingMonthCount: 0, missingAccountCount: 0 };
+    }
+
+    const accountIds = openAccounts.map((a) => a.id);
+
+    // Get all monthly entries for these accounts
+    const allEntries = await db
+      .select()
+      .from(monthlyEntries)
+      .where(inArray(monthlyEntries.accountId, accountIds))
+      .orderBy(asc(monthlyEntries.month));
+
+    // Group entries by account
+    const entriesByAccount = new Map<string, typeof allEntries>();
+    for (const entry of allEntries) {
+      const existing = entriesByAccount.get(entry.accountId) || [];
+      existing.push(entry);
+      entriesByAccount.set(entry.accountId, existing);
+    }
+
+    // Determine the previous completed calendar month
+    const now = new Date();
+    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthKey = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+
+    const staleEntries: StaleAccountEntry[] = [];
+
+    for (const account of openAccounts) {
+      const entries = entriesByAccount.get(account.id) || [];
+      const entryMonths = new Set(entries.map((e) => e.month));
+
+      // Determine the start month for this account
+      let startMonthKey: string;
+      if (entries.length > 0) {
+        // Use the first entry month as the start
+        startMonthKey = entries[0].month;
+      } else {
+        // No entries at all: only flag the previous completed month
+        const accountAccount = {
+          id: account.id,
+          name: account.name,
+          type: account.type,
+          isISA: account.isISA,
+          owner: account.owner,
+          category: account.category,
+          isClosed: account.isClosed,
+          closedAt: account.closedAt,
+          currency: account.currency,
+          displayOrder: account.displayOrder ?? 0,
+        };
+        staleEntries.push({
+          account: accountAccount,
+          missingMonth: prevMonthKey,
+          previousBalance: 0,
+          previousMonth: null,
+        });
+        continue;
+      }
+
+      // Build the account object matching the client-side Account type
+      const accountObj = {
+        id: account.id,
+        name: account.name,
+        type: account.type,
+        isISA: account.isISA,
+        owner: account.owner,
+        category: account.category,
+        isClosed: account.isClosed,
+        closedAt: account.closedAt,
+        currency: account.currency,
+        displayOrder: account.displayOrder ?? 0,
+      };
+
+      // Iterate from startMonthKey to prevMonthKey, find missing months
+      const [startYear, startMon] = startMonthKey.split("-").map(Number);
+      const [endYear, endMon] = prevMonthKey.split("-").map(Number);
+
+      let year = startYear;
+      let mon = startMon;
+
+      while (year < endYear || (year === endYear && mon <= endMon)) {
+        const monthKey = `${year}-${String(mon).padStart(2, "0")}`;
+
+        if (!entryMonths.has(monthKey)) {
+          // Find the most recent known balance before this month
+          let previousBalance = 0;
+          let previousMonth: string | null = null;
+          for (let i = entries.length - 1; i >= 0; i--) {
+            if (entries[i].month < monthKey) {
+              previousBalance = Number(entries[i].endingBalance);
+              previousMonth = entries[i].month;
+              break;
+            }
+          }
+
+          staleEntries.push({
+            account: accountObj,
+            missingMonth: monthKey,
+            previousBalance,
+            previousMonth,
+          });
+        }
+
+        // Advance to next month
+        mon++;
+        if (mon > 12) {
+          mon = 1;
+          year++;
+        }
+      }
+    }
+
+    // Sort: by month descending (most recent gaps first), then by displayOrder
+    staleEntries.sort((a, b) => {
+      const monthCmp = b.missingMonth.localeCompare(a.missingMonth);
+      if (monthCmp !== 0) return monthCmp;
+      return a.account.displayOrder - b.account.displayOrder;
+    });
+
+    const missingMonths = new Set(staleEntries.map((e) => e.missingMonth));
+    const missingAccounts = new Set(staleEntries.map((e) => e.account.id));
+
+    return {
+      staleEntries,
+      missingMonthCount: missingMonths.size,
+      missingAccountCount: missingAccounts.size,
+    };
+  } catch (error) {
+    console.error("Error getting stale accounts:", error);
+    return { staleEntries: [], missingMonthCount: 0, missingAccountCount: 0 };
   }
 }
