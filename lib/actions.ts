@@ -1178,14 +1178,15 @@ export async function addMonthlyEntry(
     await db.insert(monthlyEntries).values(newEntry);
 
     // Automatically fetch and save FX rates for this month if they don't exist
-    // This is done asynchronously and won't block the monthly entry creation
-    fetchAndSaveExchangeRatesForMonth(month).catch((error) => {
-      // Log error but don't fail the operation
+    try {
+      await fetchAndSaveExchangeRatesForMonth(month);
+    } catch (error) {
+      // Log error but don't fail the monthly entry creation
       console.error(
         `Failed to fetch FX rates for month ${month} (non-blocking):`,
         error,
       );
-    });
+    }
 
     // Revalidate the page to show the new data
     revalidatePath("/");
