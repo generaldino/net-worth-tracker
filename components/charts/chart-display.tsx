@@ -999,7 +999,6 @@ export function ChartDisplay({
                       <Bar
                         key={source}
                         dataKey={source}
-                        stackId="net-worth-changes"
                         fill={isHidden ? "transparent" : sourceColors[source]}
                         fillOpacity={opacity}
                         isAnimationActive={false}
