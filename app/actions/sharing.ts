@@ -1,11 +1,7 @@
 "use server";
 
-import { db } from "@/db";
-import {
-  dashboardShares,
-  dashboardInvitations,
-  users,
-} from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import { dashboardShares, dashboardInvitations, users } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 import { auth } from "@/lib/auth";
@@ -17,9 +13,7 @@ import { revalidatePath } from "next/cache";
 export async function getAccessibleUserIds(): Promise<string[]> {
   try {
     const currentUserId = await getUserId();
-    console.log("[DEBUG] getAccessibleUserIds - currentUserId:", currentUserId);
     if (!currentUserId) {
-      console.log("[DEBUG] getAccessibleUserIds - no currentUserId, returning []");
       return [];
     }
 
@@ -30,12 +24,10 @@ export async function getAccessibleUserIds(): Promise<string[]> {
       .where(eq(dashboardShares.sharedWithUserId, currentUserId));
 
     const result = [currentUserId, ...shares.map((s) => s.ownerId)];
-    console.log("[DEBUG] getAccessibleUserIds - shares:", shares.length, "result:", result);
     // Return array: current user ID + all owner IDs of dashboards shared with them
     return result;
   } catch (error) {
     console.error("Error getting accessible user IDs:", error);
-    console.log("[DEBUG] getAccessibleUserIds - ERROR, returning []");
     return [];
   }
 }
@@ -93,8 +85,8 @@ export async function inviteUser(email: string) {
         .where(
           and(
             eq(dashboardShares.ownerId, ownerId),
-            eq(dashboardShares.sharedWithUserId, existingUser[0].id)
-          )
+            eq(dashboardShares.sharedWithUserId, existingUser[0].id),
+          ),
         )
         .limit(1);
 
@@ -120,8 +112,8 @@ export async function inviteUser(email: string) {
           and(
             eq(dashboardInvitations.ownerId, ownerId),
             eq(dashboardInvitations.inviteeEmail, normalizedEmail),
-            eq(dashboardInvitations.status, "pending")
-          )
+            eq(dashboardInvitations.status, "pending"),
+          ),
         );
 
       revalidatePath("/");
@@ -136,8 +128,8 @@ export async function inviteUser(email: string) {
         and(
           eq(dashboardInvitations.ownerId, ownerId),
           eq(dashboardInvitations.inviteeEmail, normalizedEmail),
-          eq(dashboardInvitations.status, "pending")
-        )
+          eq(dashboardInvitations.status, "pending"),
+        ),
       )
       .limit(1);
 
@@ -155,7 +147,8 @@ export async function inviteUser(email: string) {
     revalidatePath("/");
     return {
       success: true,
-      message: "Invitation created. Share the instructions below with the user.",
+      message:
+        "Invitation created. Share the instructions below with the user.",
       inviteeEmail: normalizedEmail,
     };
   } catch (error) {
@@ -182,8 +175,8 @@ export async function revokeAccess(sharedWithUserId: string) {
       .where(
         and(
           eq(dashboardShares.ownerId, ownerId),
-          eq(dashboardShares.sharedWithUserId, sharedWithUserId)
-        )
+          eq(dashboardShares.sharedWithUserId, sharedWithUserId),
+        ),
       );
 
     revalidatePath("/");
@@ -249,8 +242,8 @@ export async function getPendingInvitations() {
       .where(
         and(
           eq(dashboardInvitations.ownerId, ownerId),
-          eq(dashboardInvitations.status, "pending")
-        )
+          eq(dashboardInvitations.status, "pending"),
+        ),
       )
       .orderBy(dashboardInvitations.createdAt);
 
@@ -285,8 +278,8 @@ export async function checkAndAcceptPendingInvitations() {
       .where(
         and(
           eq(dashboardInvitations.inviteeEmail, userEmail),
-          eq(dashboardInvitations.status, "pending")
-        )
+          eq(dashboardInvitations.status, "pending"),
+        ),
       );
 
     if (pendingInvitations.length === 0) {
@@ -315,8 +308,8 @@ export async function checkAndAcceptPendingInvitations() {
         .where(
           and(
             eq(dashboardShares.ownerId, invitation.ownerId),
-            eq(dashboardShares.sharedWithUserId, currentUserId)
-          )
+            eq(dashboardShares.sharedWithUserId, currentUserId),
+          ),
         )
         .limit(1);
 
@@ -363,8 +356,8 @@ export async function cancelInvitation(invitationId: string) {
         and(
           eq(dashboardInvitations.id, invitationId),
           eq(dashboardInvitations.ownerId, ownerId),
-          eq(dashboardInvitations.status, "pending")
-        )
+          eq(dashboardInvitations.status, "pending"),
+        ),
       )
       .limit(1);
 
@@ -384,4 +377,3 @@ export async function cancelInvitation(invitationId: string) {
     return { success: false, error: "Failed to cancel invitation" };
   }
 }
-
