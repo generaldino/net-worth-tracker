@@ -124,9 +124,6 @@ export function AccountsTable({
         cashIn: string;
         cashOut: string;
         income: string;
-        internalTransfersOut: string;
-        debtPayments: string;
-        expenditure: string;
       }
     >
   >;
@@ -285,9 +282,6 @@ export function AccountsTable({
           cashIn: prev[accountId]?.[month]?.cashIn || "",
           cashOut: prev[accountId]?.[month]?.cashOut || "",
           income: prev[accountId]?.[month]?.income || "",
-          internalTransfersOut: prev[accountId]?.[month]?.internalTransfersOut || "",
-          debtPayments: prev[accountId]?.[month]?.debtPayments || "",
-          expenditure: prev[accountId]?.[month]?.expenditure || "",
           [field]: value,
         },
       },
@@ -302,8 +296,8 @@ export function AccountsTable({
         cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
         cashOut: Number.parseFloat(editedEntry.cashOut) || 0,
         income: Number.parseFloat(editedEntry.income) || 0,
-        internalTransfersOut: Number.parseFloat(editedEntry.internalTransfersOut) || 0,
-        debtPayments: Number.parseFloat(editedEntry.debtPayments) || 0,
+        internalTransfersOut: 0,
+        debtPayments: 0,
       };
 
       await onUpdateMonthlyEntry(accountId, month, updatedEntry);
@@ -436,9 +430,6 @@ export function AccountsTable({
                           cashIn: entry.cashIn.toString(),
                           cashOut: entry.cashOut.toString(),
                           income: (entry.income || 0).toString(),
-                          internalTransfersOut: (entry.internalTransfersOut || 0).toString(),
-                          debtPayments: (entry.debtPayments || 0).toString(),
-                          expenditure: (entry.expenditure || 0).toString(),
                         },
                       },
                     }));
@@ -487,9 +478,6 @@ export function AccountsTable({
                       cashIn: entry.cashIn.toString(),
                       cashOut: entry.cashOut.toString(),
                       income: (entry.income || 0).toString(),
-                      internalTransfersOut: (entry.internalTransfersOut || 0).toString(),
-                      debtPayments: (entry.debtPayments || 0).toString(),
-                      expenditure: (entry.expenditure || 0).toString(),
                     },
                   },
                 }));

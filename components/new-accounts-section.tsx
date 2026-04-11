@@ -93,7 +93,7 @@ import { toast } from "@/components/ui/use-toast";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { StaleAccountsBanner } from "@/components/stale-accounts-banner";
 import { StaleAccountsWizard } from "@/components/stale-accounts-wizard";
-import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { shouldShowIncome, getFieldLabels } from "@/lib/account-helpers";
 import { createAccount } from "@/lib/actions";
 
 export interface NewAccountsSectionProps {
@@ -883,8 +883,8 @@ export function NewAccountsSection({
               cashIn: newEntry.cashIn,
               cashOut: newEntry.cashOut,
               income: newEntry.income || 0,
-              internalTransfersOut: newEntry.internalTransfersOut || 0,
-              debtPayments: newEntry.debtPayments || 0,
+              internalTransfersOut: 0,
+              debtPayments: 0,
             }
           );
           if (result.success) {
@@ -921,8 +921,8 @@ export function NewAccountsSection({
               cashIn: updatedEntry.cashIn,
               cashOut: updatedEntry.cashOut,
               income: updatedEntry.income || 0,
-              internalTransfersOut: updatedEntry.internalTransfersOut || 0,
-              debtPayments: updatedEntry.debtPayments || 0,
+              internalTransfersOut: 0,
+              debtPayments: 0,
             }
           );
           if (result.success) {
@@ -1000,7 +1000,7 @@ function StyledMonthlyHistoryTable({
   onEditEntry,
   onDeleteEntry,
 }: StyledMonthlyHistoryTableProps) {
-  const isCurrentAccount = shouldShowIncomeExpenditure(accountType);
+  const isCurrentAccount = shouldShowIncome(accountType);
 
   const FieldHeader = ({
     label,
@@ -1013,10 +1013,7 @@ function StyledMonthlyHistoryTable({
       | "cashOut"
       | "cashFlow"
       | "accountGrowth"
-      | "income"
-      | "expenditure"
-      | "internalTransfersOut"
-      | "debtPayments";
+      | "income";
   }) => {
     const explanation = getFieldExplanation(accountType, field);
     return (
@@ -1072,25 +1069,13 @@ function StyledMonthlyHistoryTable({
                 <th className="text-center p-2 font-medium">
                   <FieldHeader label="Income" field="income" />
                 </th>
-                <th className="text-center p-2 font-medium">
-                  <FieldHeader
-                    label="Internal Transfers Out"
-                    field="internalTransfersOut"
-                  />
-                </th>
-                <th className="text-center p-2 font-medium">
-                  <FieldHeader label="Debt Payments" field="debtPayments" />
-                </th>
-                <th className="text-center p-2 font-medium">
-                  <FieldHeader label="Expenditure" field="expenditure" />
-                </th>
               </>
             )}
             <th className="text-center p-2 font-medium">
-              <FieldHeader label="Cash In" field="cashIn" />
+              <FieldHeader label={getFieldLabels(accountType).contributionsLabel} field="cashIn" />
             </th>
             <th className="text-center p-2 font-medium">
-              <FieldHeader label="Cash Out" field="cashOut" />
+              <FieldHeader label={getFieldLabels(accountType).withdrawalsLabel} field="cashOut" />
             </th>
             <th className="text-center p-2 font-medium">
               <FieldHeader label="Cash Flow" field="cashFlow" />
@@ -1168,25 +1153,6 @@ function StyledMonthlyHistoryRow({
     displayCurrency,
     entry.month
   );
-  const { convertedAmount: convertedInternalTransfersOut } =
-    useCurrencyConversion(
-      entry.internalTransfersOut || 0,
-      accountCurrency,
-      displayCurrency,
-      entry.month
-    );
-  const { convertedAmount: convertedDebtPayments } = useCurrencyConversion(
-    entry.debtPayments || 0,
-    accountCurrency,
-    displayCurrency,
-    entry.month
-  );
-  const { convertedAmount: convertedExpenditure } = useCurrencyConversion(
-    entry.expenditure || 0,
-    accountCurrency,
-    displayCurrency,
-    entry.month
-  );
   const { convertedAmount: convertedCashIn } = useCurrencyConversion(
     entry.cashIn,
     accountCurrency,
@@ -1226,24 +1192,6 @@ function StyledMonthlyHistoryRow({
             {isMasked
               ? "••••••"
               : formatCurrencyAmount(convertedIncome, displayCurrency)}
-          </td>
-          <td className="p-2 text-center tabular-nums">
-            {isMasked
-              ? "••••••"
-              : formatCurrencyAmount(
-                  convertedInternalTransfersOut,
-                  displayCurrency
-                )}
-          </td>
-          <td className="p-2 text-center tabular-nums">
-            {isMasked
-              ? "••••••"
-              : formatCurrencyAmount(convertedDebtPayments, displayCurrency)}
-          </td>
-          <td className="p-2 text-center tabular-nums">
-            {isMasked
-              ? "••••••"
-              : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
           </td>
         </>
       )}
@@ -1574,6 +1522,7 @@ function AccountRowDesktop({
 
 interface MobileHistoryEntryProps {
   entry: MonthlyEntry;
+  accountType: AccountType;
   accountCurrency: Currency;
   effectiveDisplayCurrency: Currency;
   isMasked: boolean;
@@ -1582,6 +1531,7 @@ interface MobileHistoryEntryProps {
 
 function MobileHistoryEntry({
   entry,
+  accountType,
   accountCurrency,
   effectiveDisplayCurrency,
   isMasked,
@@ -1626,7 +1576,7 @@ function MobileHistoryEntry({
           </span>
         </div>
         <div>
-          <span className="text-muted-foreground">Cash In:</span>
+          <span className="text-muted-foreground">{getFieldLabels(accountType).contributionsLabel}:</span>
           <span className="ml-1 font-medium tabular-nums">
             {isMasked
               ? "••••••"
@@ -1863,6 +1813,7 @@ function AccountCardMobile({
               <MobileHistoryEntry
                 key={entry.month}
                 entry={entry}
+                accountType={account.type}
                 accountCurrency={accountCurrency}
                 effectiveDisplayCurrency={effectiveDisplayCurrency}
                 isMasked={isMasked}
@@ -2150,7 +2101,7 @@ function AddEntryDialog({
     debtPayments?: number;
   }) => void;
 }) {
-  const isCurrentAccount = account?.type === "Current";
+  const isIncomeAccount = account ? shouldShowIncome(account.type) : false;
 
   const [formData, setFormData] = React.useState({
     month: "",
@@ -2158,8 +2109,6 @@ function AddEntryDialog({
     cashIn: "",
     cashOut: "",
     income: "",
-    internalTransfersOut: "",
-    debtPayments: "",
   });
 
   // Reset form when dialog opens/closes
@@ -2171,8 +2120,6 @@ function AddEntryDialog({
         cashIn: "",
         cashOut: "",
         income: "",
-        internalTransfersOut: "",
-        debtPayments: "",
       });
     }
   }, [open]);
@@ -2185,9 +2132,8 @@ function AddEntryDialog({
       cashIn: Number.parseFloat(formData.cashIn) || 0,
       cashOut: Number.parseFloat(formData.cashOut) || 0,
       income: Number.parseFloat(formData.income) || 0,
-      internalTransfersOut:
-        Number.parseFloat(formData.internalTransfersOut) || 0,
-      debtPayments: Number.parseFloat(formData.debtPayments) || 0,
+      internalTransfersOut: 0,
+      debtPayments: 0,
     });
   };
 
@@ -2234,7 +2180,7 @@ function AddEntryDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cashIn">Cash In</Label>
+              <Label htmlFor="cashIn">{account ? getFieldLabels(account.type).contributionsLabel : "Cash In"}</Label>
               <Input
                 id="cashIn"
                 type="number"
@@ -2250,7 +2196,7 @@ function AddEntryDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cashOut">Cash Out</Label>
+              <Label htmlFor="cashOut">{account ? getFieldLabels(account.type).withdrawalsLabel : "Cash Out"}</Label>
               <Input
                 id="cashOut"
                 type="number"
@@ -2266,7 +2212,7 @@ function AddEntryDialog({
             </div>
           </div>
 
-          {isCurrentAccount && (
+          {isIncomeAccount && (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -2280,42 +2226,6 @@ function AddEntryDialog({
                       setFormData({
                         ...formData,
                         income: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="internalTransfersOut">
-                    Internal Transfers Out
-                  </Label>
-                  <Input
-                    id="internalTransfersOut"
-                    type="number"
-                    step="0.01"
-                    value={formData.internalTransfersOut}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalTransfersOut: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="debtPayments">Debt Payments</Label>
-                  <Input
-                    id="debtPayments"
-                    type="number"
-                    step="0.01"
-                    value={formData.debtPayments}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        debtPayments: e.target.value,
                       })
                     }
                   />
@@ -2353,7 +2263,7 @@ function EditEntryDialog({
   accountType?: AccountType;
   onSave: (entry: MonthlyEntry) => void;
 }) {
-  const isCurrentAccount = accountType === "Current";
+  const isIncomeAccount = accountType ? shouldShowIncome(accountType) : false;
 
   const [formData, setFormData] = React.useState({
     month: "",
@@ -2361,8 +2271,6 @@ function EditEntryDialog({
     cashIn: "",
     cashOut: "",
     income: "",
-    internalTransfersOut: "",
-    debtPayments: "",
   });
 
   React.useEffect(() => {
@@ -2373,10 +2281,6 @@ function EditEntryDialog({
         cashIn: entry.entry.cashIn.toString(),
         cashOut: entry.entry.cashOut.toString(),
         income: (entry.entry.income || 0).toString(),
-        internalTransfersOut: (
-          entry.entry.internalTransfersOut || 0
-        ).toString(),
-        debtPayments: (entry.entry.debtPayments || 0).toString(),
       });
     }
   }, [entry]);
@@ -2391,9 +2295,8 @@ function EditEntryDialog({
         cashIn: Number.parseFloat(formData.cashIn) || 0,
         cashOut: Number.parseFloat(formData.cashOut) || 0,
         income: Number.parseFloat(formData.income) || 0,
-        internalTransfersOut:
-          Number.parseFloat(formData.internalTransfersOut) || 0,
-        debtPayments: Number.parseFloat(formData.debtPayments) || 0,
+        internalTransfersOut: 0,
+        debtPayments: 0,
       });
     }
   };
@@ -2442,7 +2345,7 @@ function EditEntryDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-cashIn">Cash In</Label>
+              <Label htmlFor="edit-cashIn">{accountType ? getFieldLabels(accountType).contributionsLabel : "Cash In"}</Label>
               <Input
                 id="edit-cashIn"
                 type="number"
@@ -2459,7 +2362,7 @@ function EditEntryDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-cashOut">Cash Out</Label>
+              <Label htmlFor="edit-cashOut">{accountType ? getFieldLabels(accountType).withdrawalsLabel : "Cash Out"}</Label>
               <Input
                 id="edit-cashOut"
                 type="number"
@@ -2476,7 +2379,7 @@ function EditEntryDialog({
             </div>
           </div>
 
-          {isCurrentAccount && (
+          {isIncomeAccount && (
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -2490,42 +2393,6 @@ function EditEntryDialog({
                       setFormData({
                         ...formData,
                         income: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="edit-internalTransfersOut">
-                    Internal Transfers Out
-                  </Label>
-                  <Input
-                    id="edit-internalTransfersOut"
-                    type="number"
-                    step="0.01"
-                    value={formData.internalTransfersOut}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        internalTransfersOut: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-debtPayments">Debt Payments</Label>
-                  <Input
-                    id="edit-debtPayments"
-                    type="number"
-                    step="0.01"
-                    value={formData.debtPayments}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        debtPayments: e.target.value,
                       })
                     }
                   />

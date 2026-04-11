@@ -17,7 +17,7 @@ import { type Account, type MonthlyEntry } from "@/lib/types";
 import { CalendarIcon } from "lucide-react";
 import { getCurrentValue } from "@/lib/actions";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
-import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { shouldShowIncome, getFieldLabels, computeExpenditure } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { InfoButton } from "@/components/ui/info-button";
 
@@ -42,9 +42,7 @@ export function MonthlyEntryDialog({
   );
 
   useEffect(() => {
-    // Initialize entries with existing data or default values
     const initializeEntries = async () => {
-      // Fetch current values for all accounts first
       const values = await Promise.all(
         accounts.map(async (account) => {
           const value = await getCurrentValue(account.id);
@@ -56,40 +54,31 @@ export function MonthlyEntryDialog({
       );
       setCurrentValues(valuesMap);
 
-      // Then initialize entries with the fetched values
-      const initialEntries = await Promise.all(
-        accounts.map(async (account) => {
-          const existingEntry = existingEntries.find(
-            (e) => e.accountId === account.id
-          );
-          const endingBalance = existingEntry
-            ? existingEntry.endingBalance
-            : valuesMap[account.id] || 0;
-          const cashIn = existingEntry ? existingEntry.cashIn : 0;
-          const cashOut = existingEntry ? existingEntry.cashOut : 0;
-          const income = existingEntry ? existingEntry.income : 0;
-          const internalTransfersOut = existingEntry?.internalTransfersOut || 0;
-          const debtPayments = existingEntry?.debtPayments || 0;
-          // Compute expenditure from stored value or calculate it
-          const expenditure = existingEntry 
-            ? existingEntry.expenditure 
-            : Math.max(0, cashOut - internalTransfersOut - debtPayments);
-          return {
-            accountId: account.id,
-            monthKey: month,
-            month,
-            endingBalance,
-            cashIn,
-            cashOut,
-            income,
-            expenditure,
-            internalTransfersOut,
-            debtPayments,
-            cashFlow: cashIn - cashOut,
-            accountGrowth: 0,
-          };
-        })
-      );
+      const initialEntries = accounts.map((account) => {
+        const existingEntry = existingEntries.find(
+          (e) => e.accountId === account.id
+        );
+        const endingBalance = existingEntry
+          ? existingEntry.endingBalance
+          : valuesMap[account.id] || 0;
+        const cashIn = existingEntry ? existingEntry.cashIn : 0;
+        const cashOut = existingEntry ? existingEntry.cashOut : 0;
+        const income = existingEntry ? existingEntry.income : 0;
+        return {
+          accountId: account.id,
+          monthKey: month,
+          month,
+          endingBalance,
+          cashIn,
+          cashOut,
+          income,
+          expenditure: 0,
+          internalTransfersOut: 0,
+          debtPayments: 0,
+          cashFlow: cashIn - cashOut,
+          accountGrowth: 0,
+        };
+      });
       setEntries(initialEntries);
     };
 
@@ -116,15 +105,8 @@ export function MonthlyEntryDialog({
   const handleSubmit = () => {
     const entriesToSave = entries.map((entry) => {
       const account = accounts.find((a) => a.id === entry.accountId);
-      const showIncomeExpenditure = account
-        ? shouldShowIncomeExpenditure(account.type)
-        : false;
-      const internalTransfersOut = entry.internalTransfersOut || 0;
-      const debtPayments = entry.debtPayments || 0;
-      // Expenditure is computed: cashOut - internalTransfersOut - debtPayments
-      const expenditure = showIncomeExpenditure 
-        ? Math.max(0, entry.cashOut - internalTransfersOut - debtPayments)
-        : 0;
+      const accountType = account?.type || "Current";
+      const expenditure = computeExpenditure(accountType, entry.cashOut);
       return {
         accountId: entry.accountId,
         monthKey: entry.month,
@@ -132,12 +114,12 @@ export function MonthlyEntryDialog({
         endingBalance: entry.endingBalance,
         cashIn: entry.cashIn,
         cashOut: entry.cashOut,
-        income: showIncomeExpenditure ? entry.income : 0,
+        income: shouldShowIncome(accountType) ? entry.income : 0,
         expenditure,
-        internalTransfersOut: showIncomeExpenditure ? internalTransfersOut : 0,
-        debtPayments: showIncomeExpenditure ? debtPayments : 0,
+        internalTransfersOut: 0,
+        debtPayments: 0,
         cashFlow: entry.cashIn - entry.cashOut,
-        accountGrowth: 0, // This will be calculated on the server
+        accountGrowth: 0, // Calculated on the server
       };
     });
     onSaveEntries(month, entriesToSave);
@@ -160,9 +142,8 @@ export function MonthlyEntryDialog({
         <DialogHeader>
           <DialogTitle>Monthly Account Values</DialogTitle>
           <DialogDescription>
-            Enter the ending balance and cash flows for each account for the
-            selected month. For Current accounts, also specify income and
-            expenditure. For other accounts, only Cash In/Out are needed.
+            Enter the ending balance for each account. Add any deposits,
+            contributions, or withdrawals made during the month.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -183,6 +164,8 @@ export function MonthlyEntryDialog({
             {accounts.map((account) => {
               const entry = entries.find((e) => e.accountId === account.id);
               const currentValue = currentValues[account.id] || 0;
+              const { contributionsLabel, withdrawalsLabel } = getFieldLabels(account.type);
+              const showIncome = shouldShowIncome(account.type);
 
               return (
                 <div
@@ -236,131 +219,40 @@ export function MonthlyEntryDialog({
                         placeholder="0"
                       />
                     </div>
-                    {shouldShowIncomeExpenditure(account.type) && (
-                      <>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Label className="text-sm">Income</Label>
-                            {(() => {
-                              const explanation = getFieldExplanation(
-                                account.type,
-                                "income"
-                              );
-                              return explanation ? (
-                                <InfoButton
-                                  title={explanation.title}
-                                  description={explanation.description}
-                                />
-                              ) : null;
-                            })()}
-                          </div>
-                          <Input
-                            type="number"
-                            value={entry?.income || 0}
-                            onChange={(e) =>
-                              handleEntryChange(
-                                account.id.toString(),
-                                "income",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0"
-                          />
+                    {showIncome && (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          <Label className="text-sm">Income</Label>
+                          {(() => {
+                            const explanation = getFieldExplanation(
+                              account.type,
+                              "income"
+                            );
+                            return explanation ? (
+                              <InfoButton
+                                title={explanation.title}
+                                description={explanation.description}
+                              />
+                            ) : null;
+                          })()}
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Label className="text-sm">Internal Transfers Out</Label>
-                            {(() => {
-                              const explanation = getFieldExplanation(
-                                account.type,
-                                "internalTransfersOut"
-                              );
-                              return explanation ? (
-                                <InfoButton
-                                  title={explanation.title}
-                                  description={explanation.description}
-                                />
-                              ) : null;
-                            })()}
-                          </div>
-                          <Input
-                            type="number"
-                            value={entry?.internalTransfersOut || 0}
-                            onChange={(e) =>
-                              handleEntryChange(
-                                account.id.toString(),
-                                "internalTransfersOut",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Label className="text-sm">Debt Payments</Label>
-                            {(() => {
-                              const explanation = getFieldExplanation(
-                                account.type,
-                                "debtPayments"
-                              );
-                              return explanation ? (
-                                <InfoButton
-                                  title={explanation.title}
-                                  description={explanation.description}
-                                />
-                              ) : null;
-                            })()}
-                          </div>
-                          <Input
-                            type="number"
-                            value={entry?.debtPayments || 0}
-                            onChange={(e) =>
-                              handleEntryChange(
-                                account.id.toString(),
-                                "debtPayments",
-                                e.target.value
-                              )
-                            }
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Label className="text-sm">Expenditure (Computed)</Label>
-                            {(() => {
-                              const explanation = getFieldExplanation(
-                                account.type,
-                                "expenditure"
-                              );
-                              return explanation ? (
-                                <InfoButton
-                                  title={explanation.title}
-                                  description={explanation.description}
-                                />
-                              ) : null;
-                            })()}
-                          </div>
-                          <Input
-                            type="number"
-                            value={
-                              Math.max(
-                                0,
-                                (entry?.cashOut || 0) -
-                                  (entry?.internalTransfersOut || 0) -
-                                  (entry?.debtPayments || 0)
-                              )
-                            }
-                            disabled
-                            className="bg-muted"
-                            placeholder="0"
-                          />
-                        </div>
-                      </>
+                        <Input
+                          type="number"
+                          value={entry?.income || 0}
+                          onChange={(e) =>
+                            handleEntryChange(
+                              account.id.toString(),
+                              "income",
+                              e.target.value
+                            )
+                          }
+                          placeholder="0"
+                        />
+                      </div>
                     )}
                     <div className="space-y-1">
                       <div className="flex items-center gap-1">
-                        <Label className="text-sm">Cash In</Label>
+                        <Label className="text-sm">{contributionsLabel}</Label>
                         {(() => {
                           const explanation = getFieldExplanation(
                             account.type,
@@ -389,7 +281,7 @@ export function MonthlyEntryDialog({
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-1">
-                        <Label className="text-sm">Cash Out</Label>
+                        <Label className="text-sm">{withdrawalsLabel}</Label>
                         {(() => {
                           const explanation = getFieldExplanation(
                             account.type,

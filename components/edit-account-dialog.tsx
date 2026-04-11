@@ -27,8 +27,6 @@ import {
   Account,
   AccountType,
   accountTypes,
-  AccountCategory,
-  accountCategories,
   supportedCurrencies,
   currencyLabels,
 } from "@/lib/types";
@@ -48,7 +46,6 @@ export function EditAccountDialog({
   const router = useRouter();
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("Current");
-  const [category, setCategory] = useState<AccountCategory>("Investments");
   const [currency, setCurrency] = useState<Currency>("GBP");
   const [isISA, setIsISA] = useState(false);
   const [owner, setOwner] = useState("");
@@ -58,7 +55,6 @@ export function EditAccountDialog({
     if (account) {
       setName(account.name);
       setType(account.type);
-      setCategory(account.category || "Investments");
       setCurrency(account.currency || "GBP");
       setIsISA(account.isISA);
       setOwner(account.owner);
@@ -81,7 +77,6 @@ export function EditAccountDialog({
         id: account.id,
         name,
         type,
-        category,
         currency,
         isISA,
         owner,
@@ -152,25 +147,9 @@ export function EditAccountDialog({
               <SelectContent>
                 {accountTypes.map((accountType) => (
                   <SelectItem key={accountType} value={accountType}>
-                    {accountType}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-category">Account Category</Label>
-            <Select
-              value={category}
-              onValueChange={(value: AccountCategory) => setCategory(value)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {accountCategories.map((accountCategory) => (
-                  <SelectItem key={accountCategory} value={accountCategory}>
-                    {accountCategory}
+                    {accountType
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
                   </SelectItem>
                 ))}
               </SelectContent>

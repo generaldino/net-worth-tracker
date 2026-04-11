@@ -15,18 +15,17 @@ import { InfoButton } from "@/components/ui/info-button";
 interface MonthlyHistoryRowProps {
   entry: MonthlyEntry;
   isEditing: boolean;
-  showIncomeExpenditure: boolean;
+  showIncome: boolean;
   accountType: AccountType;
   accountCurrency: Currency;
   displayCurrency: Currency;
+  contributionsLabel: string;
+  withdrawalsLabel: string;
   editingValues: {
     endingBalance: string;
     cashIn: string;
     cashOut: string;
     income: string;
-    internalTransfersOut: string;
-    debtPayments: string;
-    expenditure: string;
   };
   onValueChange: (field: string, value: string) => void;
   onSave: () => void;
@@ -37,10 +36,12 @@ interface MonthlyHistoryRowProps {
 export function MonthlyHistoryRow({
   entry,
   isEditing,
-  showIncomeExpenditure,
+  showIncome,
   accountType,
   accountCurrency,
   displayCurrency,
+  contributionsLabel,
+  withdrawalsLabel,
   editingValues,
   onValueChange,
   onSave,
@@ -58,24 +59,6 @@ export function MonthlyHistoryRow({
   );
   const { convertedAmount: convertedIncome } = useCurrencyConversion(
     entry.income || 0,
-    accountCurrency,
-    displayCurrency,
-    entry.month
-  );
-  const { convertedAmount: convertedExpenditure } = useCurrencyConversion(
-    entry.expenditure || 0,
-    accountCurrency,
-    displayCurrency,
-    entry.month
-  );
-  const { convertedAmount: convertedInternalTransfersOut } = useCurrencyConversion(
-    entry.internalTransfersOut || 0,
-    accountCurrency,
-    displayCurrency,
-    entry.month
-  );
-  const { convertedAmount: convertedDebtPayments } = useCurrencyConversion(
-    entry.debtPayments || 0,
     accountCurrency,
     displayCurrency,
     entry.month
@@ -155,125 +138,95 @@ export function MonthlyHistoryRow({
               </div>
             )}
           </div>
-          {showIncomeExpenditure && (
-            <>
-              <div>
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <span className="text-muted-foreground">Income:</span>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      accountType,
-                      "income"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    value={editingValues.income}
-                    onChange={(e) => onValueChange("income", e.target.value)}
-                    className="h-8"
-                  />
-                ) : (
-                  <div className="font-medium text-center">
-                    {isMasked
-                      ? "••••••"
-                      : formatCurrencyAmount(convertedIncome, displayCurrency)}
-                  </div>
-                )}
+          {showIncome && (
+            <div>
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <span className="text-muted-foreground">Income:</span>
+                {(() => {
+                  const explanation = getFieldExplanation(
+                    accountType,
+                    "income"
+                  );
+                  return explanation ? (
+                    <InfoButton
+                      title={explanation.title}
+                      description={explanation.description}
+                    />
+                  ) : null;
+                })()}
               </div>
-              <div>
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <span className="text-muted-foreground">Internal Transfers Out:</span>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      accountType,
-                      "internalTransfersOut"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    value={editingValues.internalTransfersOut}
-                    onChange={(e) => onValueChange("internalTransfersOut", e.target.value)}
-                    className="h-8"
-                  />
-                ) : (
-                  <div className="font-medium text-center">
-                    {isMasked
-                      ? "••••••"
-                      : formatCurrencyAmount(convertedInternalTransfersOut, displayCurrency)}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <span className="text-muted-foreground">Debt Payments:</span>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      accountType,
-                      "debtPayments"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    value={editingValues.debtPayments}
-                    onChange={(e) => onValueChange("debtPayments", e.target.value)}
-                    className="h-8"
-                  />
-                ) : (
-                  <div className="font-medium text-center">
-                    {isMasked
-                      ? "••••••"
-                      : formatCurrencyAmount(convertedDebtPayments, displayCurrency)}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <span className="text-muted-foreground">Expenditure (Computed):</span>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      accountType,
-                      "expenditure"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                <div className="font-medium bg-muted px-2 py-1 rounded text-center">
+              {isEditing ? (
+                <Input
+                  type="number"
+                  value={editingValues.income}
+                  onChange={(e) => onValueChange("income", e.target.value)}
+                  className="h-8"
+                />
+              ) : (
+                <div className="font-medium text-center">
                   {isMasked
                     ? "••••••"
-                    : formatCurrencyAmount(convertedExpenditure, displayCurrency)}
+                    : formatCurrencyAmount(convertedIncome, displayCurrency)}
                 </div>
-              </div>
-            </>
+              )}
+            </div>
           )}
+          <div>
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <span className="text-muted-foreground">{contributionsLabel}:</span>
+              {(() => {
+                const explanation = getFieldExplanation(accountType, "cashIn");
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
+            {isEditing ? (
+              <Input
+                type="number"
+                value={editingValues.cashIn}
+                onChange={(e) => onValueChange("cashIn", e.target.value)}
+                className="h-8"
+              />
+            ) : (
+              <div className="font-medium text-center">
+                {isMasked
+                  ? "••••••"
+                  : formatCurrencyAmount(convertedCashIn, displayCurrency)}
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <span className="text-muted-foreground">{withdrawalsLabel}:</span>
+              {(() => {
+                const explanation = getFieldExplanation(accountType, "cashOut");
+                return explanation ? (
+                  <InfoButton
+                    title={explanation.title}
+                    description={explanation.description}
+                  />
+                ) : null;
+              })()}
+            </div>
+            {isEditing ? (
+              <Input
+                type="number"
+                value={editingValues.cashOut}
+                onChange={(e) => onValueChange("cashOut", e.target.value)}
+                className="h-8"
+              />
+            ) : (
+              <div className="font-medium text-center">
+                {isMasked
+                  ? "••••••"
+                  : formatCurrencyAmount(convertedCashOut, displayCurrency)}
+              </div>
+            )}
+          </div>
           <div>
             <div className="flex items-center justify-center gap-1 mb-1">
               <span className="text-muted-foreground">Growth:</span>
@@ -307,62 +260,6 @@ export function MonthlyHistoryRow({
               )}
             </div>
           </div>
-          <div>
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <span className="text-muted-foreground">Cash In:</span>
-              {(() => {
-                const explanation = getFieldExplanation(accountType, "cashIn");
-                return explanation ? (
-                  <InfoButton
-                    title={explanation.title}
-                    description={explanation.description}
-                  />
-                ) : null;
-              })()}
-            </div>
-            {isEditing ? (
-              <Input
-                type="number"
-                value={editingValues.cashIn}
-                onChange={(e) => onValueChange("cashIn", e.target.value)}
-                className="h-8"
-              />
-            ) : (
-              <div className="font-medium text-center">
-                {isMasked
-                  ? "••••••"
-                  : formatCurrencyAmount(convertedCashIn, displayCurrency)}
-              </div>
-            )}
-          </div>
-          <div>
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <span className="text-muted-foreground">Cash Out:</span>
-              {(() => {
-                const explanation = getFieldExplanation(accountType, "cashOut");
-                return explanation ? (
-                  <InfoButton
-                    title={explanation.title}
-                    description={explanation.description}
-                  />
-                ) : null;
-              })()}
-            </div>
-            {isEditing ? (
-              <Input
-                type="number"
-                value={editingValues.cashOut}
-                onChange={(e) => onValueChange("cashOut", e.target.value)}
-                className="h-8"
-              />
-            ) : (
-              <div className="font-medium text-center">
-                {isMasked
-                  ? "••••••"
-                  : formatCurrencyAmount(convertedCashOut, displayCurrency)}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -385,58 +282,21 @@ export function MonthlyHistoryRow({
           formatCurrencyAmount(convertedBalance, displayCurrency)
         )}
       </td>
-      {showIncomeExpenditure && (
-        <>
-          <td className="text-center">
-            {isEditing ? (
-              <Input
-                type="number"
-                value={editingValues.income}
-                onChange={(e) => onValueChange("income", e.target.value)}
-                className="w-[100px]"
-              />
-            ) : isMasked ? (
-              "••••••"
-            ) : (
-              formatCurrencyAmount(convertedIncome, displayCurrency)
-            )}
-          </td>
-          <td className="text-center">
-            {isEditing ? (
-              <Input
-                type="number"
-                value={editingValues.internalTransfersOut}
-                onChange={(e) => onValueChange("internalTransfersOut", e.target.value)}
-                className="w-[100px]"
-              />
-            ) : isMasked ? (
-              "••••••"
-            ) : (
-              formatCurrencyAmount(convertedInternalTransfersOut, displayCurrency)
-            )}
-          </td>
-          <td className="text-center">
-            {isEditing ? (
-              <Input
-                type="number"
-                value={editingValues.debtPayments}
-                onChange={(e) => onValueChange("debtPayments", e.target.value)}
-                className="w-[100px]"
-              />
-            ) : isMasked ? (
-              "••••••"
-            ) : (
-              formatCurrencyAmount(convertedDebtPayments, displayCurrency)
-            )}
-          </td>
-          <td className="bg-muted/50 text-center">
-            {isMasked ? (
-              "••••••"
-            ) : (
-              formatCurrencyAmount(convertedExpenditure, displayCurrency)
-            )}
-          </td>
-        </>
+      {showIncome && (
+        <td className="text-center">
+          {isEditing ? (
+            <Input
+              type="number"
+              value={editingValues.income}
+              onChange={(e) => onValueChange("income", e.target.value)}
+              className="w-[100px]"
+            />
+          ) : isMasked ? (
+            "••••••"
+          ) : (
+            formatCurrencyAmount(convertedIncome, displayCurrency)
+          )}
+        </td>
       )}
       <td className="text-center">
         {isEditing ? (

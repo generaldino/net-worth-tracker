@@ -16,7 +16,7 @@ import {
 import { InfoButton } from "@/components/ui/info-button";
 import { toast } from "@/components/ui/use-toast";
 import { addMonthlyEntry } from "@/lib/actions";
-import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { shouldShowIncome, getFieldLabels } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { formatCurrencyAmount, getCurrencySymbol } from "@/lib/fx-rates";
 import type { AccountType, StaleAccountsData } from "@/lib/types";
@@ -77,8 +77,6 @@ export function StaleAccountsWizard({
   const [cashIn, setCashIn] = React.useState("0");
   const [cashOut, setCashOut] = React.useState("0");
   const [income, setIncome] = React.useState("0");
-  const [internalTransfersOut, setInternalTransfersOut] = React.useState("0");
-  const [debtPayments, setDebtPayments] = React.useState("0");
 
   // Reset form when current entry changes
   React.useEffect(() => {
@@ -88,8 +86,6 @@ export function StaleAccountsWizard({
       setCashIn("0");
       setCashOut("0");
       setIncome("0");
-      setInternalTransfersOut("0");
-      setDebtPayments("0");
     }
   }, [currentIndex, entries]);
 
@@ -128,8 +124,8 @@ export function StaleAccountsWizard({
         cashIn: Number(cashIn) || 0,
         cashOut: Number(cashOut) || 0,
         income: Number(income) || 0,
-        internalTransfersOut: Number(internalTransfersOut) || 0,
-        debtPayments: Number(debtPayments) || 0,
+        internalTransfersOut: 0,
+        debtPayments: 0,
       });
 
       if (result.success) {
@@ -167,13 +163,8 @@ export function StaleAccountsWizard({
   if (entries.length === 0) return null;
 
   const currentEntry = entries[currentIndex];
-  const isCurrentAccount = currentEntry
-    ? shouldShowIncomeExpenditure(currentEntry.account.type)
-    : false;
-
-  const computedExpenditure = isCurrentAccount
-    ? Math.max(0, (Number(cashOut) || 0) - (Number(internalTransfersOut) || 0) - (Number(debtPayments) || 0))
-    : 0;
+  const showIncome = currentEntry ? shouldShowIncome(currentEntry.account.type) : false;
+  const fieldLabels = currentEntry ? getFieldLabels(currentEntry.account.type) : { contributionsLabel: "Contributions", withdrawalsLabel: "Withdrawals" };
 
   const progressPercent = isCompleted
     ? 100
@@ -256,8 +247,18 @@ export function StaleAccountsWizard({
                   value={endingBalance}
                   onChange={setEndingBalance}
                 />
+                {showIncome && (
+                  <FieldInput
+                    label="Income"
+                    field="income"
+                    accountType={currentEntry.account.type}
+                    currency={currentEntry.account.currency as Currency}
+                    value={income}
+                    onChange={setIncome}
+                  />
+                )}
                 <FieldInput
-                  label="Cash In"
+                  label={fieldLabels.contributionsLabel}
                   field="cashIn"
                   accountType={currentEntry.account.type}
                   currency={currentEntry.account.currency as Currency}
@@ -265,56 +266,13 @@ export function StaleAccountsWizard({
                   onChange={setCashIn}
                 />
                 <FieldInput
-                  label="Cash Out"
+                  label={fieldLabels.withdrawalsLabel}
                   field="cashOut"
                   accountType={currentEntry.account.type}
                   currency={currentEntry.account.currency as Currency}
                   value={cashOut}
                   onChange={setCashOut}
                 />
-
-                {isCurrentAccount && (
-                  <>
-                    <FieldInput
-                      label="Income"
-                      field="income"
-                      accountType={currentEntry.account.type}
-                      currency={currentEntry.account.currency as Currency}
-                      value={income}
-                      onChange={setIncome}
-                    />
-                    <FieldInput
-                      label="Internal Transfers Out"
-                      field="internalTransfersOut"
-                      accountType={currentEntry.account.type}
-                      currency={currentEntry.account.currency as Currency}
-                      value={internalTransfersOut}
-                      onChange={setInternalTransfersOut}
-                    />
-                    <FieldInput
-                      label="Debt Payments"
-                      field="debtPayments"
-                      accountType={currentEntry.account.type}
-                      currency={currentEntry.account.currency as Currency}
-                      value={debtPayments}
-                      onChange={setDebtPayments}
-                    />
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1">
-                        <Label className="text-xs text-muted-foreground">Expenditure</Label>
-                        {(() => {
-                          const exp = getFieldExplanation(currentEntry.account.type, "expenditure");
-                          return exp ? <InfoButton title={exp.title} description={exp.description} /> : null;
-                        })()}
-                      </div>
-                      <Input
-                        value={computedExpenditure.toFixed(0)}
-                        disabled
-                        className="h-8 text-sm bg-muted/50"
-                      />
-                    </div>
-                  </>
-                )}
               </div>
             </div>
 
@@ -374,7 +332,7 @@ function FieldInput({
 }) {
   const explanation = getFieldExplanation(
     accountType,
-    field as "endingBalance" | "cashIn" | "cashOut" | "income" | "internalTransfersOut" | "debtPayments",
+    field as "endingBalance" | "cashIn" | "cashOut" | "income",
   );
 
   return (

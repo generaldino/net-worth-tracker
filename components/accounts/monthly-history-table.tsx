@@ -10,7 +10,7 @@ import { type MonthlyEntry, type AccountType } from "@/lib/types";
 import { updateMonthlyEntry } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import type { Currency } from "@/lib/fx-rates";
-import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { shouldShowIncome, getFieldLabels } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { InfoButton } from "@/components/ui/info-button";
 
@@ -25,9 +25,6 @@ interface MonthlyHistoryTableProps {
         cashIn: string;
         cashOut: string;
         income: string;
-        internalTransfersOut: string;
-        debtPayments: string;
-        expenditure: string;
       }
     >
   >;
@@ -56,7 +53,9 @@ export function MonthlyHistoryTable({
   onSave,
   onEdit,
 }: MonthlyHistoryTableProps) {
-  const showIncomeExpenditure = shouldShowIncomeExpenditure(accountType);
+  const showIncome = shouldShowIncome(accountType);
+  const { contributionsLabel, withdrawalsLabel } = getFieldLabels(accountType);
+
   if (history.length === 0) {
     return (
       <div className="text-center py-6 sm:py-8 text-muted-foreground">
@@ -73,22 +72,16 @@ export function MonthlyHistoryTable({
     if (editedEntry) {
       try {
         const cashOutValue = Number.parseFloat(editedEntry.cashOut) || 0;
-        const internalTransfersOutValue = showIncomeExpenditure
-          ? Number.parseFloat(editedEntry.internalTransfersOut) || 0
-          : 0;
-        const debtPaymentsValue = showIncomeExpenditure
-          ? Number.parseFloat(editedEntry.debtPayments) || 0
-          : 0;
 
         const result = await updateMonthlyEntry(accountId, month, {
           endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
           cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
           cashOut: cashOutValue,
-          income: showIncomeExpenditure
+          income: showIncome
             ? Number.parseFloat(editedEntry.income) || 0
             : 0,
-          internalTransfersOut: internalTransfersOutValue,
-          debtPayments: debtPaymentsValue,
+          internalTransfersOut: 0,
+          debtPayments: 0,
         });
 
         if (result.success) {
@@ -127,10 +120,12 @@ export function MonthlyHistoryTable({
               key={entry.month}
               entry={entry}
               isEditing={isEditing}
-              showIncomeExpenditure={showIncomeExpenditure}
+              showIncome={showIncome}
               accountType={accountType}
               accountCurrency={accountCurrency}
               displayCurrency={displayCurrency}
+              contributionsLabel={contributionsLabel}
+              withdrawalsLabel={withdrawalsLabel}
               editingValues={
                 isEditing
                   ? editingValues[accountId][entry.month]
@@ -139,9 +134,6 @@ export function MonthlyHistoryTable({
                       cashIn: entry.cashIn.toString(),
                       cashOut: entry.cashOut.toString(),
                       income: (entry.income || 0).toString(),
-                      internalTransfersOut: (entry.internalTransfersOut || 0).toString(),
-                      debtPayments: (entry.debtPayments || 0).toString(),
-                      expenditure: (entry.expenditure || 0).toString(),
                     }
               }
               onValueChange={(field, value) =>
@@ -178,81 +170,28 @@ export function MonthlyHistoryTable({
                   })()}
                 </div>
               </TableHead>
-              {showIncomeExpenditure && (
-                <>
-                  <TableHead className="w-[120px] text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      Income
-                      {(() => {
-                        const explanation = getFieldExplanation(
-                          accountType,
-                          "income"
-                        );
-                        return explanation ? (
-                          <InfoButton
-                            title={explanation.title}
-                            description={explanation.description}
-                          />
-                        ) : null;
-                      })()}
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[120px] text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      Internal Transfers Out
-                      {(() => {
-                        const explanation = getFieldExplanation(
-                          accountType,
-                          "internalTransfersOut"
-                        );
-                        return explanation ? (
-                          <InfoButton
-                            title={explanation.title}
-                            description={explanation.description}
-                          />
-                        ) : null;
-                      })()}
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[120px] text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      Debt Payments
-                      {(() => {
-                        const explanation = getFieldExplanation(
-                          accountType,
-                          "debtPayments"
-                        );
-                        return explanation ? (
-                          <InfoButton
-                            title={explanation.title}
-                            description={explanation.description}
-                          />
-                        ) : null;
-                      })()}
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-[120px] text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      Expenditure (Computed)
-                      {(() => {
-                        const explanation = getFieldExplanation(
-                          accountType,
-                          "expenditure"
-                        );
-                        return explanation ? (
-                          <InfoButton
-                            title={explanation.title}
-                            description={explanation.description}
-                          />
-                        ) : null;
-                      })()}
-                    </div>
-                  </TableHead>
-                </>
+              {showIncome && (
+                <TableHead className="w-[120px] text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    Income
+                    {(() => {
+                      const explanation = getFieldExplanation(
+                        accountType,
+                        "income"
+                      );
+                      return explanation ? (
+                        <InfoButton
+                          title={explanation.title}
+                          description={explanation.description}
+                        />
+                      ) : null;
+                    })()}
+                  </div>
+                </TableHead>
               )}
               <TableHead className="w-[120px] text-center">
                 <div className="flex items-center justify-center gap-1">
-                  Cash In
+                  {contributionsLabel}
                   {(() => {
                     const explanation = getFieldExplanation(
                       accountType,
@@ -269,7 +208,7 @@ export function MonthlyHistoryTable({
               </TableHead>
               <TableHead className="w-[120px] text-center">
                 <div className="flex items-center justify-center gap-1">
-                  Cash Out
+                  {withdrawalsLabel}
                   {(() => {
                     const explanation = getFieldExplanation(
                       accountType,
@@ -331,23 +270,22 @@ export function MonthlyHistoryTable({
                   key={entry.month}
                   entry={entry}
                   isEditing={isEditing}
-                  showIncomeExpenditure={showIncomeExpenditure}
+                  showIncome={showIncome}
                   accountType={accountType}
                   accountCurrency={accountCurrency}
                   displayCurrency={displayCurrency}
-              editingValues={
-                isEditing
-                  ? editingValues[accountId][entry.month]
-                  : {
-                      endingBalance: entry.endingBalance.toString(),
-                      cashIn: entry.cashIn.toString(),
-                      cashOut: entry.cashOut.toString(),
-                      income: (entry.income || 0).toString(),
-                      internalTransfersOut: (entry.internalTransfersOut || 0).toString(),
-                      debtPayments: (entry.debtPayments || 0).toString(),
-                      expenditure: (entry.expenditure || 0).toString(),
-                    }
-              }
+                  contributionsLabel={contributionsLabel}
+                  withdrawalsLabel={withdrawalsLabel}
+                  editingValues={
+                    isEditing
+                      ? editingValues[accountId][entry.month]
+                      : {
+                          endingBalance: entry.endingBalance.toString(),
+                          cashIn: entry.cashIn.toString(),
+                          cashOut: entry.cashOut.toString(),
+                          income: (entry.income || 0).toString(),
+                        }
+                  }
                   onValueChange={(field, value) =>
                     onValueChange(accountId, entry.month, field, value)
                   }

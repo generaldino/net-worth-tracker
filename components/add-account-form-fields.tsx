@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -15,8 +14,6 @@ import { DialogFooter, DialogClose } from "@/components/ui/dialog";
 import {
   AccountType,
   accountTypes,
-  AccountCategory,
-  accountCategories,
   supportedCurrencies,
   currencyLabels,
 } from "@/lib/types";
@@ -25,12 +22,11 @@ import { createAccount } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/components/ui/use-toast";
 import { useForm, Controller } from "react-hook-form";
+import { getCategoryFromType } from "@/lib/account-helpers";
 
 type FormData = {
   name: string;
   type: AccountType;
-  category: AccountCategory;
-  isISA: boolean;
   owner: string;
   currency: Currency;
 };
@@ -47,8 +43,6 @@ export function AddAccountFormFields() {
     defaultValues: {
       name: "",
       type: "Current",
-      category: "Investments",
-      isISA: false,
       owner: "",
       currency: "GBP",
     },
@@ -56,7 +50,11 @@ export function AddAccountFormFields() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const result = await createAccount(data);
+      const result = await createAccount({
+        ...data,
+        category: getCategoryFromType(data.type),
+        isISA: false,
+      });
 
       if (result.success && result.account) {
         reset();
@@ -123,27 +121,6 @@ export function AddAccountFormFields() {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="category">Account Category</Label>
-        <Controller
-          name="category"
-          control={control}
-          render={({ field }) => (
-            <Select value={field.value} onValueChange={field.onChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select account category" />
-              </SelectTrigger>
-              <SelectContent>
-                {accountCategories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        />
-      </div>
-      <div className="space-y-2">
         <Label htmlFor="currency">Currency</Label>
         <Controller
           name="currency"
@@ -163,25 +140,6 @@ export function AddAccountFormFields() {
             </Select>
           )}
         />
-      </div>
-      <div className="flex items-center space-x-2">
-        <Controller
-          name="isISA"
-          control={control}
-          render={({ field }) => (
-            <Checkbox
-              id="isa"
-              checked={field.value}
-              onCheckedChange={field.onChange}
-            />
-          )}
-        />
-        <Label
-          htmlFor="isa"
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-        >
-          ISA Account
-        </Label>
       </div>
       <DialogFooter className="flex-col sm:flex-row gap-2">
         <DialogClose asChild>

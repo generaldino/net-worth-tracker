@@ -18,7 +18,7 @@ import { Plus } from "lucide-react";
 import { addMonthlyEntry, getCurrentValue } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
-import { shouldShowIncomeExpenditure } from "@/lib/account-helpers";
+import { shouldShowIncome, getFieldLabels, computeExpenditure } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { InfoButton } from "@/components/ui/info-button";
 
@@ -34,10 +34,11 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [cashIn, setCashIn] = useState("");
   const [cashOut, setCashOut] = useState("");
   const [income, setIncome] = useState("");
-  const [internalTransfersOut, setInternalTransfersOut] = useState("");
-  const [debtPayments, setDebtPayments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
+
+  const { contributionsLabel, withdrawalsLabel } = getFieldLabels(account.type);
+  const showIncome = shouldShowIncome(account.type);
 
   useEffect(() => {
     async function fetchCurrentValue() {
@@ -61,23 +62,17 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
 
     try {
       const cashOutValue = Number.parseFloat(cashOut) || 0;
-      const internalTransfersOutValue = shouldShowIncomeExpenditure(account.type)
-        ? Number.parseFloat(internalTransfersOut) || 0
-        : 0;
-      const debtPaymentsValue = shouldShowIncomeExpenditure(account.type)
-        ? Number.parseFloat(debtPayments) || 0
-        : 0;
-      const expenditureValue = Math.max(0, cashOutValue - internalTransfersOutValue - debtPaymentsValue);
+      const cashInValue = Number.parseFloat(cashIn) || 0;
+      const incomeValue = showIncome ? Number.parseFloat(income) || 0 : 0;
+      const expenditure = computeExpenditure(account.type, cashOutValue);
 
       const result = await addMonthlyEntry(account.id, month, {
         endingBalance: Number.parseFloat(endingBalance) || 0,
-        cashIn: Number.parseFloat(cashIn) || 0,
+        cashIn: cashInValue,
         cashOut: cashOutValue,
-        income: shouldShowIncomeExpenditure(account.type)
-          ? Number.parseFloat(income) || 0
-          : 0,
-        internalTransfersOut: internalTransfersOutValue,
-        debtPayments: debtPaymentsValue,
+        income: incomeValue,
+        internalTransfersOut: 0,
+        debtPayments: 0,
       });
 
       if (result.success) {
@@ -86,17 +81,14 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           monthKey: month,
           month,
           endingBalance: Number.parseFloat(endingBalance) || 0,
-          cashIn: Number.parseFloat(cashIn) || 0,
+          cashIn: cashInValue,
           cashOut: cashOutValue,
-          income: shouldShowIncomeExpenditure(account.type)
-            ? Number.parseFloat(income) || 0
-            : 0,
-          expenditure: expenditureValue,
-          internalTransfersOut: internalTransfersOutValue,
-          debtPayments: debtPaymentsValue,
-          cashFlow:
-            (Number.parseFloat(cashIn) || 0) - cashOutValue,
-          accountGrowth: 0, // This will be calculated by the server
+          income: incomeValue,
+          expenditure,
+          internalTransfersOut: 0,
+          debtPayments: 0,
+          cashFlow: cashInValue - cashOutValue,
+          accountGrowth: 0,
         };
 
         onAddMonth(month, entry);
@@ -107,8 +99,6 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         setCashIn("");
         setCashOut("");
         setIncome("");
-        setInternalTransfersOut("");
-        setDebtPayments("");
         setOpen(false);
 
         toast({
@@ -151,7 +141,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         <DialogHeader>
           <DialogTitle>Add Month for {account.name}</DialogTitle>
           <DialogDescription>
-            Enter the month-end balance and cash flows for this account.
+            Enter the month-end balance and any cash movements for this account.
             <br />
             <span className="text-sm text-muted-foreground">
               Current balance:{" "}
@@ -199,115 +189,35 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               placeholder="0"
             />
           </div>
-          {shouldShowIncomeExpenditure(account.type) && (
-            <>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="income">Income</Label>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      account.type,
-                      "income"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                <Input
-                  id="income"
-                  type="number"
-                  value={income}
-                  onChange={(e) => setIncome(e.target.value)}
-                  placeholder="0"
-                />
+          {showIncome && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <Label htmlFor="income">Income</Label>
+                {(() => {
+                  const explanation = getFieldExplanation(
+                    account.type,
+                    "income"
+                  );
+                  return explanation ? (
+                    <InfoButton
+                      title={explanation.title}
+                      description={explanation.description}
+                    />
+                  ) : null;
+                })()}
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="internal-transfers-out">Internal Transfers Out</Label>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      account.type,
-                      "internalTransfersOut"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                <Input
-                  id="internal-transfers-out"
-                  type="number"
-                  value={internalTransfersOut}
-                  onChange={(e) => setInternalTransfersOut(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="debt-payments">Debt Payments</Label>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      account.type,
-                      "debtPayments"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                <Input
-                  id="debt-payments"
-                  type="number"
-                  value={debtPayments}
-                  onChange={(e) => setDebtPayments(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="expenditure">Expenditure (Computed)</Label>
-                  {(() => {
-                    const explanation = getFieldExplanation(
-                      account.type,
-                      "expenditure"
-                    );
-                    return explanation ? (
-                      <InfoButton
-                        title={explanation.title}
-                        description={explanation.description}
-                      />
-                    ) : null;
-                  })()}
-                </div>
-                <Input
-                  id="expenditure"
-                  type="number"
-                  value={Math.max(
-                    0,
-                    (Number.parseFloat(cashOut) || 0) -
-                      (Number.parseFloat(internalTransfersOut) || 0) -
-                      (Number.parseFloat(debtPayments) || 0)
-                  )}
-                  disabled
-                  className="bg-muted"
-                  placeholder="0"
-                />
-              </div>
-            </>
+              <Input
+                id="income"
+                type="number"
+                value={income}
+                onChange={(e) => setIncome(e.target.value)}
+                placeholder="0"
+              />
+            </div>
           )}
           <div className="space-y-2">
             <div className="flex items-center gap-1">
-              <Label htmlFor="cash-in">Cash In</Label>
+              <Label htmlFor="cash-in">{contributionsLabel}</Label>
               {(() => {
                 const explanation = getFieldExplanation(account.type, "cashIn");
                 return explanation ? (
@@ -328,7 +238,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-1">
-              <Label htmlFor="cash-out">Cash Out</Label>
+              <Label htmlFor="cash-out">{withdrawalsLabel}</Label>
               {(() => {
                 const explanation = getFieldExplanation(
                   account.type,

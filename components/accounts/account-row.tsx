@@ -38,9 +38,6 @@ interface AccountRowProps {
         cashIn: string;
         cashOut: string;
         income: string;
-        internalTransfersOut: string;
-        debtPayments: string;
-        expenditure: string;
       }
     >
   >;
@@ -292,23 +289,7 @@ export function AccountRow({
 
             <MonthlyHistoryTable
               history={history}
-              editingValues={
-                editingValues as unknown as Record<
-                  string,
-                  Record<
-                    string,
-                    {
-                      endingBalance: string;
-                      cashIn: string;
-                      cashOut: string;
-                      income: string;
-                      internalTransfersOut: string;
-                      debtPayments: string;
-                      expenditure: string;
-                    }
-                  >
-                >
-              }
+              editingValues={editingValues}
               accountId={account.id}
               accountType={account.type}
               accountCurrency={accountCurrency}

@@ -18,6 +18,7 @@ import {
   getExchangeRates,
 } from "@/lib/fx-rates-server";
 import type { AccountType, StaleAccountsData, StaleAccountEntry } from "@/lib/types";
+import { getCategoryFromType, computeExpenditure } from "@/lib/account-helpers";
 
 export async function calculateNetWorth() {
   try {
@@ -993,6 +994,9 @@ export async function createAccount(data: {
       return { success: false, error: "Not authenticated" };
     }
 
+    // Auto-derive category from type
+    const derivedCategory = getCategoryFromType(data.type);
+
     // Get the maximum display_order for this user's accounts
     const existingAccounts = await db
       .select({ displayOrder: accountsTable.displayOrder })
@@ -1009,7 +1013,7 @@ export async function createAccount(data: {
       .values({
         name: data.name,
         type: data.type,
-        category: data.category,
+        category: derivedCategory,
         isISA: data.isISA,
         owner: data.owner,
         currency: data.currency,
@@ -1041,7 +1045,7 @@ export async function updateAccount(data: {
     | "Credit_Card"
     | "Loan"
     | "Asset";
-  category: "Cash" | "Investments";
+  category?: "Cash" | "Investments";
   isISA: boolean;
   owner: string;
   currency: "GBP" | "EUR" | "USD" | "AED";
@@ -1053,12 +1057,15 @@ export async function updateAccount(data: {
       return { success: false, error: "Not authenticated" };
     }
 
+    // Auto-derive category from type
+    const derivedCategory = getCategoryFromType(data.type);
+
     const [account] = await db
       .update(accountsTable)
       .set({
         name: data.name,
         type: data.type,
-        category: data.category,
+        category: derivedCategory,
         isISA: data.isISA,
         owner: data.owner,
         currency: data.currency,
@@ -1147,20 +1154,9 @@ export async function addMonthlyEntry(
       };
     }
 
-    // Expenditure only applies to Current and Credit_Card accounts
-    // For other account types (Stock, Savings, Pension, etc.), expenditure is always 0
-    const shouldCalculateExpenditure =
-      accountType === "Current" || accountType === "Credit_Card";
-
-    const internalTransfersOut = shouldCalculateExpenditure
-      ? entry.internalTransfersOut || 0
-      : 0;
-    const debtPayments = shouldCalculateExpenditure
-      ? entry.debtPayments || 0
-      : 0;
-    const expenditure = shouldCalculateExpenditure
-      ? Math.max(0, entry.cashOut - internalTransfersOut - debtPayments)
-      : 0;
+    // Auto-compute expenditure based on account type
+    const expenditure = computeExpenditure(accountType, entry.cashOut);
+    const isIncomeAccount = accountType === "Current";
 
     // Insert the new entry
     const newEntry = {
@@ -1169,9 +1165,9 @@ export async function addMonthlyEntry(
       endingBalance: entry.endingBalance.toString(),
       cashIn: entry.cashIn.toString(),
       cashOut: entry.cashOut.toString(),
-      income: shouldCalculateExpenditure ? (entry.income || 0).toString() : "0",
-      internalTransfersOut: internalTransfersOut.toString(),
-      debtPayments: debtPayments.toString(),
+      income: isIncomeAccount ? (entry.income || 0).toString() : "0",
+      internalTransfersOut: "0",
+      debtPayments: "0",
       expenditure: expenditure.toString(),
     };
 
@@ -1251,20 +1247,9 @@ export async function updateMonthlyEntry(
       };
     }
 
-    // Expenditure only applies to Current and Credit_Card accounts
-    // For other account types (Stock, Savings, Pension, etc.), expenditure is always 0
-    const shouldCalculateExpenditure =
-      accountType === "Current" || accountType === "Credit_Card";
-
-    const internalTransfersOut = shouldCalculateExpenditure
-      ? entry.internalTransfersOut || 0
-      : 0;
-    const debtPayments = shouldCalculateExpenditure
-      ? entry.debtPayments || 0
-      : 0;
-    const expenditure = shouldCalculateExpenditure
-      ? Math.max(0, entry.cashOut - internalTransfersOut - debtPayments)
-      : 0;
+    // Auto-compute expenditure based on account type
+    const expenditure = computeExpenditure(accountType, entry.cashOut);
+    const isIncomeAccount = accountType === "Current";
 
     // Update the entry
     await db
@@ -1273,11 +1258,9 @@ export async function updateMonthlyEntry(
         endingBalance: entry.endingBalance.toString(),
         cashIn: entry.cashIn.toString(),
         cashOut: entry.cashOut.toString(),
-        income: shouldCalculateExpenditure
-          ? (entry.income || 0).toString()
-          : "0",
-        internalTransfersOut: internalTransfersOut.toString(),
-        debtPayments: debtPayments.toString(),
+        income: isIncomeAccount ? (entry.income || 0).toString() : "0",
+        internalTransfersOut: "0",
+        debtPayments: "0",
         expenditure: expenditure.toString(),
         updatedAt: new Date(),
       })
