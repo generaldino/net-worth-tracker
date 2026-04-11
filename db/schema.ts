@@ -75,9 +75,9 @@ export const monthlyEntries = pgTable("monthly_entries", {
   cashIn: numeric("cash_in").notNull(),
   cashOut: numeric("cash_out").notNull(),
   income: numeric("income").notNull().default("0"),
-  expenditure: numeric("expenditure").notNull().default("0"), // Computed: cashOut - internalTransfersOut - debtPayments
-  internalTransfersOut: numeric("internal_transfers_out").notNull().default("0"),
-  debtPayments: numeric("debt_payments").notNull().default("0"),
+  expenditure: numeric("expenditure").notNull().default("0"), // Auto-computed: Current/Credit_Card = cashOut, others = 0
+  internalTransfersOut: numeric("internal_transfers_out").notNull().default("0"), // Deprecated: new entries write 0
+  debtPayments: numeric("debt_payments").notNull().default("0"), // Deprecated: new entries write 0
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -908,8 +908,6 @@ export async function getMonthlyData() {
         cashIn: number;
         cashOut: number;
         income: number;
-        internalTransfersOut: number;
-        debtPayments: number;
         expenditure: number;
         cashFlow: number;
         accountGrowth: number;
@@ -923,8 +921,7 @@ export async function getMonthlyData() {
         monthlyData[month] = [];
       }
 
-      // cashFlow = cashIn - cashOut
-      // Note: cashIn now includes income, cashOut now includes expenditure
+      // cashIn = contributions/deposits, cashOut = withdrawals/charges
       const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
       monthlyData[month].push({
         accountId: entry.accountId,
@@ -934,8 +931,6 @@ export async function getMonthlyData() {
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
         income: Number(entry.income || 0),
-        internalTransfersOut: Number(entry.internalTransfersOut || 0),
-        debtPayments: Number(entry.debtPayments || 0),
         expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
@@ -1407,8 +1402,6 @@ export async function getChartData(
         cashIn: number;
         cashOut: number;
         income: number;
-        internalTransfersOut: number;
-        debtPayments: number;
         expenditure: number;
         cashFlow: number;
         accountGrowth: number;
@@ -1422,7 +1415,7 @@ export async function getChartData(
         monthlyData[month] = [];
       }
 
-      // Note: cashIn now includes income, cashOut now includes expenditure
+      // cashIn = contributions/deposits, cashOut = withdrawals/charges
       const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
       monthlyData[month].push({
         accountId: entry.accountId,
@@ -1432,8 +1425,6 @@ export async function getChartData(
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
         income: Number(entry.income || 0),
-        internalTransfersOut: Number(entry.internalTransfersOut || 0),
-        debtPayments: Number(entry.debtPayments || 0),
         expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth: 0, // Will be calculated in second pass
@@ -1739,9 +1730,7 @@ export async function getChartData(
           );
         }
 
-        // Add Credit Card expenditure to total expenditure (spending on cards is expenditure)
-        // For credit cards, expenditure = cashOut - internalTransfersOut - debtPayments
-        // (though credit cards typically won't have internal transfers or debt payments)
+        // Add Credit Card expenditure to total expenditure (new charges = spending)
         if (account.type === "Credit_Card") {
           const expenditure = Number(entry.expenditure || 0);
           totalExpenditure += convertToGBPForMonth(
@@ -1921,7 +1910,7 @@ export async function getAccountHistory(accountId: string) {
 
     // Transform the entries to include calculated fields
     const history = entries.map((entry, index) => {
-      // Note: cashIn now includes income, cashOut now includes expenditure
+      // cashIn = contributions/deposits, cashOut = withdrawals/charges
       const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
       let accountGrowth = 0;
 
@@ -1942,8 +1931,6 @@ export async function getAccountHistory(accountId: string) {
         cashIn: Number(entry.cashIn),
         cashOut: Number(entry.cashOut),
         income: Number(entry.income || 0),
-        internalTransfersOut: Number(entry.internalTransfersOut || 0),
-        debtPayments: Number(entry.debtPayments || 0),
         expenditure: Number(entry.expenditure || 0),
         cashFlow,
         accountGrowth,
@@ -2232,8 +2219,8 @@ export async function exportToCSV(): Promise<string> {
       "Closed Date",
       "Month",
       "Ending Balance",
-      "Cash In",
-      "Cash Out",
+      "Contributions",
+      "Withdrawals",
       "Income",
       "Expenditure",
       "Cash Flow",
@@ -2253,8 +2240,7 @@ export async function exportToCSV(): Promise<string> {
       const account = accountsMap.get(entry.accountId);
       if (!account) return; // Skip if account not found
 
-      // Calculate cash flow
-      // Note: cashIn now includes income, cashOut now includes expenditure
+      // cashIn = contributions/deposits, cashOut = withdrawals/charges
       const cashFlow = Number(entry.cashIn) - Number(entry.cashOut);
 
       // Calculate account growth by comparing with previous month's entry

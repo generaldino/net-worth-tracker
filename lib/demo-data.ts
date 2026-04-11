@@ -1,5 +1,6 @@
 import type { Account, MonthlyEntry, AccountType } from "@/lib/types";
 import type { ChartData, AccountData } from "@/components/charts/types";
+import { computeExpenditure } from "@/lib/account-helpers";
 
 // Generate month keys for the last 24 months
 function generateMonthKeys(count: number): string[] {
@@ -244,15 +245,16 @@ function generateDemoEntries(): Record<string, MonthlyEntry[]> {
       currentBalance = currentBalance + cashFlow + accountGrowth;
 
       // Create entry
+      const actualCashOut = Math.max(0, cashOut);
       const entry: MonthlyEntry = {
         accountId: account.id,
         monthKey,
         month: formatMonth(monthKey),
         endingBalance: Math.round(currentBalance),
         cashIn: Math.max(0, cashIn),
-        cashOut: Math.max(0, cashOut),
+        cashOut: actualCashOut,
         income: Math.max(0, income),
-        expenditure: Math.max(0, cashOut - (cashIn - income)),
+        expenditure: computeExpenditure(account.type, actualCashOut),
         cashFlow,
         accountGrowth: Math.round(accountGrowth),
       };
@@ -345,12 +347,23 @@ export function getDemoFinancialMetrics() {
   monthKeys.forEach((monthKey) => {
     const entries = demoMonthlyData[monthKey];
     entries.forEach((entry) => {
-      incomeAllTime += entry.income;
-      expenditureAllTime += Math.max(0, entry.cashOut - entry.income);
+      const account = demoAccounts.find((a) => a.id === entry.accountId);
+      if (!account) return;
 
-      if (ytdMonths.includes(monthKey)) {
-        incomeYTD += entry.income;
-        expenditureYTD += Math.max(0, entry.cashOut - entry.income);
+      // Income from Current accounts only
+      if (account.type === "Current") {
+        incomeAllTime += entry.income;
+        if (ytdMonths.includes(monthKey)) {
+          incomeYTD += entry.income;
+        }
+      }
+
+      // Expenditure from Current and Credit_Card accounts (uses stored value)
+      if (account.type === "Current" || account.type === "Credit_Card") {
+        expenditureAllTime += entry.expenditure;
+        if (ytdMonths.includes(monthKey)) {
+          expenditureYTD += entry.expenditure;
+        }
       }
     });
   });
@@ -532,20 +545,29 @@ export function getDemoChartData(): ChartData {
 
     entries.forEach((entry) => {
       const account = demoAccounts.find((a) => a.id === entry.accountId);
-      totalIncome += entry.income;
+      if (!account) return;
 
-      // Calculate expenditure (cashOut that isn't transfers)
-      const expenditure = Math.max(
-        0,
-        entry.cashOut - (entry.cashIn - entry.income)
-      );
-      totalExpenditure += expenditure;
+      // Income from Current accounts only
+      if (account.type === "Current") {
+        totalIncome += entry.income;
+      }
 
-      // For cash accounts, growth is interest
-      if (account?.category === "Cash") {
-        interestEarned += Math.max(0, entry.accountGrowth);
-      } else {
-        // For investments, growth is capital gains
+      // Expenditure from Current and Credit_Card accounts (uses stored value)
+      if (account.type === "Current" || account.type === "Credit_Card") {
+        totalExpenditure += entry.expenditure;
+      }
+
+      // Interest earned from Savings accounts
+      if (account.type === "Savings" && entry.accountGrowth > 0) {
+        interestEarned += entry.accountGrowth;
+      } else if (
+        // Capital gains from investment-type accounts
+        account.type !== "Current" &&
+        account.type !== "Savings" &&
+        account.type !== "Credit_Card" &&
+        account.type !== "Loan" &&
+        entry.accountGrowth !== 0
+      ) {
         capitalGains += entry.accountGrowth;
       }
     });

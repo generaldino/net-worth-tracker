@@ -259,7 +259,7 @@ export function LandingPage() {
                 icon: Calculator,
                 title: "Enter Monthly Data",
                 description:
-                  "Just 4 numbers per account: Closing Balance, Cash In, Cash Out, and Income.",
+                  "Just 3-4 numbers per account: Ending Balance, Contributions, Withdrawals, and Income (current accounts).",
               },
               {
                 step: "3",
@@ -311,27 +311,27 @@ export function LandingPage() {
             <div className="grid sm:grid-cols-2 gap-6">
               {[
                 {
-                  field: "Closing Balance",
+                  field: "Ending Balance",
                   description:
                     "Your account balance at the end of each month. The foundation of net worth tracking.",
                   icon: "💰",
                 },
                 {
-                  field: "Cash In",
+                  field: "Contributions",
                   description:
-                    "All money coming into the account: deposits, transfers, salary, investment contributions.",
+                    "Money you moved into the account: deposits, transfers in, investment contributions, loan payments.",
                   icon: "📥",
                 },
                 {
-                  field: "Cash Out",
+                  field: "Withdrawals",
                   description:
-                    "All money leaving the account: withdrawals, expenses, transfers, and payments.",
+                    "Money you moved out of the account: withdrawals, purchases, transfers out.",
                   icon: "📤",
                 },
                 {
                   field: "Income",
                   description:
-                    "The portion of Cash In that represents earned income from salary or business revenue.",
+                    "Salary or wages received (current accounts only). Used to calculate your savings rate.",
                   icon: "💵",
                 },
               ].map((item, i) => (
@@ -352,7 +352,7 @@ export function LandingPage() {
                   {"We automatically calculate: "}
                 </span>
                 {
-                  "Cash Flow (net movement), Account Growth (investment gains/interest), Savings Rate, Expenditure, Net Worth changes, and more."
+                  "Cash Flow, Account Growth (capital gains, interest, appreciation), Savings Rate, Expenditure, Net Worth changes, and more."
                 }
               </p>
             </div>

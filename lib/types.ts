@@ -54,7 +54,7 @@ export type MonthlyEntry = {
   cashIn: number;
   cashOut: number;
   income: number;
-  expenditure: number; // Computed: cashOut - internalTransfersOut - debtPayments
+  expenditure: number; // Auto-computed on save: Current/Credit_Card = cashOut, others = 0
   internalTransfersOut?: number;
   debtPayments?: number;
   cashFlow: number;
