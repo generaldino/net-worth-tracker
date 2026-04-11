@@ -44,5 +44,6 @@ export const authConfig = {
     strategy: "database" as const,
   },
 
-  debug: false, // Disable debug logs to reduce console noise
+  trustHost: true,
+  debug: false,
 } satisfies NextAuthConfig;
