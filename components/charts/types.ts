@@ -1,12 +1,8 @@
 export type ChartType =
   | "total"
-  | "assets-vs-liabilities"
-  | "by-account"
-  | "by-wealth-source"
-  | "monthly-growth-rate"
+  | "net-worth-changes"
+  | "income-spending"
   | "allocation"
-  | "waterfall"
-  | "savings-rate"
   | "projection";
 
 export interface Account {

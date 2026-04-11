@@ -56,7 +56,11 @@ export function ChartControls({
   const [isPending, startTransition] = useTransition();
   
   // URL-based state for shareable chart views
-  const [chartType, setChartTypeUrl] = useUrlState<ChartType>("chart", "total");
+  const validChartTypes: ChartType[] = ["total", "net-worth-changes", "income-spending", "allocation", "projection"];
+  const [rawChartType, setChartTypeUrl] = useUrlState<string>("chart", "total");
+  const chartType: ChartType = validChartTypes.includes(rawChartType as ChartType)
+    ? (rawChartType as ChartType)
+    : "total";
   const [timePeriod, setTimePeriodUrl] = useUrlState<TimePeriod>("period", "1Y");
   
   const [clickedData, setClickedData] = useState<ClickedData | null>(null);
@@ -102,9 +106,6 @@ export function ChartControls({
   const hasPreloadedRef = useRef(false);
 
   // Allocation chart options
-  const [allocationViewType, setAllocationViewType] = useState<
-    "account-type" | "category"
-  >("account-type");
   const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<
     string | undefined
   >(undefined);
@@ -114,10 +115,10 @@ export function ChartControls({
     "absolute"
   );
 
-  // By wealth source chart options
+  // Net worth changes chart options (formerly by-wealth-source)
   const [byWealthSourceViewType, setByWealthSourceViewType] = useState<
     "cumulative" | "monthly"
-  >("cumulative");
+  >("monthly");
 
   // Projection chart options
   const [selectedProjectionScenario, setSelectedProjectionScenario] = useState<
@@ -349,12 +350,9 @@ export function ChartControls({
     );
   }, [filteredChartDataByPeriod, getChartCurrency, convertChartData]);
 
-  // Update selected month to latest when view type changes or data updates
+  // Update selected month to latest when data updates
   useEffect(() => {
-    const sourceData =
-      allocationViewType === "category"
-        ? chartData.categoryData
-        : chartData.accountTypeData;
+    const sourceData = chartData.accountTypeData;
     const latestMonth =
       sourceData.length > 0
         ? sourceData[sourceData.length - 1]?.month
@@ -368,7 +366,7 @@ export function ChartControls({
       setAllocationSelectedMonth(latestMonth);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allocationViewType, chartData.categoryData, chartData.accountTypeData]);
+  }, [chartData.accountTypeData]);
 
   // Always use all accounts, all types, all categories, and all owners (no filtering via UI)
   const selectedAccounts = useMemo(
@@ -438,7 +436,7 @@ export function ChartControls({
           allocationOptions={
             chartType === "allocation"
               ? {
-                  viewType: allocationViewType,
+                  viewType: "account-type",
                   selectedMonth: allocationSelectedMonth,
                 }
               : undefined
@@ -455,7 +453,7 @@ export function ChartControls({
               : undefined
           }
           byWealthSourceOptions={
-            chartType === "by-wealth-source"
+            chartType === "net-worth-changes"
               ? { viewType: byWealthSourceViewType }
               : undefined
           }
@@ -492,7 +490,7 @@ export function ChartControls({
                     <option value="percentage">Percentage Composition</option>
                   </select>
                 </label>
-              ) : chartType === "by-wealth-source" ? (
+              ) : chartType === "net-worth-changes" ? (
                 <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">View:</span>
                   <select
@@ -574,43 +572,23 @@ export function ChartControls({
                   </button>
                 </React.Fragment>
               ) : chartType === "allocation" ? (
-                <>
-                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                    <span className="whitespace-nowrap">View by:</span>
-                    <select
-                      value={allocationViewType}
-                      onChange={(e) =>
-                        setAllocationViewType(
-                          e.target.value as "account-type" | "category"
-                        )
-                      }
-                      className="px-2 py-1 rounded border bg-background min-w-[140px]"
-                    >
-                      <option value="account-type">Account Type</option>
-                      <option value="category">Category</option>
-                    </select>
-                  </label>
-                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                    <span className="whitespace-nowrap">Month:</span>
-                    <select
-                      value={allocationSelectedMonth || ""}
-                      onChange={(e) =>
-                        setAllocationSelectedMonth(e.target.value || undefined)
-                      }
-                      className="px-2 py-1 rounded border bg-background min-w-[120px]"
-                    >
-                      <option value="">Latest</option>
-                      {(allocationViewType === "category"
-                        ? chartData.categoryData
-                        : chartData.accountTypeData
-                      ).map((item) => (
-                        <option key={item.monthKey} value={item.month}>
-                          {item.month}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </>
+                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="whitespace-nowrap">Month:</span>
+                  <select
+                    value={allocationSelectedMonth || ""}
+                    onChange={(e) =>
+                      setAllocationSelectedMonth(e.target.value || undefined)
+                    }
+                    className="px-2 py-1 rounded border bg-background min-w-[120px]"
+                  >
+                    <option value="">Latest</option>
+                    {chartData.accountTypeData.map((item) => (
+                      <option key={item.monthKey} value={item.month}>
+                        {item.month}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               ) : null}
             </>
           }

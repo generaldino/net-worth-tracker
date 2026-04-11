@@ -27,14 +27,9 @@ export function ChartTypeSelector({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="total">Net Worth</SelectItem>
-        <SelectItem value="assets-vs-liabilities">
-          Assets vs Liabilities
-        </SelectItem>
-        <SelectItem value="by-wealth-source">By Wealth Source</SelectItem>
-        <SelectItem value="monthly-growth-rate">Monthly Growth Rate</SelectItem>
+        <SelectItem value="income-spending">Income & Spending</SelectItem>
+        <SelectItem value="net-worth-changes">Net Worth Changes</SelectItem>
         <SelectItem value="allocation">Asset Allocation</SelectItem>
-        <SelectItem value="waterfall">Waterfall (Net Worth Changes)</SelectItem>
-        <SelectItem value="savings-rate">Savings Rate</SelectItem>
         <SelectItem value="projection">Projection</SelectItem>
       </SelectContent>
     </Select>

@@ -49,9 +49,6 @@ export function DemoChartSection() {
   }, [startTransition]);
 
   // Allocation chart options
-  const [allocationViewType, setAllocationViewType] = useState<
-    "account-type" | "category"
-  >("account-type");
   const [allocationSelectedMonth, setAllocationSelectedMonth] = useState<
     string | undefined
   >(undefined);
@@ -61,10 +58,10 @@ export function DemoChartSection() {
     "absolute"
   );
 
-  // By wealth source chart options
+  // Net worth changes chart options
   const [byWealthSourceViewType, setByWealthSourceViewType] = useState<
     "cumulative" | "monthly"
-  >("cumulative");
+  >("monthly");
 
   // Client-side function to filter months by time period
   const getFilteredMonths = (
@@ -167,7 +164,7 @@ export function DemoChartSection() {
           allocationOptions={
             chartType === "allocation"
               ? {
-                  viewType: allocationViewType,
+                  viewType: "account-type",
                   selectedMonth: allocationSelectedMonth,
                 }
               : undefined
@@ -176,7 +173,7 @@ export function DemoChartSection() {
             chartType === "total" ? { viewType: totalViewType } : undefined
           }
           byWealthSourceOptions={
-            chartType === "by-wealth-source"
+            chartType === "net-worth-changes"
               ? { viewType: byWealthSourceViewType }
               : undefined
           }
@@ -207,7 +204,7 @@ export function DemoChartSection() {
                     <option value="percentage">Percentage Composition</option>
                   </select>
                 </label>
-              ) : chartType === "by-wealth-source" ? (
+              ) : chartType === "net-worth-changes" ? (
                 <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">View:</span>
                   <select
@@ -228,43 +225,23 @@ export function DemoChartSection() {
                   Projections not available in demo mode
                 </div>
               ) : chartType === "allocation" ? (
-                <>
-                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                    <span className="whitespace-nowrap">View by:</span>
-                    <select
-                      value={allocationViewType}
-                      onChange={(e) =>
-                        setAllocationViewType(
-                          e.target.value as "account-type" | "category"
-                        )
-                      }
-                      className="px-2 py-1 rounded border bg-background min-w-[140px]"
-                    >
-                      <option value="account-type">Account Type</option>
-                      <option value="category">Category</option>
-                    </select>
-                  </label>
-                  <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
-                    <span className="whitespace-nowrap">Month:</span>
-                    <select
-                      value={allocationSelectedMonth || ""}
-                      onChange={(e) =>
-                        setAllocationSelectedMonth(e.target.value || undefined)
-                      }
-                      className="px-2 py-1 rounded border bg-background min-w-[120px]"
-                    >
-                      <option value="">Latest</option>
-                      {(allocationViewType === "category"
-                        ? chartData.categoryData
-                        : chartData.accountTypeData
-                      ).map((item) => (
-                        <option key={item.monthKey} value={item.month}>
-                          {item.month}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </>
+                <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
+                  <span className="whitespace-nowrap">Month:</span>
+                  <select
+                    value={allocationSelectedMonth || ""}
+                    onChange={(e) =>
+                      setAllocationSelectedMonth(e.target.value || undefined)
+                    }
+                    className="px-2 py-1 rounded border bg-background min-w-[120px]"
+                  >
+                    <option value="">Latest</option>
+                    {chartData.accountTypeData.map((item) => (
+                      <option key={item.monthKey} value={item.month}>
+                        {item.month}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               ) : null}
             </>
           }

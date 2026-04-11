@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useWindowSize } from "@/hooks/use-window-size";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import {
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -31,7 +30,6 @@ import {
   COLORS,
   CHART_GREEN,
   CHART_RED,
-  getUniqueColor,
   getAccountTypeColor,
 } from "./constants";
 import { useMasking } from "@/contexts/masking-context";
@@ -65,9 +63,6 @@ interface ChartDisplayProps {
   isLoading: boolean;
   timePeriod?: TimePeriod;
   onTimePeriodChange?: (value: TimePeriod) => void;
-  byAccountOptions?: {
-    topN?: number;
-  };
   allocationOptions?: {
     viewType?: "account-type" | "category";
     selectedMonth?: string;
@@ -95,11 +90,10 @@ export function ChartDisplay({
   isLoading,
   timePeriod,
   onTimePeriodChange,
-  byAccountOptions = { topN: undefined },
   allocationOptions = { viewType: "account-type", selectedMonth: undefined },
   totalOptions = { viewType: "absolute" },
   projectionOptions = { viewType: "absolute", selectedScenario: null },
-  byWealthSourceOptions = { viewType: "cumulative" },
+  byWealthSourceOptions = { viewType: "monthly" },
   headerControls,
   hiddenCards = new Set(),
   onToggleHidden,
@@ -166,25 +160,6 @@ export function ChartDisplay({
       container.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, []);
-
-  // Calculate responsive bar size based on data length and screen size
-  const getBarSize = (dataLength: number) => {
-    if (!width) return 40; // fallback during SSR
-
-    const availableWidth = width - 120; // Account for margins and padding
-    const maxBarWidth = availableWidth / dataLength;
-
-    if (width < 640) {
-      // mobile
-      return Math.max(15, Math.min(50, maxBarWidth * 0.8));
-    } else if (width < 1024) {
-      // tablet
-      return Math.max(25, Math.min(70, maxBarWidth * 0.7));
-    } else {
-      // desktop
-      return Math.max(30, Math.min(80, maxBarWidth * 0.6));
-    }
-  };
 
   // Get responsive font size
   const getFontSize = () => {
@@ -260,81 +235,7 @@ export function ChartDisplay({
         }
         break;
       }
-      case "assets-vs-liabilities": {
-        const monthData = chartData.netWorthData.find((d) => d.month === month);
-        if (monthData) {
-          const assets =
-            monthData.accountBalances
-              ?.filter((acc) => !acc.isLiability)
-              .reduce((sum, acc) => sum + acc.balance, 0) || 0;
-          const liabilities =
-            monthData.accountBalances
-              ?.filter((acc) => acc.isLiability)
-              .reduce((sum, acc) => sum + Math.abs(acc.balance), 0) || 0;
-          pinData = {
-            date: month,
-            month,
-            primaryValue: monthData.netWorth,
-            metrics: {
-              Assets: assets,
-              Liabilities: liabilities,
-              "Net Worth": monthData.netWorth,
-            },
-          };
-        }
-        break;
-      }
-      case "monthly-growth-rate": {
-        const monthIndex = chartData.netWorthData.findIndex(
-          (d) => d.month === month
-        );
-        if (monthIndex > 0) {
-          const current = chartData.netWorthData[monthIndex];
-          const previous = chartData.netWorthData[monthIndex - 1];
-          const growthRate =
-            previous.netWorth !== 0
-              ? ((current.netWorth - previous.netWorth) /
-                  Math.abs(previous.netWorth)) *
-                100
-              : 0;
-          pinData = {
-            date: month,
-            month,
-            primaryValue: growthRate,
-            metrics: {
-              "Growth Rate": growthRate,
-              netWorth: current.netWorth,
-            },
-          };
-        }
-        break;
-      }
-      case "by-account": {
-        const monthData = chartData.accountData.find((d) => d.month === month);
-        if (monthData) {
-          let total = 0;
-          const metrics: Record<string, number | string> = {};
-          Object.keys(monthData).forEach((key) => {
-            if (
-              key !== "month" &&
-              key !== "monthKey" &&
-              typeof monthData[key] === "number"
-            ) {
-              const val = monthData[key] as number;
-              total += val;
-              metrics[key] = val;
-            }
-          });
-          pinData = {
-            date: month,
-            month,
-            primaryValue: total,
-            metrics: { ...metrics, Total: total },
-          };
-        }
-        break;
-      }
-      case "by-wealth-source": {
+      case "net-worth-changes": {
         const monthData = chartData.sourceData.find((d) => d.month === month);
         if (monthData) {
           const savings = monthData["Savings from Income"] || 0;
@@ -353,33 +254,7 @@ export function ChartDisplay({
         }
         break;
       }
-      case "waterfall": {
-        const monthIndex = chartData.sourceData.findIndex(
-          (d) => d.month === month
-        );
-        const monthSource = chartData.sourceData[monthIndex];
-        const monthNetWorth = chartData.netWorthData[monthIndex];
-        const prevNetWorth =
-          monthIndex > 0
-            ? chartData.netWorthData[monthIndex - 1]?.netWorth
-            : monthNetWorth?.netWorth || 0;
-        if (monthSource && monthNetWorth) {
-          pinData = {
-            date: month,
-            month,
-            primaryValue: monthNetWorth.netWorth,
-            metrics: {
-              "Starting Balance": prevNetWorth,
-              "Savings from Income": monthSource["Savings from Income"] || 0,
-              "Interest Earned": monthSource["Interest Earned"] || 0,
-              "Capital Gains": monthSource["Capital Gains"] || 0,
-              "Ending Balance": monthNetWorth.netWorth,
-            },
-          };
-        }
-        break;
-      }
-      case "savings-rate": {
+      case "income-spending": {
         const monthData = chartData.sourceData.find((d) => d.month === month);
         if (monthData) {
           pinData = {
@@ -464,38 +339,7 @@ export function ChartDisplay({
         });
         break;
       }
-      case "assets-vs-liabilities": {
-        primaryValue = dataPoint["Net Worth"] as number;
-        metrics["Assets"] = dataPoint["Assets"] as number;
-        metrics["Liabilities"] = dataPoint["Liabilities"] as number;
-        metrics["Net Worth"] = primaryValue;
-        break;
-      }
-      case "monthly-growth-rate": {
-        primaryValue = dataPoint["Growth Rate"] as number;
-        metrics["Growth Rate"] = primaryValue;
-        metrics["netWorth"] = dataPoint["netWorth"] as number;
-        break;
-      }
-      case "by-account": {
-        // Calculate total from all account values
-        let total = 0;
-        Object.keys(dataPoint).forEach((key) => {
-          if (
-            key !== "month" &&
-            key !== "monthKey" &&
-            typeof dataPoint[key] === "number"
-          ) {
-            const val = dataPoint[key] as number;
-            total += val;
-            metrics[key] = val;
-          }
-        });
-        primaryValue = total;
-        metrics["Total"] = total;
-        break;
-      }
-      case "by-wealth-source": {
+      case "net-worth-changes": {
         const savings = dataPoint["Savings from Income"] as number;
         const interest = dataPoint["Interest Earned"] as number;
         const gains = dataPoint["Capital Gains"] as number;
@@ -505,18 +349,7 @@ export function ChartDisplay({
         primaryValue = (savings || 0) + (interest || 0) + (gains || 0);
         break;
       }
-      case "waterfall": {
-        primaryValue = dataPoint["Ending Balance"] as number;
-        metrics["Starting Balance"] = dataPoint["Starting Balance"] as number;
-        metrics["Savings from Income"] = dataPoint[
-          "Savings from Income"
-        ] as number;
-        metrics["Interest Earned"] = dataPoint["Interest Earned"] as number;
-        metrics["Capital Gains"] = dataPoint["Capital Gains"] as number;
-        metrics["Ending Balance"] = primaryValue;
-        break;
-      }
-      case "savings-rate": {
+      case "income-spending": {
         const savingsRate = dataPoint["Savings Rate"] as number;
         const totalIncome = dataPoint["Total Income"] as number;
         const totalExpenditure = dataPoint["Total Expenditure"] as number;
@@ -594,76 +427,7 @@ export function ChartDisplay({
           metrics,
         };
       }
-      case "assets-vs-liabilities": {
-        const latest =
-          chartData.netWorthData[chartData.netWorthData.length - 1];
-        if (!latest) return null;
-        const assets =
-          latest.accountBalances
-            ?.filter((acc) => !acc.isLiability)
-            .reduce((sum, acc) => sum + acc.balance, 0) || 0;
-        // Use Math.abs to handle both positive and negative balance conventions
-        const liabilities =
-          latest.accountBalances
-            ?.filter((acc) => acc.isLiability)
-            .reduce((sum, acc) => sum + Math.abs(acc.balance), 0) || 0;
-        return {
-          date: latest.month,
-          month: latest.month,
-          primaryValue: latest.netWorth,
-          metrics: {
-            Assets: assets,
-            Liabilities: liabilities,
-            "Net Worth": latest.netWorth,
-          },
-        };
-      }
-      case "monthly-growth-rate": {
-        if (chartData.netWorthData.length < 2) return null;
-        const latest =
-          chartData.netWorthData[chartData.netWorthData.length - 1];
-        const previous =
-          chartData.netWorthData[chartData.netWorthData.length - 2];
-        const growthRate =
-          previous.netWorth !== 0
-            ? ((latest.netWorth - previous.netWorth) /
-                Math.abs(previous.netWorth)) *
-              100
-            : 0;
-        return {
-          date: latest.month,
-          month: latest.month,
-          primaryValue: growthRate,
-          metrics: {
-            "Growth Rate": growthRate,
-            netWorth: latest.netWorth,
-          },
-        };
-      }
-      case "by-account": {
-        const latest = chartData.accountData[chartData.accountData.length - 1];
-        if (!latest) return null;
-        let total = 0;
-        const metrics: Record<string, number | string> = {};
-        Object.keys(latest).forEach((key) => {
-          if (
-            key !== "month" &&
-            key !== "monthKey" &&
-            typeof latest[key] === "number"
-          ) {
-            const val = latest[key] as number;
-            total += val;
-            metrics[key] = val;
-          }
-        });
-        return {
-          date: latest.month,
-          month: latest.month,
-          primaryValue: total,
-          metrics: { ...metrics, Total: total },
-        };
-      }
-      case "by-wealth-source": {
+      case "net-worth-changes": {
         const latest = chartData.sourceData[chartData.sourceData.length - 1];
         if (!latest) return null;
         const savings = latest["Savings from Income"] || 0;
@@ -682,10 +446,7 @@ export function ChartDisplay({
       }
       case "allocation": {
         // For allocation, use selected month or latest
-        const sourceData =
-          allocationOptions.viewType === "category"
-            ? chartData.categoryData
-            : chartData.accountTypeData;
+        const sourceData = chartData.accountTypeData;
         const selected = allocationOptions.selectedMonth
           ? sourceData.find((d) => d.month === allocationOptions.selectedMonth)
           : sourceData[sourceData.length - 1];
@@ -714,30 +475,7 @@ export function ChartDisplay({
           metrics,
         };
       }
-      case "waterfall": {
-        const latestSource =
-          chartData.sourceData[chartData.sourceData.length - 1];
-        const latestNetWorth =
-          chartData.netWorthData[chartData.netWorthData.length - 1];
-        if (!latestSource || !latestNetWorth) return null;
-        const previousNetWorth =
-          chartData.netWorthData.length > 1
-            ? chartData.netWorthData[chartData.netWorthData.length - 2].netWorth
-            : latestNetWorth.netWorth;
-        return {
-          date: latestSource.month,
-          month: latestSource.month,
-          primaryValue: latestNetWorth.netWorth,
-          metrics: {
-            "Starting Balance": previousNetWorth,
-            "Savings from Income": latestSource["Savings from Income"] || 0,
-            "Interest Earned": latestSource["Interest Earned"] || 0,
-            "Capital Gains": latestSource["Capital Gains"] || 0,
-            "Ending Balance": latestNetWorth.netWorth,
-          },
-        };
-      }
-      case "savings-rate": {
+      case "income-spending": {
         const latest = chartData.sourceData[chartData.sourceData.length - 1];
         if (!latest) return null;
         return {
@@ -831,7 +569,7 @@ export function ChartDisplay({
 
   // Calculate cumulative wealth source data (must be at top level for hooks)
   const wealthSourceData = useMemo(() => {
-    if (chartType !== "by-wealth-source") {
+    if (chartType !== "net-worth-changes") {
       return null;
     }
 
@@ -1095,431 +833,31 @@ export function ChartDisplay({
           </ChartContainer>
         );
 
-      case "assets-vs-liabilities":
-        // Process data to separate assets and liabilities
-        const assetsVsLiabilitiesData = chartData.netWorthData.map((item) => {
-          if (!item.accountBalances) {
-            return {
-              month: item.month,
-              monthKey: item.monthKey,
-              Assets: item.netWorth > 0 ? item.netWorth : 0,
-              Liabilities: item.netWorth < 0 ? Math.abs(item.netWorth) : 0,
-              "Net Worth": item.netWorth,
-            };
-          }
-
-          const assets = item.accountBalances
-            .filter((acc) => !acc.isLiability)
-            .reduce((sum, acc) => sum + acc.balance, 0);
-
-          // Use Math.abs to handle both positive and negative balance conventions
-          const liabilities = item.accountBalances
-            .filter((acc) => acc.isLiability)
-            .reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
-
-          // Net Worth = Assets - Liabilities
-          const netWorth = assets - liabilities;
-
-          return {
-            month: item.month,
-            monthKey: item.monthKey,
-            Assets: assets,
-            Liabilities: liabilities,
-            "Net Worth": netWorth,
-          };
-        });
-
-        return (
-          <ChartContainer
-            config={{
-              Assets: {
-                label: "Assets",
-                color: CHART_GREEN,
-              },
-              Liabilities: {
-                label: "Liabilities",
-                color: CHART_RED,
-              },
-              "Net Worth": {
-                label: "Net Worth",
-                color: "hsl(var(--chart-1))",
-              },
-            }}
-            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={assetsVsLiabilitiesData}
-                margin={margins}
-                onClick={(data) => {
-                  if (data?.activePayload?.[0]?.payload?.month) {
-                    handlePinToggle(data.activePayload[0].payload.month);
-                  }
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" hide={true} />
-                <YAxis
-                  hide={true}
-                  tickFormatter={(value) =>
-                    isMasked
-                      ? "•••"
-                      : formatCurrencyAmount(value / 1000, chartCurrency, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        }) + "K"
-                  }
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                  domain={["auto", "auto"]}
-                  allowDataOverflow={true}
-                />
-                <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip
-                  content={<HeaderUpdateTooltip />}
-                  cursor={{
-                    stroke: "hsl(var(--foreground))",
-                    strokeWidth: 1,
-                    strokeDasharray: "5 5",
-                  }}
-                />
-                {hoveredData && (
-                  <ReferenceLine
-                    x={hoveredData.month}
-                    stroke="hsl(var(--foreground))"
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    label={{
-                      value: hoveredData.date || hoveredData.month,
-                      position: "top",
-                      offset: 5,
-                      fill: "var(--foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                )}
-                <Area
-                  type="monotone"
-                  dataKey="Assets"
-                  stackId="1"
-                  stroke={
-                    hiddenCards.has("Assets") ? "transparent" : CHART_GREEN
-                  }
-                  fill={CHART_GREEN}
-                  fillOpacity={
-                    hiddenCards.has("Assets")
-                      ? 0
-                      : hoveredCardName !== null
-                      ? hoveredCardName === "Assets"
-                        ? 0.9
-                        : 0.2
-                      : 0.6
-                  }
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="Liabilities"
-                  stackId="1"
-                  stroke={
-                    hiddenCards.has("Liabilities") ? "transparent" : CHART_RED
-                  }
-                  fill={CHART_RED}
-                  fillOpacity={
-                    hiddenCards.has("Liabilities")
-                      ? 0
-                      : hoveredCardName !== null
-                      ? hoveredCardName === "Liabilities"
-                        ? 0.9
-                        : 0.2
-                      : 0.6
-                  }
-                  strokeWidth={2}
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Net Worth"
-                  stroke="hsl(var(--chart-1))"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={false}
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        Assets: number;
-                        Liabilities: number;
-                        "Net Worth": number;
-                      };
-                      handlePinToggle(payload.month);
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        );
-
-      case "monthly-growth-rate":
-        // Calculate month-over-month growth rate
-        const growthRateData = chartData.netWorthData.map((item, index) => {
-          if (index === 0) {
-            return {
-              month: item.month,
-              monthKey: item.monthKey,
-              "Growth Rate": 0,
-              netWorth: item.netWorth,
-            };
-          }
-          const previousItem = chartData.netWorthData[index - 1];
-          const previousNetWorth = previousItem.netWorth;
-          const currentNetWorth = item.netWorth;
-          const growthRate =
-            previousNetWorth !== 0
-              ? ((currentNetWorth - previousNetWorth) /
-                  Math.abs(previousNetWorth)) *
-                100
-              : 0;
-
-          return {
-            month: item.month,
-            monthKey: item.monthKey,
-            "Growth Rate": Math.floor(growthRate),
-            netWorth: currentNetWorth,
-          };
-        });
-
-        return (
-          <ChartContainer
-            config={{
-              "Growth Rate": {
-                label: "Growth Rate (%)",
-                color: "hsl(var(--chart-1))",
-              },
-            }}
-            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={growthRateData}
-                margin={margins}
-                onClick={(data) => {
-                  if (data?.activePayload?.[0]?.payload?.month) {
-                    handlePinToggle(data.activePayload[0].payload.month);
-                  }
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="month" hide={true} />
-                <YAxis
-                  hide={true}
-                  tickFormatter={(value) => formatPercentage(value)}
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                  domain={["auto", "auto"]}
-                  allowDataOverflow={true}
-                />
-                <ReferenceLine y={0} stroke="#666" strokeDasharray="2 2" />
-                <ChartTooltip
-                  content={<HeaderUpdateTooltip />}
-                  cursor={{
-                    fill: "hsl(var(--foreground))",
-                    fillOpacity: 0.1,
-                  }}
-                />
-                {hoveredData && (
-                  <ReferenceLine
-                    x={hoveredData.month}
-                    stroke="hsl(var(--foreground))"
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    label={{
-                      value: hoveredData.date || hoveredData.month,
-                      position: "top",
-                      offset: 5,
-                      fill: "var(--foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                )}
-                <Bar
-                  dataKey="Growth Rate"
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        "Growth Rate": number;
-                        netWorth: number;
-                      };
-                      handlePinToggle(payload.month);
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
-                >
-                  {growthRateData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry["Growth Rate"] >= 0 ? CHART_GREEN : CHART_RED}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        );
-
-      case "by-account":
-        // Get latest month's data for sorting
-        const latestAccountData =
-          chartData.accountData[chartData.accountData.length - 1] ||
-          chartData.accountData[0];
-
-        // Always sort by current value (largest to smallest)
-        let accountsToDisplay = chartData.accounts
-          .map((account) => {
-            const uniqueName = `${account.name} (${account.type}${
-              account.isISA ? " ISA" : ""
-            })`;
-            const currentValue = latestAccountData
-              ? (latestAccountData[uniqueName] as number | undefined) || 0
-              : 0;
-            return { account, currentValue: Math.abs(currentValue) };
-          })
-          .sort((a, b) => b.currentValue - a.currentValue)
-          .map((item) => item.account);
-
-        // Apply top N filter if specified
-        if (byAccountOptions?.topN && byAccountOptions.topN > 0) {
-          accountsToDisplay = accountsToDisplay.slice(0, byAccountOptions.topN);
-        }
-
-        const accountBarSize = getBarSize(chartData.accountData.length);
-        // Always stack bars
-        const stackId = "by-account-stack";
-
-        return (
-          <ChartContainer
-            config={accountsToDisplay.reduce(
-              (config, account, index) => ({
-                ...config,
-                [`${account.name} (${account.type}${
-                  account.isISA ? " ISA" : ""
-                })`]: {
-                  label: `${account.name} (${account.type}${
-                    account.isISA ? " ISA" : ""
-                  })`,
-                  color: getUniqueColor(index),
-                },
-              }),
-              {}
-            )}
-            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData.accountData}
-                margin={margins}
-                barCategoryGap="20%"
-                onClick={(data) => {
-                  if (data?.activePayload?.[0]?.payload?.month) {
-                    handlePinToggle(data.activePayload[0].payload.month);
-                  }
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" hide={true} />
-                <YAxis
-                  hide={true}
-                  tickFormatter={(value) =>
-                    isMasked
-                      ? "•••"
-                      : formatCurrencyAmount(value / 1000, chartCurrency, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        }) + "K"
-                  }
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                />
-                <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip
-                  content={<HeaderUpdateTooltip />}
-                  cursor={{
-                    stroke: "hsl(var(--foreground))",
-                    strokeWidth: 1,
-                    strokeDasharray: "5 5",
-                  }}
-                />
-                {hoveredData && (
-                  <ReferenceLine
-                    x={hoveredData.month}
-                    stroke="hsl(var(--foreground))"
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    label={{
-                      value: hoveredData.date || hoveredData.month,
-                      position: "top",
-                      offset: 5,
-                      fill: "var(--foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                )}
-                {accountsToDisplay.map((account, index) => {
-                  const uniqueName = `${account.name} (${account.type}${
-                    account.isISA ? " ISA" : ""
-                  })`;
-                  const hasData = chartData.accountData.some((monthData) => {
-                    const value = monthData[uniqueName] as number | undefined;
-                    return value !== undefined && value !== null && value !== 0;
-                  });
-                  if (hasData) {
-                    return (
-                      <Bar
-                        key={account.id}
-                        dataKey={uniqueName}
-                        fill={getUniqueColor(index)}
-                        maxBarSize={accountBarSize}
-                        stackId={stackId}
-                        onClick={(data) => handlePinToggle(data.month)}
-                        style={{ cursor: "pointer" }}
-                        isAnimationActive={false}
-                      />
-                    );
-                  }
-                  return null;
-                })}
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        );
-
-      case "by-wealth-source":
+      case "net-worth-changes":
         const sourceKeys = [
           "Savings from Income",
           "Interest Earned",
           "Capital Gains",
         ] as const;
 
+        const sourceColors: Record<string, string> = {
+          "Savings from Income": CHART_GREEN,
+          "Interest Earned": COLORS[0],
+          "Capital Gains": "#8b5cf6",
+        };
+
         // Use pre-calculated wealth source data (from top-level useMemo)
         const dataToUse = wealthSourceData || chartData.sourceData;
+        const isCumulative = byWealthSourceOptions?.viewType === "cumulative";
 
         return (
           <ChartContainer
             config={sourceKeys.reduce(
-              (config, source, index) => ({
+              (config, source) => ({
                 ...config,
                 [source]: {
                   label: source,
-                  color: getUniqueColor(index),
+                  color: sourceColors[source],
                 },
               }),
               {}
@@ -1527,136 +865,163 @@ export function ChartDisplay({
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
           >
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={dataToUse}
-                margin={margins}
-                onClick={(data) => {
-                  if (data?.activePayload?.[0]?.payload?.month) {
-                    handlePinToggle(data.activePayload[0].payload.month);
-                  }
-                }}
-              >
-                <defs>
-                  {sourceKeys.map((source, index) => (
-                    <linearGradient
-                      key={source}
-                      id={`${source.replace(/\s+/g, "")}Gradient`}
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor={getUniqueColor(index)}
-                        stopOpacity={0.4}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor={getUniqueColor(index)}
-                        stopOpacity={0}
-                      />
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" hide={true} />
-                <YAxis
-                  hide={true}
-                  tickFormatter={(value) =>
-                    isMasked
-                      ? "•••"
-                      : formatCurrencyAmount(value / 1000, chartCurrency, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        }) + "K"
-                  }
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                  domain={["auto", "auto"]}
-                  allowDataOverflow={true}
-                />
-                <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip
-                  content={<HeaderUpdateTooltip />}
-                  cursor={{
-                    stroke: "hsl(var(--foreground))",
-                    strokeWidth: 1,
-                    strokeDasharray: "5 5",
+              {isCumulative ? (
+                <AreaChart
+                  data={dataToUse}
+                  margin={margins}
+                  onClick={(data) => {
+                    if (data?.activePayload?.[0]?.payload?.month) {
+                      handlePinToggle(data.activePayload[0].payload.month);
+                    }
                   }}
-                />
-                {hoveredData && (
-                  <ReferenceLine
-                    x={hoveredData.month}
-                    stroke="hsl(var(--foreground))"
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    label={{
-                      value: hoveredData.date || hoveredData.month,
-                      position: "top",
-                      offset: 5,
-                      fill: "var(--foreground)",
-                      fontSize: 12,
+                >
+                  <defs>
+                    {sourceKeys.map((source) => (
+                      <linearGradient
+                        key={source}
+                        id={`${source.replace(/\s+/g, "")}Gradient`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor={sourceColors[source]}
+                          stopOpacity={0.4}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={sourceColors[source]}
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" hide={true} />
+                  <YAxis
+                    hide={true}
+                    domain={["auto", "auto"]}
+                    allowDataOverflow={true}
+                  />
+                  <ReferenceLine y={0} stroke="#666" />
+                  <ChartTooltip
+                    content={<HeaderUpdateTooltip />}
+                    cursor={{
+                      stroke: "hsl(var(--foreground))",
+                      strokeWidth: 1,
+                      strokeDasharray: "5 5",
                     }}
                   />
-                )}
-                {sourceKeys.map((source, index) => {
-                  const hasData = dataToUse.some(
-                    (monthData) => (monthData[source] || 0) !== 0
-                  );
-                  if (hasData) {
+                  {hoveredData && (
+                    <ReferenceLine
+                      x={hoveredData.month}
+                      stroke="hsl(var(--foreground))"
+                      strokeWidth={1}
+                      strokeDasharray="5 5"
+                      label={{
+                        value: hoveredData.date || hoveredData.month,
+                        position: "top",
+                        offset: 5,
+                        fill: "var(--foreground)",
+                        fontSize: 12,
+                      }}
+                    />
+                  )}
+                  {sourceKeys.map((source) => {
+                    const isHidden = hiddenCards.has(source);
                     const isHovered = hoveredCardName === source;
                     const hasHover = hoveredCardName !== null;
-                    const isHidden = hiddenCards.has(source);
-                    const opacity = isHidden
-                      ? 0
-                      : hasHover
-                      ? isHovered
-                        ? 0.9
-                        : 0.2
-                      : 0.6;
-
+                    const opacity = isHidden ? 0 : hasHover ? (isHovered ? 0.9 : 0.2) : 0.6;
                     return (
                       <Area
                         key={source}
                         type="monotone"
                         dataKey={source}
-                        stroke={
-                          isHidden ? "transparent" : getUniqueColor(index)
-                        }
+                        stroke={isHidden ? "transparent" : sourceColors[source]}
                         fill={`url(#${source.replace(/\s+/g, "")}Gradient)`}
                         fillOpacity={opacity}
                         strokeWidth={2}
                         isAnimationActive={false}
+                        style={{ cursor: isHidden ? "default" : "pointer" }}
+                      />
+                    );
+                  })}
+                </AreaChart>
+              ) : (
+                <ComposedChart
+                  data={dataToUse}
+                  margin={margins}
+                  onClick={(data) => {
+                    if (data?.activePayload?.[0]?.payload?.month) {
+                      handlePinToggle(data.activePayload[0].payload.month);
+                    }
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" hide={true} />
+                  <YAxis
+                    hide={true}
+                    domain={["auto", "auto"]}
+                    allowDataOverflow={true}
+                  />
+                  <ReferenceLine y={0} stroke="#666" />
+                  <ChartTooltip
+                    content={<HeaderUpdateTooltip />}
+                    cursor={{
+                      stroke: "hsl(var(--foreground))",
+                      strokeWidth: 1,
+                      strokeDasharray: "5 5",
+                    }}
+                  />
+                  {hoveredData && (
+                    <ReferenceLine
+                      x={hoveredData.month}
+                      stroke="hsl(var(--foreground))"
+                      strokeWidth={1}
+                      strokeDasharray="5 5"
+                      label={{
+                        value: hoveredData.date || hoveredData.month,
+                        position: "top",
+                        offset: 5,
+                        fill: "var(--foreground)",
+                        fontSize: 12,
+                      }}
+                    />
+                  )}
+                  {sourceKeys.map((source) => {
+                    const isHidden = hiddenCards.has(source);
+                    const isHovered = hoveredCardName === source;
+                    const hasHover = hoveredCardName !== null;
+                    const opacity = isHidden ? 0 : hasHover ? (isHovered ? 1 : 0.3) : 1;
+                    return (
+                      <Bar
+                        key={source}
+                        dataKey={source}
+                        stackId="net-worth-changes"
+                        fill={isHidden ? "transparent" : sourceColors[source]}
+                        fillOpacity={opacity}
+                        isAnimationActive={false}
                         onClick={(data) => {
                           if ("payload" in data) {
-                            const payload = data.payload as {
-                              month: string;
-                              [key: string]: string | number | undefined;
-                            };
-                            if (payload.month) {
-                              handlePinToggle(payload.month);
-                            }
+                            const payload = data.payload as { month: string };
+                            handlePinToggle(payload.month);
                           }
                         }}
                         style={{ cursor: isHidden ? "default" : "pointer" }}
                       />
                     );
-                  }
-                  return null;
-                })}
-              </AreaChart>
+                  })}
+                </ComposedChart>
+              )}
             </ResponsiveContainer>
           </ChartContainer>
         );
 
       case "allocation":
         // Determine which data source to use based on view type
-        const sourceDataArray =
-          allocationOptions.viewType === "category"
-            ? chartData.categoryData
-            : chartData.accountTypeData;
+        const sourceDataArray = chartData.accountTypeData;
 
         // Get selected month's data or most recent (last item since data is sorted asc)
         const selectedMonthData = allocationOptions.selectedMonth
@@ -1841,262 +1206,7 @@ export function ChartDisplay({
           </div>
         );
 
-      case "waterfall":
-        // Process data for waterfall chart showing month-to-month net worth changes
-        // For each month, show: Starting Balance (from previous month) -> +Savings -> +Interest -> +Capital Gains
-        // Data is already in chronological order (oldest to newest) from the source
-        const reversedSourceData = [...chartData.sourceData].reverse();
-        const reversedNetWorthData = [...chartData.netWorthData].reverse();
-
-        const waterfallData = reversedSourceData.map((item, index) => {
-          // Get previous month's net worth (starting balance)
-          const previousNetWorth =
-            index > 0
-              ? reversedNetWorthData[index - 1].netWorth
-              : reversedNetWorthData[0].netWorth;
-
-          // Get current month's net worth (ending balance)
-          const currentNetWorth =
-            reversedNetWorthData[index]?.netWorth || previousNetWorth;
-
-          const savingsFromIncome = item["Savings from Income"] || 0;
-          const interestEarned = item["Interest Earned"] || 0;
-          const capitalGains = item["Capital Gains"] || 0;
-
-          return {
-            month: item.month,
-            monthKey: item.monthKey,
-            "Starting Balance": previousNetWorth,
-            "Savings from Income": savingsFromIncome,
-            "Interest Earned": interestEarned,
-            "Capital Gains": capitalGains,
-            "Ending Balance": currentNetWorth,
-            // Store breakdown for details panel
-            breakdown: item.breakdown,
-          };
-        });
-
-        // Calculate min/max for auto-scaling y-axis (not starting from zero)
-        // For stacked bars, we need to account for all possible bar positions
-        const allWaterfallValues: number[] = [];
-        waterfallData.forEach((point) => {
-          // Include starting balance (base of bar)
-          allWaterfallValues.push(point["Starting Balance"]);
-          // Include ending balance (top of stacked bar)
-          allWaterfallValues.push(point["Ending Balance"]);
-        });
-
-        // Calculate domain for y-axis - use explicit array to avoid default zero-starting behavior
-        let waterfallDomain: [number, number] = [0, 100];
-
-        if (allWaterfallValues.length > 0) {
-          const min = Math.min(...allWaterfallValues);
-          const max = Math.max(...allWaterfallValues);
-
-          // Use very minimal padding - just enough to prevent clipping (0.5% of range)
-          const range = max - min;
-          const padding = range > 0 ? range * 0.005 : 0;
-
-          waterfallDomain = [min - padding, max + padding];
-        }
-
-        return (
-          <ChartContainer
-            config={{
-              "Starting Balance": {
-                label: "Starting Balance",
-                color: "hsl(var(--chart-4))",
-              },
-              "Savings from Income": {
-                label: "Savings from Income",
-                color: COLORS[0],
-              },
-              "Interest Earned": {
-                label: "Interest Earned",
-                color: COLORS[1],
-              },
-              "Capital Gains": {
-                label: "Capital Gains",
-                color: COLORS[2],
-              },
-              "Ending Balance": {
-                label: "Ending Balance",
-                color: "hsl(var(--chart-1))",
-              },
-            }}
-            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={waterfallData}
-                margin={margins}
-                onClick={(data) => {
-                  if (data?.activePayload?.[0]?.payload?.month) {
-                    handlePinToggle(data.activePayload[0].payload.month);
-                  }
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" hide={true} />
-                <YAxis
-                  hide={true}
-                  tickFormatter={(value) =>
-                    isMasked
-                      ? "•••"
-                      : formatCurrencyAmount(value / 1000, chartCurrency, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        }) + "K"
-                  }
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                  domain={waterfallDomain}
-                  allowDataOverflow={true}
-                />
-                <ReferenceLine y={0} stroke="#666" />
-                <ChartTooltip
-                  content={<HeaderUpdateTooltip />}
-                  cursor={{
-                    stroke: "hsl(var(--foreground))",
-                    strokeWidth: 1,
-                    strokeDasharray: "5 5",
-                  }}
-                />
-                {hoveredData && (
-                  <ReferenceLine
-                    x={hoveredData.month}
-                    stroke="hsl(var(--foreground))"
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    label={{
-                      value: hoveredData.date || hoveredData.month,
-                      position: "top",
-                      offset: 5,
-                      fill: "var(--foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                )}
-                {/* Starting Balance - transparent bar for positioning */}
-                <Bar
-                  dataKey="Starting Balance"
-                  fill="transparent"
-                  stackId="waterfall"
-                  isAnimationActive={false}
-                />
-                {/* Savings from Income */}
-                <Bar
-                  dataKey="Savings from Income"
-                  fill={
-                    hiddenCards.has("Savings from Income")
-                      ? "transparent"
-                      : COLORS[0]
-                  }
-                  fillOpacity={
-                    hiddenCards.has("Savings from Income")
-                      ? 0
-                      : hoveredCardName !== null
-                      ? hoveredCardName === "Savings from Income"
-                        ? 1
-                        : 0.3
-                      : 1
-                  }
-                  stackId="waterfall"
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        [key: string]: string | number | undefined;
-                      };
-                      if (payload.month) {
-                        handlePinToggle(payload.month);
-                      }
-                    }
-                  }}
-                  style={{
-                    cursor: hiddenCards.has("Savings from Income")
-                      ? "default"
-                      : "pointer",
-                  }}
-                />
-                {/* Interest Earned */}
-                <Bar
-                  dataKey="Interest Earned"
-                  fill={
-                    hiddenCards.has("Interest Earned")
-                      ? "transparent"
-                      : COLORS[1]
-                  }
-                  fillOpacity={
-                    hiddenCards.has("Interest Earned")
-                      ? 0
-                      : hoveredCardName !== null
-                      ? hoveredCardName === "Interest Earned"
-                        ? 1
-                        : 0.3
-                      : 1
-                  }
-                  stackId="waterfall"
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        [key: string]: string | number | undefined;
-                      };
-                      if (payload.month) {
-                        handlePinToggle(payload.month);
-                      }
-                    }
-                  }}
-                  style={{
-                    cursor: hiddenCards.has("Interest Earned")
-                      ? "default"
-                      : "pointer",
-                  }}
-                />
-                {/* Capital Gains - can be negative */}
-                <Bar
-                  dataKey="Capital Gains"
-                  fill={
-                    hiddenCards.has("Capital Gains") ? "transparent" : COLORS[2]
-                  }
-                  fillOpacity={
-                    hiddenCards.has("Capital Gains")
-                      ? 0
-                      : hoveredCardName !== null
-                      ? hoveredCardName === "Capital Gains"
-                        ? 1
-                        : 0.3
-                      : 1
-                  }
-                  stackId="waterfall"
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        [key: string]: string | number | undefined;
-                      };
-                      if (payload.month) {
-                        handlePinToggle(payload.month);
-                      }
-                    }
-                  }}
-                  style={{
-                    cursor: hiddenCards.has("Capital Gains")
-                      ? "default"
-                      : "pointer",
-                  }}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        );
-
-      case "savings-rate":
+      case "income-spending":
         // Create chart data with Savings Rate, Total Income, Total Expenditure, and Savings from Income
         // Filter out any invalid data points
         const savingsRateData = chartData.sourceData
@@ -2138,21 +1248,21 @@ export function ChartDisplay({
         return (
           <ChartContainer
             config={{
-              "Savings Rate": {
-                label: "Savings Rate (%)",
-                color: CHART_GREEN,
-              },
               "Total Income": {
                 label: "Total Income",
-                color: COLORS[0],
+                color: CHART_GREEN,
               },
               "Total Expenditure": {
                 label: "Total Expenditure",
                 color: CHART_RED,
               },
               "Savings from Income": {
-                label: "Savings from Income",
-                color: COLORS[1],
+                label: "Savings",
+                color: COLORS[0],
+              },
+              "Savings Rate": {
+                label: "Savings Rate (%)",
+                color: "#9333EA",
               },
             }}
             className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
@@ -2223,7 +1333,40 @@ export function ChartDisplay({
                     }}
                   />
                 )}
-                {/* Stacked Bars: Expenditure (bottom) + Savings (top) = Total Income */}
+                {/* Side-by-side bars: Income (green) and Expenditure (red) */}
+                <Bar
+                  dataKey="Total Income"
+                  yAxisId="left"
+                  fill={
+                    hiddenCards.has("Total Income")
+                      ? "transparent"
+                      : CHART_GREEN
+                  }
+                  fillOpacity={
+                    hiddenCards.has("Total Income")
+                      ? 0
+                      : hoveredCardName !== null
+                      ? hoveredCardName === "Total Income"
+                        ? 1
+                        : 0.3
+                      : 1
+                  }
+                  isAnimationActive={false}
+                  onClick={(data) => {
+                    if ("payload" in data) {
+                      const payload = data.payload as {
+                        month: string;
+                        monthKey: string;
+                      };
+                      handlePinToggle(payload.month);
+                    }
+                  }}
+                  style={{
+                    cursor: hiddenCards.has("Total Income")
+                      ? "default"
+                      : "pointer",
+                  }}
+                />
                 <Bar
                   dataKey="Total Expenditure"
                   yAxisId="left"
@@ -2236,13 +1379,11 @@ export function ChartDisplay({
                     hiddenCards.has("Total Expenditure")
                       ? 0
                       : hoveredCardName !== null
-                      ? hoveredCardName === "Total Expenditure" ||
-                        hoveredCardName === "Total Income"
+                      ? hoveredCardName === "Total Expenditure"
                         ? 1
                         : 0.3
                       : 1
                   }
-                  stackId="income-breakdown"
                   isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
@@ -2265,19 +1406,17 @@ export function ChartDisplay({
                   fill={
                     hiddenCards.has("Savings from Income")
                       ? "transparent"
-                      : COLORS[1]
+                      : COLORS[0]
                   }
                   fillOpacity={
                     hiddenCards.has("Savings from Income")
                       ? 0
                       : hoveredCardName !== null
-                      ? hoveredCardName === "Savings from Income" ||
-                        hoveredCardName === "Total Income"
+                      ? hoveredCardName === "Savings from Income"
                         ? 1
                         : 0.3
                       : 1
                   }
-                  stackId="income-breakdown"
                   isAnimationActive={false}
                   onClick={(data) => {
                     if ("payload" in data) {
