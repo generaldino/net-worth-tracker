@@ -1,8 +1,8 @@
 "use server";
 
 import { and, eq } from "drizzle-orm";
+import { db } from "@/db";
 import { dashboardShares, dashboardInvitations, users } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
