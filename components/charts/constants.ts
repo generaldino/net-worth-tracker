@@ -20,22 +20,61 @@ export const SOURCE_KEYS = [
 ];
 
 /**
- * Map account types to their hex colors matching Tailwind colors used in account type badges
- * These colors match the -500 variants used in the accounts table badges
+ * Map account types to their hex colors matching Tailwind colors used in account type badges.
+ * Stock is teal (not indigo) so it sits clearly apart from Current/Investment in stacked charts;
+ * Loan is rose-900 (not rose-500) so it reads distinctly darker than Credit_Card's red-500.
  */
 export const ACCOUNT_TYPE_COLORS: Record<string, string> = {
-  Current: "#3b82f6",      // blue-500
+  Current: "#3b82f6",       // blue-500
   Savings: "#22c55e",       // green-500
   Investment: "#8b5cf6",    // violet-500
-  Stock: "#6366f1",         // indigo-500
+  Stock: "#14b8a6",         // teal-500
   Crypto: "#f97316",        // orange-500
   Pension: "#64748b",       // slate-500
   Commodity: "#f59e0b",     // amber-500
   Stock_options: "#ec4899", // pink-500
   Credit_Card: "#ef4444",   // red-500
-  Loan: "#f43f5e",          // rose-500
+  Loan: "#881337",          // rose-900
   Asset: "#0ea5e9",         // sky-500
 };
+
+/**
+ * Semantic colors for income/expense/savings series. One color per concept, used
+ * across every chart so the same hue always means the same thing.
+ * - Total Income = emerald-600 (deep green, gross inflow)
+ * - Savings from Income = emerald-500 (brighter green, the kept portion of income)
+ * - Total Expenditure = red-600 (deep red, outflow)
+ * - Interest Earned = cyan-600 (passive yield from cash/savings)
+ * - Capital Gains = violet-600 (darker violet, conceptually tied to Investment accounts)
+ */
+export const SERIES_COLORS: Record<string, string> = {
+  "Total Income": "#059669",          // emerald-600
+  "Total Expenditure": "#dc2626",     // red-600
+  "Savings from Income": "#10b981",   // emerald-500
+  "Interest Earned": "#0891b2",       // cyan-600
+  "Capital Gains": "#7c3aed",         // violet-600
+};
+
+/**
+ * Canonical labels for series keys. Charts should never hardcode display strings —
+ * they should read from here so "Savings from Income" / "Earned" / "Total Income"
+ * don't drift between charts.
+ */
+export const SERIES_LABELS: Record<string, string> = {
+  "Total Income": "Total Income",
+  "Total Expenditure": "Total Expenditure",
+  "Savings from Income": "Savings from Income",
+  "Interest Earned": "Interest Earned",
+  "Capital Gains": "Capital Gains",
+};
+
+export function getSeriesColor(key: string): string {
+  return SERIES_COLORS[key] ?? getUniqueColor(0);
+}
+
+export function getSeriesLabel(key: string): string {
+  return SERIES_LABELS[key] ?? key;
+}
 
 /**
  * Checks if a string is a known account type

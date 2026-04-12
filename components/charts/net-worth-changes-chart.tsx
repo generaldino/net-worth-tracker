@@ -14,11 +14,12 @@ import {
 import type { ChartData } from "./types";
 import { ChartCard } from "./chart-card";
 import { ChartLegend, type LegendItem } from "./chart-legend";
+import { ChartTooltip } from "./chart-tooltip";
 import {
-  CHART_GREEN,
-  COLORS,
   getResponsiveChartMargins,
   getResponsiveFontSize,
+  getSeriesColor,
+  getSeriesLabel,
   useChartHover,
 } from "./chart-shared";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
@@ -33,12 +34,6 @@ const SOURCE_KEYS = [
 ] as const;
 
 type SourceKey = (typeof SOURCE_KEYS)[number];
-
-const SOURCE_COLORS: Record<SourceKey, string> = {
-  "Savings from Income": CHART_GREEN,
-  "Interest Earned": COLORS[0],
-  "Capital Gains": "#8b5cf6",
-};
 
 type ViewType = "cumulative" | "monthly";
 
@@ -102,17 +97,17 @@ export function NetWorthChangesChart({
       {
         name: "Savings from Income",
         value: displayedValues.savings,
-        color: SOURCE_COLORS["Savings from Income"],
+        color: getSeriesColor("Savings from Income"),
       },
       {
         name: "Interest Earned",
         value: displayedValues.interest,
-        color: SOURCE_COLORS["Interest Earned"],
+        color: getSeriesColor("Interest Earned"),
       },
       {
         name: "Capital Gains",
         value: displayedValues.gains,
-        color: SOURCE_COLORS["Capital Gains"],
+        color: getSeriesColor("Capital Gains"),
       },
     ],
     [displayedValues]
@@ -144,7 +139,7 @@ export function NetWorthChangesChart({
             items={legendItems}
             chartCurrency={chartCurrency}
             className="mt-3"
-            formatLabel={(name) => name}
+            formatLabel={getSeriesLabel}
           />
         </div>
       }
@@ -185,13 +180,20 @@ export function NetWorthChangesChart({
             />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
             <Tooltip
-              content={() => null}
+              content={
+                <ChartTooltip
+                  chartCurrency={chartCurrency}
+                  formatLabel={getSeriesLabel}
+                  showTotal
+                />
+              }
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,
                 strokeDasharray: "5 5",
               }}
               isAnimationActive={false}
+              wrapperStyle={{ outline: "none" }}
             />
             {hovered && (
               <ReferenceLine
@@ -206,7 +208,7 @@ export function NetWorthChangesChart({
                 key={key}
                 dataKey={key}
                 stackId="changes"
-                fill={SOURCE_COLORS[key]}
+                fill={getSeriesColor(key)}
                 isAnimationActive={false}
               />
             ))}

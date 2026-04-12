@@ -14,6 +14,7 @@ import {
 import type { ChartData } from "./types";
 import { ChartCard } from "./chart-card";
 import { ChartLegend, type LegendItem } from "./chart-legend";
+import { ChartTooltip } from "./chart-tooltip";
 import {
   formatAccountTypeName,
   getAccountTypeColor,
@@ -173,13 +174,20 @@ export function NetWorthChart({
               fontSize={fontSize}
             />
             <Tooltip
-              content={() => null}
+              content={
+                <ChartTooltip
+                  chartCurrency={chartCurrency}
+                  formatLabel={formatAccountTypeName}
+                  showTotal
+                />
+              }
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,
                 strokeDasharray: "5 5",
               }}
               isAnimationActive={false}
+              wrapperStyle={{ outline: "none" }}
             />
             {hovered && (
               <ReferenceLine

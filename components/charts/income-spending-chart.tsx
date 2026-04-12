@@ -13,12 +13,12 @@ import {
 } from "recharts";
 import type { ChartData } from "./types";
 import { ChartCard } from "./chart-card";
+import { ChartTooltip } from "./chart-tooltip";
 import {
-  CHART_GREEN,
-  CHART_RED,
-  COLORS,
   getResponsiveChartMargins,
   getResponsiveFontSize,
+  getSeriesColor,
+  getSeriesLabel,
   useChartHover,
 } from "./chart-shared";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
@@ -108,9 +108,11 @@ export function IncomeSpendingChart({
             <div className="flex items-center gap-1.5">
               <span
                 className="w-2 h-2 rounded-sm"
-                style={{ backgroundColor: CHART_GREEN }}
+                style={{ backgroundColor: getSeriesColor("Total Income") }}
               />
-              <span className="text-muted-foreground">Earned</span>
+              <span className="text-muted-foreground">
+                {getSeriesLabel("Total Income")}
+              </span>
               <span className="font-medium tabular-nums">
                 {isMasked
                   ? "••••"
@@ -123,9 +125,11 @@ export function IncomeSpendingChart({
             <div className="flex items-center gap-1.5">
               <span
                 className="w-2 h-2 rounded-sm"
-                style={{ backgroundColor: CHART_RED }}
+                style={{ backgroundColor: getSeriesColor("Total Expenditure") }}
               />
-              <span className="text-muted-foreground">Spent</span>
+              <span className="text-muted-foreground">
+                {getSeriesLabel("Total Expenditure")}
+              </span>
               <span className="font-medium tabular-nums">
                 {isMasked
                   ? "••••"
@@ -138,9 +142,13 @@ export function IncomeSpendingChart({
             <div className="flex items-center gap-1.5">
               <span
                 className="w-2 h-2 rounded-sm"
-                style={{ backgroundColor: COLORS[0] }}
+                style={{
+                  backgroundColor: getSeriesColor("Savings from Income"),
+                }}
               />
-              <span className="text-muted-foreground">Saved</span>
+              <span className="text-muted-foreground">
+                {getSeriesLabel("Savings from Income")}
+              </span>
               <span className="font-medium tabular-nums">
                 {isMasked
                   ? "••••"
@@ -194,13 +202,20 @@ export function IncomeSpendingChart({
             />
             <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" />
             <Tooltip
-              content={() => null}
+              content={
+                <ChartTooltip
+                  chartCurrency={chartCurrency}
+                  formatLabel={getSeriesLabel}
+                  absoluteValues
+                />
+              }
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,
                 strokeDasharray: "5 5",
               }}
               isAnimationActive={false}
+              wrapperStyle={{ outline: "none" }}
             />
             {hovered && (
               <ReferenceLine
@@ -214,19 +229,19 @@ export function IncomeSpendingChart({
             <Bar
               yAxisId="left"
               dataKey="Total Income"
-              fill={CHART_GREEN}
+              fill={getSeriesColor("Total Income")}
               isAnimationActive={false}
             />
             <Bar
               yAxisId="left"
               dataKey="Total Expenditure"
-              fill={CHART_RED}
+              fill={getSeriesColor("Total Expenditure")}
               isAnimationActive={false}
             />
             <Bar
               yAxisId="left"
               dataKey="Savings from Income"
-              fill={COLORS[0]}
+              fill={getSeriesColor("Savings from Income")}
               isAnimationActive={false}
             />
           </ComposedChart>

@@ -13,6 +13,10 @@ export {
   getUniqueColor,
   isAccountType,
   ACCOUNT_TYPE_COLORS,
+  SERIES_COLORS,
+  SERIES_LABELS,
+  getSeriesColor,
+  getSeriesLabel,
 } from "./constants";
 
 // Account type ordering hierarchy for consistent sorting.

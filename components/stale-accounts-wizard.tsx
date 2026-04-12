@@ -30,7 +30,7 @@ const accountTypeColors: Record<AccountType, string> = {
   Investment:
     "bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-500/30",
   Stock:
-    "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30",
+    "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-500/30",
   Crypto:
     "bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30",
   Pension:
@@ -41,7 +41,7 @@ const accountTypeColors: Record<AccountType, string> = {
     "bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-200 dark:border-pink-500/30",
   Credit_Card:
     "bg-red-500/10 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30",
-  Loan: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30",
+  Loan: "bg-rose-900/10 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-900/40",
   Asset:
     "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-500/30",
 };
