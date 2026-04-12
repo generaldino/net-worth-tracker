@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useMemo,
   useRef,
   useState,
   useCallback,
@@ -40,11 +41,14 @@ export function ChartDataProvider({
     setOverrideData(next);
   }, []);
 
-  const value: ChartDataContextValue = {
-    data: overrideData ?? initialRef.current,
-    initialData: initialRef.current,
-    override,
-  };
+  const value = useMemo<ChartDataContextValue>(
+    () => ({
+      data: overrideData ?? initialRef.current,
+      initialData: initialRef.current,
+      override,
+    }),
+    [overrideData, override]
+  );
 
   return (
     <ChartDataContext.Provider value={value}>

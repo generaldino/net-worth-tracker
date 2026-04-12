@@ -1,11 +1,12 @@
 "use server";
 
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_cache } from "next/cache";
 import { getAccessibleUserIds } from "@/app/actions/sharing";
 import { db } from "@/db";
 import type { Account, MonthlyEntry } from "@/db/schema";
 import {
+  exchangeRates as exchangeRatesTable,
   financialAccounts as accountsTable,
   monthlyEntries,
 } from "@/db/schema";
@@ -1635,14 +1636,66 @@ export async function getChartData(
       return monthData;
     });
 
-    // Pre-fetch exchange rates for all months to avoid repeated DB calls
+    // Pre-fetch exchange rates for all months in ONE query (was a serial
+    // per-month loop — 36 sequential DB round-trips for "all" period).
     const monthRatesMap = new Map<
       string,
       { rates: Record<Currency, number> }
     >();
-    for (const month of filteredMonths) {
-      const rates = await getExchangeRates(month);
-      monthRatesMap.set(month, rates);
+    if (filteredMonths.length > 0) {
+      const monthToDate = new Map<string, string>();
+      const dates: string[] = [];
+      for (const month of filteredMonths) {
+        const [year, monthNum] = month.split("-").map(Number);
+        const dateStr = new Date(Date.UTC(year, monthNum, 0))
+          .toISOString()
+          .split("T")[0];
+        monthToDate.set(month, dateStr);
+        dates.push(dateStr);
+      }
+
+      const rows = await db
+        .select()
+        .from(exchangeRatesTable)
+        .where(inArray(exchangeRatesTable.date, dates));
+      const dateToRates = new Map<string, Record<Currency, number>>();
+      for (const r of rows) {
+        dateToRates.set(r.date, {
+          GBP: Number(r.gbpRate),
+          EUR: Number(r.eurRate),
+          USD: Number(r.usdRate),
+          AED: Number(r.aedRate),
+        });
+      }
+
+      // Fall back to latest known rate for months without an exact match.
+      let latestFallback: Record<Currency, number> | null = null;
+      const missing = filteredMonths.filter(
+        (m) => !dateToRates.has(monthToDate.get(m)!)
+      );
+      if (missing.length > 0) {
+        const latest = await db
+          .select()
+          .from(exchangeRatesTable)
+          .orderBy(desc(exchangeRatesTable.date))
+          .limit(1);
+        if (latest.length > 0) {
+          latestFallback = {
+            GBP: Number(latest[0].gbpRate),
+            EUR: Number(latest[0].eurRate),
+            USD: Number(latest[0].usdRate),
+            AED: Number(latest[0].aedRate),
+          };
+        }
+      }
+
+      for (const month of filteredMonths) {
+        const dateStr = monthToDate.get(month)!;
+        const rates =
+          dateToRates.get(dateStr) ??
+          latestFallback ?? { GBP: 1, EUR: 1, USD: 1, AED: 1 };
+        monthRatesMap.set(month, { rates });
+      }
     }
     // Helper function to convert amount to GBP using cached rates
     const convertToGBPForMonth = (
@@ -2406,35 +2459,13 @@ export async function fetchExchangeRatesForMonths(months: string[]): Promise<
 }
 
 /**
- * Get initial exchange rates for SSR - fetches rates for recent months
- * Returns data in the format expected by ExchangeRatesProvider
+ * Get initial exchange rates for SSR. Returns every stored rate (one row
+ * per month) — rates are global and the table is small, so this is cheaper
+ * than generating a month list and falling back per-month.
  */
-export async function getInitialExchangeRates(): Promise<
-  Record<
-    string,
-    {
-      date: string;
-      gbpRate: number;
-      eurRate: number;
-      usdRate: number;
-      aedRate: number;
-    }
-  >
-> {
-  try {
-    // Generate months for the last 24 months (covers most chart views)
-    const months: string[] = [];
-    const now = new Date();
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      months.push(`${year}-${month}`);
-    }
-    const rates = await fetchExchangeRatesForMonths(months);
-
-    // Convert to the format expected by ExchangeRatesProvider
-    const result: Record<
+export const getInitialExchangeRates = unstable_cache(
+  async (): Promise<
+    Record<
       string,
       {
         date: string;
@@ -2443,23 +2474,42 @@ export async function getInitialExchangeRates(): Promise<
         usdRate: number;
         aedRate: number;
       }
-    > = {};
-    rates.forEach((rate) => {
-      result[rate.date] = {
-        date: rate.date,
-        gbpRate: Number(rate.gbpRate),
-        eurRate: Number(rate.eurRate),
-        usdRate: Number(rate.usdRate),
-        aedRate: Number(rate.aedRate),
-      };
-    });
+    >
+  > => {
+    try {
+      const rows = await db
+        .select()
+        .from(exchangeRatesTable)
+        .orderBy(desc(exchangeRatesTable.date));
 
-    return result;
-  } catch (error) {
-    console.error("Error getting initial exchange rates:", error);
-    return {};
-  }
-}
+      const result: Record<
+        string,
+        {
+          date: string;
+          gbpRate: number;
+          eurRate: number;
+          usdRate: number;
+          aedRate: number;
+        }
+      > = {};
+      rows.forEach((rate) => {
+        result[rate.date] = {
+          date: rate.date,
+          gbpRate: Number(rate.gbpRate),
+          eurRate: Number(rate.eurRate),
+          usdRate: Number(rate.usdRate),
+          aedRate: Number(rate.aedRate),
+        };
+      });
+      return result;
+    } catch (error) {
+      console.error("Error getting initial exchange rates:", error);
+      return {};
+    }
+  },
+  ["initial-exchange-rates"],
+  { tags: ["exchange-rates"], revalidate: 3600 }
+);
 
 /**
  * Server action to convert currency

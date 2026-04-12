@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, useCallback, ReactNode } from "react";
 import { setMaskingPreference } from "@/lib/preferences";
 
 interface MaskingContextType {
@@ -38,8 +38,13 @@ export function MaskingProvider({ children, initialMasked = true }: MaskingProvi
     return value.toLocaleString();
   }, [isMasked]);
 
+  const value = useMemo(
+    () => ({ isMasked, toggleMasking, formatCurrency }),
+    [isMasked, toggleMasking, formatCurrency]
+  );
+
   return (
-    <MaskingContext.Provider value={{ isMasked, toggleMasking, formatCurrency }}>
+    <MaskingContext.Provider value={value}>
       {children}
     </MaskingContext.Provider>
   );

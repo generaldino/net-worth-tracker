@@ -13,14 +13,12 @@ import { CurrencySelector } from "@/components/currency-selector";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 import { PeriodSelector } from "@/components/charts/period-selector";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
-import { useNetWorth } from "@/contexts/net-worth-context";
 import { ChartDataProvider } from "@/contexts/chart-data-context";
 import { useUrlState } from "@/hooks/use-url-state";
 import { getDemoChartData } from "@/lib/demo-data";
 import type { TimePeriod } from "@/lib/types";
 
 export default function DemoPage() {
-  const { netWorth, netWorthBreakdown, financialMetrics } = useNetWorth();
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const chartData = useMemo(() => getDemoChartData(), []);
   const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
@@ -57,13 +55,9 @@ export default function DemoPage() {
           <div className="w-full max-w-full px-4 sm:px-6 overflow-hidden">
             <div className="flex items-center justify-between gap-2 sm:gap-4 py-3 min-h-[56px] w-full">
               <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                {netWorth !== null &&
-                  netWorthBreakdown &&
-                  financialMetrics && (
-                    <div className="hidden lg:flex items-center gap-3 min-w-0 flex-1">
-                      <FinancialMetricsNavbar />
-                    </div>
-                  )}
+                <div className="hidden lg:flex items-center gap-3 min-w-0 flex-1">
+                  <FinancialMetricsNavbar />
+                </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-auto">
                 <div className="hidden md:block">
@@ -77,14 +71,12 @@ export default function DemoPage() {
               </div>
             </div>
             {/* Mobile/tablet financial metrics display */}
-            {netWorth !== null && netWorthBreakdown && financialMetrics && (
-              <div className="lg:hidden pb-3 border-t pt-3 mt-2 space-y-3">
-                <FinancialMetricsNavbar />
-                <div className="flex justify-center md:hidden">
-                  <PeriodSelector value={period} onChange={setPeriod} />
-                </div>
+            <div className="lg:hidden pb-3 border-t pt-3 mt-2 space-y-3">
+              <FinancialMetricsNavbar />
+              <div className="flex justify-center md:hidden">
+                <PeriodSelector value={period} onChange={setPeriod} />
               </div>
-            )}
+            </div>
           </div>
         </nav>
 

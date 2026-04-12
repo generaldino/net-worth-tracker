@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, useCallback, ReactNode } from "react";
 import type { DisplayCurrency } from "@/components/currency-selector";
 import { setDisplayCurrencyPreference } from "@/lib/preferences";
 
@@ -42,10 +42,13 @@ export function DisplayCurrencyProvider({
     return displayCurrency;
   }, [displayCurrency]);
 
+  const value = useMemo(
+    () => ({ displayCurrency, setDisplayCurrency, getChartCurrency }),
+    [displayCurrency, setDisplayCurrency, getChartCurrency]
+  );
+
   return (
-    <DisplayCurrencyContext.Provider
-      value={{ displayCurrency, setDisplayCurrency, getChartCurrency }}
-    >
+    <DisplayCurrencyContext.Provider value={value}>
       {children}
     </DisplayCurrencyContext.Provider>
   );

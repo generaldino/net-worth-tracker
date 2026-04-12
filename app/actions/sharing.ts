@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { dashboardShares, dashboardInvitations, users } from "@/db/schema";
@@ -7,29 +8,31 @@ import { getUserId } from "@/lib/auth-helpers";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-/**
- * Get all user IDs that the current user can access (their own + dashboards shared with them)
- */
-export async function getAccessibleUserIds(): Promise<string[]> {
+// cache() dedupes within a single RSC render pass. Most server actions call
+// this once, and the home dashboard calls it ~7 times in parallel — without
+// cache() that's 7 redundant DB queries + auth checks per page load.
+const _getAccessibleUserIds = cache(async (): Promise<string[]> => {
   try {
     const currentUserId = await getUserId();
-    if (!currentUserId) {
-      return [];
-    }
+    if (!currentUserId) return [];
 
-    // Get user IDs of dashboards shared with the current user
     const shares = await db
       .select({ ownerId: dashboardShares.ownerId })
       .from(dashboardShares)
       .where(eq(dashboardShares.sharedWithUserId, currentUserId));
 
-    const result = [currentUserId, ...shares.map((s) => s.ownerId)];
-    // Return array: current user ID + all owner IDs of dashboards shared with them
-    return result;
+    return [currentUserId, ...shares.map((s) => s.ownerId)];
   } catch (error) {
     console.error("Error getting accessible user IDs:", error);
     return [];
   }
+});
+
+/**
+ * Get all user IDs that the current user can access (their own + dashboards shared with them)
+ */
+export async function getAccessibleUserIds(): Promise<string[]> {
+  return _getAccessibleUserIds();
 }
 
 /**

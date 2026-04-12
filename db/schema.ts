@@ -9,6 +9,7 @@ import {
   integer,
   jsonb,
   primaryKey,
+  index,
 } from "drizzle-orm/pg-core";
 
 // Enums
@@ -65,22 +66,35 @@ export const financialAccounts = pgTable("accounts", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const monthlyEntries = pgTable("monthly_entries", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  accountId: uuid("account_id")
-    .notNull()
-    .references(() => financialAccounts.id, { onDelete: "cascade" }),
-  month: text("month").notNull(), // Format: "YYYY-MM"
-  endingBalance: numeric("ending_balance").notNull(),
-  cashIn: numeric("cash_in").notNull(),
-  cashOut: numeric("cash_out").notNull(),
-  income: numeric("income").notNull().default("0"),
-  expenditure: numeric("expenditure").notNull().default("0"), // Auto-computed: Current/Credit_Card = cashOut, others = 0
-  internalTransfersOut: numeric("internal_transfers_out").notNull().default("0"), // Deprecated: new entries write 0
-  debtPayments: numeric("debt_payments").notNull().default("0"), // Deprecated: new entries write 0
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const monthlyEntries = pgTable(
+  "monthly_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => financialAccounts.id, { onDelete: "cascade" }),
+    month: text("month").notNull(), // Format: "YYYY-MM"
+    endingBalance: numeric("ending_balance").notNull(),
+    cashIn: numeric("cash_in").notNull(),
+    cashOut: numeric("cash_out").notNull(),
+    income: numeric("income").notNull().default("0"),
+    expenditure: numeric("expenditure").notNull().default("0"), // Auto-computed: Current/Credit_Card = cashOut, others = 0
+    internalTransfersOut: numeric("internal_transfers_out")
+      .notNull()
+      .default("0"), // Deprecated: new entries write 0
+    debtPayments: numeric("debt_payments").notNull().default("0"), // Deprecated: new entries write 0
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    accountIdIdx: index("monthly_entries_account_id_idx").on(table.accountId),
+    monthIdx: index("monthly_entries_month_idx").on(table.month),
+    accountMonthIdx: index("monthly_entries_account_id_month_idx").on(
+      table.accountId,
+      table.month
+    ),
+  })
+);
 
 export const exchangeRates = pgTable("exchange_rates", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -197,6 +211,3 @@ export type NextAuthAccount = typeof nextAuthAccounts.$inferSelect;
 export type NextAuthSession = typeof nextAuthSessions.$inferSelect;
 export type NextAuthVerificationToken = typeof nextAuthVerificationTokens.$inferSelect;
 
-// Indexes
-export const monthlyEntriesMonthIdx = monthlyEntries.month;
-export const monthlyEntriesAccountIdIdx = monthlyEntries.accountId;

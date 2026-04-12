@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useMemo,
   useState,
   useCallback,
   useRef,
@@ -138,10 +139,13 @@ export function ExchangeRatesProvider({
     }
   }, [rates]);
 
+  const value = useMemo(
+    () => ({ rates, isLoading, error, fetchRates, getRate }),
+    [rates, isLoading, error, fetchRates, getRate]
+  );
+
   return (
-    <ExchangeRatesContext.Provider
-      value={{ rates, isLoading, error, fetchRates, getRate }}
-    >
+    <ExchangeRatesContext.Provider value={value}>
       {children}
     </ExchangeRatesContext.Provider>
   );

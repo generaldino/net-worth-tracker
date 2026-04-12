@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
 import { AssistantTriggerButton } from "@/components/assistant/assistant-trigger-button";
@@ -18,40 +18,49 @@ export function Navbar() {
   const chartData = useChartData();
   const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  // Scroll bookkeeping lives in refs so scroll events don't re-subscribe the
+  // listener on every tick.
+  const lastScrollYRef = useRef(0);
+  const tickingRef = useRef(false);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
+  useEffect(() => {
     if (!isMobile) {
       setIsVisible(true);
       return;
     }
 
-    const handleScroll = () => {
+    const update = () => {
       const currentScrollY = window.scrollY;
+      const last = lastScrollYRef.current;
       if (currentScrollY < 10) {
         setIsVisible(true);
-      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      } else if (currentScrollY > last && currentScrollY > 100) {
         setIsVisible(false);
-      } else if (currentScrollY < lastScrollY) {
+      } else if (currentScrollY < last) {
         setIsVisible(true);
       }
-      setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
+      tickingRef.current = false;
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", checkMobile);
+    const onScroll = () => {
+      if (!tickingRef.current) {
+        tickingRef.current = true;
+        requestAnimationFrame(update);
+      }
     };
-  }, [lastScrollY, isMobile]);
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isMobile]);
 
   const hasChartData = !!chartData && chartData.sourceData.length > 0;
 

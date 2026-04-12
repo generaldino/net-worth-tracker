@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import type { ChartData } from "@/components/charts/types";
 import type { Currency } from "@/lib/fx-rates";
 import { useExchangeRates } from "@/contexts/exchange-rates-context";
@@ -11,7 +12,7 @@ import { useExchangeRates } from "@/contexts/exchange-rates-context";
 export function useChartCurrencyConverter() {
   const { getRate } = useExchangeRates();
 
-  const convertChartData = (
+  const convertChartData = useCallback((
     data: ChartData,
     displayCurrency: Currency
   ): ChartData => {
@@ -315,7 +316,7 @@ export function useChartCurrencyConverter() {
       categoryData: convertedCategoryData,
       sourceData: convertedSourceData,
     };
-  };
+  }, [getRate]);
 
   return { convertChartData };
 }
