@@ -54,12 +54,30 @@ export function DashboardGrid() {
           />
         </ChartErrorBoundary>
       </div>
-      <ChartErrorBoundary name="Net Worth Changes">
-        <NetWorthChangesChart data={chartData} chartCurrency={chartCurrency} />
+      <ChartErrorBoundary name="Net Worth Changes (Monthly)">
+        <NetWorthChangesChart
+          data={chartData}
+          chartCurrency={chartCurrency}
+          viewType="monthly"
+          title="Net Worth Changes (Monthly)"
+        />
       </ChartErrorBoundary>
-      <ChartErrorBoundary name="Asset Allocation">
-        <AssetAllocationChart data={chartData} chartCurrency={chartCurrency} />
+      <ChartErrorBoundary name="Net Worth Changes (Cumulative)">
+        <NetWorthChangesChart
+          data={chartData}
+          chartCurrency={chartCurrency}
+          viewType="cumulative"
+          title="Net Worth Changes (Cumulative)"
+        />
       </ChartErrorBoundary>
+      <div className="lg:col-span-2">
+        <ChartErrorBoundary name="Asset Allocation">
+          <AssetAllocationChart
+            data={chartData}
+            chartCurrency={chartCurrency}
+          />
+        </ChartErrorBoundary>
+      </div>
     </div>
   );
 }

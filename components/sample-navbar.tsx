@@ -35,6 +35,14 @@ export function FinancialMetricsNavbar() {
       filtered.netWorthData.length > 0
         ? filtered.netWorthData[filtered.netWorthData.length - 1].netWorth
         : 0;
+    const netWorthStart =
+      filtered.netWorthData.length > 0
+        ? filtered.netWorthData[0].netWorth
+        : 0;
+    const netWorthChange =
+      netWorthStart !== 0
+        ? ((netWorth - netWorthStart) / Math.abs(netWorthStart)) * 100
+        : null;
 
     const earned = filtered.sourceData.reduce(
       (sum, m) => sum + ((m["Total Income"] as number) || 0),
@@ -48,7 +56,15 @@ export function FinancialMetricsNavbar() {
     const savingsRate = earned > 0 ? (saved / earned) * 100 : null;
     const spendingRate = earned > 0 ? (spent / earned) * 100 : null;
 
-    return { netWorth, earned, spent, saved, savingsRate, spendingRate };
+    return {
+      netWorth,
+      netWorthChange,
+      earned,
+      spent,
+      saved,
+      savingsRate,
+      spendingRate,
+    };
   }, [chartData, targetCurrency, period, convertChartData]);
 
   if (!metrics) return null;
@@ -63,13 +79,31 @@ export function FinancialMetricsNavbar() {
     }).format(value);
   };
 
+  const formatSignedPercent = (value: number) => {
+    const sign = value >= 0 ? "+" : "";
+    return `${sign}${value.toFixed(1)}%`;
+  };
+
   const entries: Array<{
     label: string;
     value: number;
     badge?: string;
+    badgeTone?: "muted" | "green" | "red";
     color: "green" | "red" | "neutral";
   }> = [
-    { label: "Net Worth", value: metrics.netWorth, color: "neutral" },
+    {
+      label: "Net Worth",
+      value: metrics.netWorth,
+      badge:
+        metrics.netWorthChange !== null
+          ? formatSignedPercent(metrics.netWorthChange)
+          : undefined,
+      badgeTone:
+        metrics.netWorthChange !== null && metrics.netWorthChange >= 0
+          ? "green"
+          : "red",
+      color: "neutral",
+    },
     { label: "Earned", value: metrics.earned, color: "neutral" },
     {
       label: "Spent",
@@ -78,6 +112,7 @@ export function FinancialMetricsNavbar() {
         metrics.spendingRate !== null
           ? `${Math.round(metrics.spendingRate)}% of income`
           : undefined,
+      badgeTone: "muted",
       color: "neutral",
     },
     {
@@ -87,6 +122,7 @@ export function FinancialMetricsNavbar() {
         metrics.savingsRate !== null
           ? `${Math.round(metrics.savingsRate)}% of income`
           : undefined,
+      badgeTone: "muted",
       color: metrics.saved >= 0 ? "green" : "red",
     },
   ];
@@ -101,7 +137,15 @@ export function FinancialMetricsNavbar() {
                 {metric.label}
               </span>
               {metric.badge && (
-                <span className="whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold font-mono tabular-nums bg-muted text-muted-foreground">
+                <span
+                  className={`whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold font-mono tabular-nums ${
+                    metric.badgeTone === "green"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                      : metric.badgeTone === "red"
+                      ? "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
                   {metric.badge}
                 </span>
               )}

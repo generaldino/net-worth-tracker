@@ -9,6 +9,7 @@ import { useChartData } from "@/contexts/chart-data-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PeriodSelector } from "@/components/charts/period-selector";
+import { AccountFilter } from "@/components/charts/account-filter";
 import { useUrlState } from "@/hooks/use-url-state";
 import type { TimePeriod } from "@/lib/types";
 
@@ -73,8 +74,9 @@ export function Navbar() {
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-auto">
             {hasChartData && (
-              <div className="hidden md:block">
+              <div className="hidden md:flex items-center gap-2">
                 <PeriodSelector value={period} onChange={setPeriod} />
+                <AccountFilter />
               </div>
             )}
             <CurrencySelector
@@ -89,8 +91,9 @@ export function Navbar() {
         {hasChartData && (
           <div className="lg:hidden pb-3 border-t pt-3 mt-2 space-y-3">
             <FinancialMetricsNavbar />
-            <div className="flex justify-center md:hidden">
+            <div className="flex justify-center gap-2 md:hidden">
               <PeriodSelector value={period} onChange={setPeriod} />
+              <AccountFilter />
             </div>
           </div>
         )}

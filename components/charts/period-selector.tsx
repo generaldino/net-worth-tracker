@@ -1,8 +1,13 @@
 "use client";
 
 import type { TimePeriod } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PeriodSelectorProps {
   value: TimePeriod;
@@ -10,7 +15,6 @@ interface PeriodSelectorProps {
   isLoading?: boolean;
 }
 
-// Map our existing TimePeriod to button labels
 const PERIOD_OPTIONS: Array<{ value: TimePeriod; label: string }> = [
   { value: "1M", label: "1M" },
   { value: "3M", label: "3M" },
@@ -26,23 +30,25 @@ export function PeriodSelector({
   isLoading = false,
 }: PeriodSelectorProps) {
   return (
-    <div className="flex items-center gap-1 sm:gap-2">
-      {PERIOD_OPTIONS.map((option) => (
-        <Button
-          key={option.value}
-          variant={value === option.value ? "default" : "outline"}
-          size="sm"
-          onClick={() => onChange(option.value)}
-          disabled={isLoading}
-          className={cn(
-            "h-8 px-3 text-xs sm:text-sm",
-            value === option.value && "bg-primary text-primary-foreground"
-          )}
-        >
-          {option.label}
-        </Button>
-      ))}
-    </div>
+    <Select
+      value={value}
+      onValueChange={(v) => onChange(v as TimePeriod)}
+      disabled={isLoading}
+    >
+      <SelectTrigger
+        size="sm"
+        className="w-auto min-w-[64px] px-2"
+        aria-label="Time period"
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {PERIOD_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -45,17 +45,20 @@ type ViewType = "cumulative" | "monthly";
 interface NetWorthChangesChartProps {
   data: ChartData;
   chartCurrency: Currency;
+  viewType?: ViewType;
+  title?: string;
   heightClass?: string;
 }
 
 export function NetWorthChangesChart({
   data,
   chartCurrency,
+  viewType = "monthly",
+  title = "Net Worth Changes",
   heightClass = "h-[240px] sm:h-[280px]",
 }: NetWorthChangesChartProps) {
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
-  const [viewType, setViewType] = useState<ViewType>("monthly");
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
 
   // Sort chronologically and accumulate if cumulative view is on.
@@ -120,7 +123,7 @@ export function NetWorthChangesChart({
 
   return (
     <ChartCard
-      title="Net Worth Changes"
+      title={title}
       subtitle={
         <div>
           <div
@@ -144,17 +147,6 @@ export function NetWorthChangesChart({
             formatLabel={(name) => name}
           />
         </div>
-      }
-      controls={
-        <select
-          value={viewType}
-          onChange={(e) => setViewType(e.target.value as ViewType)}
-          className="h-7 px-2 text-xs rounded border bg-background"
-          aria-label="View type"
-        >
-          <option value="monthly">Monthly</option>
-          <option value="cumulative">Cumulative</option>
-        </select>
       }
     >
       <div className={`w-full ${heightClass}`}>

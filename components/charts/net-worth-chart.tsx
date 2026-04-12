@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -23,7 +23,7 @@ import {
   useAccountTypeKeys,
   useChartHover,
 } from "./chart-shared";
-import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
+import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 import { useWindowSize } from "@/hooks/use-window-size";
@@ -34,8 +34,6 @@ interface NetWorthChartProps {
   heightClass?: string;
 }
 
-type ViewType = "absolute" | "percentage";
-
 export function NetWorthChart({
   data,
   chartCurrency,
@@ -43,34 +41,25 @@ export function NetWorthChart({
 }: NetWorthChartProps) {
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
-  const [viewType, setViewType] = useState<ViewType>("absolute");
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
-  const isPercentage = viewType === "percentage";
   const accountTypeKeys = useAccountTypeKeys(data.accountTypeData);
 
-  // Compose the stacked area chart data — join netWorthData with the
-  // per-account-type split, converting to percentage composition when asked.
   const chartPoints = useMemo(() => {
     return data.accountTypeData.map((point) => {
       const netWorth =
         data.netWorthData.find((nw) => nw.monthKey === point.monthKey)
           ?.netWorth ?? 0;
-      const absNetWorth = Math.abs(netWorth);
       const result: Record<string, string | number> = {
         month: point.month,
         monthKey: point.monthKey,
         "Net Worth": netWorth,
       };
       accountTypeKeys.forEach((key) => {
-        const balance = (point[key] as number) ?? 0;
-        result[key] =
-          isPercentage && absNetWorth > 0
-            ? (balance / absNetWorth) * 100
-            : balance;
+        result[key] = (point[key] as number) ?? 0;
       });
       return result;
     });
-  }, [data.accountTypeData, data.netWorthData, accountTypeKeys, isPercentage]);
+  }, [data.accountTypeData, data.netWorthData, accountTypeKeys]);
 
   const latest = chartPoints[chartPoints.length - 1];
   const latestNetWorth = (latest?.["Net Worth"] as number) ?? 0;
@@ -147,17 +136,6 @@ export function NetWorthChart({
           />
         </div>
       }
-      controls={
-        <select
-          value={viewType}
-          onChange={(e) => setViewType(e.target.value as ViewType)}
-          className="h-7 px-2 text-xs rounded border bg-background"
-          aria-label="View type"
-        >
-          <option value="absolute">Absolute</option>
-          <option value="percentage">% of Net Worth</option>
-        </select>
-      }
     >
       <div className={`w-full ${heightClass}`}>
         <ResponsiveContainer width="100%" height="100%">
@@ -188,9 +166,7 @@ export function NetWorthChart({
               hide
               domain={yDomain}
               tickFormatter={(v) =>
-                isPercentage
-                  ? formatPercentage(v)
-                  : isMasked
+                isMasked
                   ? "•••"
                   : formatCurrencyAmount(v / 1000, chartCurrency) + "K"
               }

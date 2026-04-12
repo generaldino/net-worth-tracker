@@ -12,7 +12,11 @@ import type { ChartData } from "@/components/charts/types";
 
 interface ChartDataContextValue {
   data: ChartData;
-  // Temporarily override the dataset (e.g. when demo mode is toggled on).
+  // The initial server-fetched dataset — stable reference used by filters
+  // that need the unfiltered account list regardless of any override.
+  initialData: ChartData;
+  // Temporarily override the dataset (e.g. when demo mode is toggled on,
+  // or when the dashboard filter refetches with excluded accounts).
   // Pass null to restore the initial (real) data.
   override: (next: ChartData | null) => void;
 }
@@ -38,6 +42,7 @@ export function ChartDataProvider({
 
   const value: ChartDataContextValue = {
     data: overrideData ?? initialRef.current,
+    initialData: initialRef.current,
     override,
   };
 
@@ -50,6 +55,10 @@ export function ChartDataProvider({
 
 export function useChartData(): ChartData | null {
   return useContext(ChartDataContext)?.data ?? null;
+}
+
+export function useInitialChartData(): ChartData | null {
+  return useContext(ChartDataContext)?.initialData ?? null;
 }
 
 export function useChartDataOverride(): (next: ChartData | null) => void {
