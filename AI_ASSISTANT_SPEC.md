@@ -208,7 +208,7 @@ export function buildTools(ctx: AssistantContext) {
         "Returns income, expenditure, savings, and savings rate for a given month. " +
         "Monetary fields come back as { value, formatted } — quote the `formatted` string in your answer. " +
         "Use for questions about a specific month's performance.",
-      parameters: z.object({
+      inputSchema: z.object({
         month: z.string().regex(/^\d{4}-\d{2}$/).describe("YYYY-MM"),
       }),
       execute: async ({ month }) => {
@@ -249,12 +249,13 @@ A standard Next.js route that streams an AI SDK response.
 
 ```ts
 // app/api/assistant/route.ts
-import { streamText, convertToCoreMessages } from "ai";
+import { streamText, convertToModelMessages, stepCountIs } from "ai";
+import type { ModelMessage, UIMessage } from "ai";
+import { z } from "zod";
 import { getModel } from "@/lib/llm/provider";
 import { buildTools } from "@/lib/llm/tools";
 import { buildSystemPrompt } from "@/lib/llm/system-prompt";
 import { canUseAssistant } from "@/lib/llm/access";
-import { z } from "zod";
 
 export const runtime = "nodejs"; // tools import server-only code
 
@@ -268,28 +269,42 @@ export async function POST(req: Request) {
     return new Response("Not found", { status: 404 });
   }
 
-  const { messages, displayCurrency } = RequestSchema.parse(await req.json());
+  const { messages: uiMessages, displayCurrency } = RequestSchema.parse(
+    await req.json(),
+  );
 
+  const systemPrompt = await buildSystemPrompt(); // currency-agnostic
   const tools = buildTools({ displayCurrency });
-  const system = await buildSystemPrompt(); // currency-agnostic; tools carry the currency
+  const converted = await convertToModelMessages(uiMessages as UIMessage[]);
 
-  const result = await streamText({
-    model: getModel(),
-    system,
-    tools,
-    messages: convertToCoreMessages(messages),
-    maxSteps: 6, // let the model chain tool calls before answering
-    // Anthropic prompt caching — the system message is ~2k tokens and identical every turn.
-    providerOptions: {
-      anthropic: { cacheControl: { type: "ephemeral" } },
+  // System message sits at the top of messages[] with cache control attached
+  // via providerOptions. One cache entry covers every currency because the
+  // prompt is currency-agnostic (see §7).
+  const modelMessages: ModelMessage[] = [
+    {
+      role: "system",
+      content: systemPrompt,
+      providerOptions: {
+        anthropic: { cacheControl: { type: "ephemeral" } },
+      },
     },
+    ...converted,
+  ];
+
+  const result = streamText({
+    model: getModel(),
+    messages: modelMessages,
+    tools,
+    stopWhen: stepCountIs(6), // allow up to 6 tool-call steps per turn
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
-The `maxSteps: 6` matters: it lets the model call several tools in a row ("first fetch March, then compare to February, then answer"). Without it, it can only call one tool before being forced to respond. Streaming is the default (`streamText` + `toDataStreamResponse`) — tool calls and tokens arrive incrementally so the UI can show "Fetching March metrics…" as it happens.
+The `stopWhen: stepCountIs(6)` matters: it lets the model call several tools in a row ("first fetch March, then compare to February, then answer"). The AI SDK default is `stepCountIs(1)` — without raising it, the model can only call one tool before being forced to respond. Streaming is the default (`streamText` + `toUIMessageStreamResponse`) — tool calls and tokens arrive incrementally so the UI can show "Fetching March metrics…" as it happens.
+
+> **v5→v6 API note.** The AI SDK v5 renamed several things the older spec drafts used: `maxSteps` → `stopWhen: stepCountIs(n)`, `convertToCoreMessages` → `convertToModelMessages` (now async), `toDataStreamResponse` → `toUIMessageStreamResponse`, `tool({ parameters })` → `tool({ inputSchema })`. The `system` string field still exists on `streamText` but does NOT support prompt caching — to cache the system prompt you must pass it as the first entry in `messages[]` with `providerOptions.anthropic.cacheControl`, as shown above.
 
 ---
 

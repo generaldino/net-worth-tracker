@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
+import { AssistantTriggerButton } from "@/components/assistant/assistant-trigger-button";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useNetWorth } from "@/contexts/net-worth-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
@@ -114,6 +115,7 @@ export function Navbar() {
               onValueChange={setDisplayCurrency}
             />
             <MaskToggleButton />
+            <AssistantTriggerButton />
           </div>
         </div>
         {/* Mobile/tablet financial metrics display */}

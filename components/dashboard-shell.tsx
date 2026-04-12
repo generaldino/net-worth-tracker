@@ -23,6 +23,9 @@ import {
   getFinancialMetrics,
   getInitialExchangeRates,
 } from "@/lib/actions";
+import { canUseAssistant } from "@/lib/llm/access";
+import { AssistantProvider } from "@/components/assistant/assistant-provider";
+import { AssistantDrawer } from "@/components/assistant/assistant-drawer";
 
 interface Session {
   user: {
@@ -57,12 +60,14 @@ async function DashboardProviders({
     firstEntryData,
     financialMetrics,
     initialExchangeRates,
+    assistantAllowed,
   ] = await Promise.all([
     calculateNetWorth(),
     getNetWorthBreakdown(),
     getFirstEntryNetWorth(),
     getFinancialMetrics(),
     getInitialExchangeRates(),
+    canUseAssistant(),
   ]);
 
   // Calculate percentage increase from first entry
@@ -85,17 +90,20 @@ async function DashboardProviders({
               initialFinancialMetrics={financialMetrics}
             >
               <DemoProvider initialDemoMode={isDemoMode}>
-                <SidebarProvider defaultOpen={sidebarOpen}>
-                  <AppSidebar
-                    name={session.user.name}
-                    email={session.user.email}
-                    avatarUrl={session.user.image ?? null}
-                  />
-                  <SidebarInset className="overflow-x-hidden">
-                    <Navbar />
-                    {children}
-                  </SidebarInset>
-                </SidebarProvider>
+                <AssistantProvider canUseAssistant={assistantAllowed}>
+                  <SidebarProvider defaultOpen={sidebarOpen}>
+                    <AppSidebar
+                      name={session.user.name}
+                      email={session.user.email}
+                      avatarUrl={session.user.image ?? null}
+                    />
+                    <SidebarInset className="overflow-x-hidden">
+                      <Navbar />
+                      {children}
+                    </SidebarInset>
+                  </SidebarProvider>
+                  <AssistantDrawer />
+                </AssistantProvider>
               </DemoProvider>
             </NetWorthProvider>
           </ProjectionProvider>
