@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
 import { DashboardGrid } from "@/components/charts/dashboard-grid";
-import { getDemoChartData } from "@/lib/demo-data";
 
+// ChartDataProvider is supplied by the parent:
+//   - app/demo/page.tsx wraps itself for the public demo route
+//   - DashboardContent swaps in demo data via useChartDataOverride when
+//     demo mode is toggled from the sidebar on the real dashboard
 export function DemoChartSection() {
-  const initialData = useMemo(() => getDemoChartData(), []);
-  return <DashboardGrid initialData={initialData} />;
+  return <DashboardGrid />;
 }

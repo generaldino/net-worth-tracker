@@ -5,13 +5,17 @@ import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
 import { AssistantTriggerButton } from "@/components/assistant/assistant-trigger-button";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
-import { useNetWorth } from "@/contexts/net-worth-context";
+import { useChartData } from "@/contexts/chart-data-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { PeriodSelector } from "@/components/charts/period-selector";
+import { useUrlState } from "@/hooks/use-url-state";
+import type { TimePeriod } from "@/lib/types";
 
 export function Navbar() {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
-  const { netWorth, netWorthBreakdown, financialMetrics } = useNetWorth();
+  const chartData = useChartData();
+  const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -31,7 +35,6 @@ export function Navbar() {
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
       if (currentScrollY < 10) {
         setIsVisible(true);
       } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
@@ -39,17 +42,17 @@ export function Navbar() {
       } else if (currentScrollY < lastScrollY) {
         setIsVisible(true);
       }
-
       setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => {
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", checkMobile);
     };
   }, [lastScrollY, isMobile]);
+
+  const hasChartData = !!chartData && chartData.sourceData.length > 0;
 
   return (
     <nav
@@ -61,14 +64,19 @@ export function Navbar() {
         <div className="flex items-center justify-between gap-2 sm:gap-4 py-3 min-h-[56px] w-full">
           <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             <SidebarTrigger className="-ml-1" />
-            {netWorth !== null && netWorthBreakdown && financialMetrics && (
+            {hasChartData && (
               <div className="hidden lg:flex items-center gap-3 min-w-0 flex-1">
                 <div className="border-l h-8 ml-2" />
-                <FinancialMetricsNavbar period="ytd" />
+                <FinancialMetricsNavbar />
               </div>
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-auto">
+            {hasChartData && (
+              <div className="hidden md:block">
+                <PeriodSelector value={period} onChange={setPeriod} />
+              </div>
+            )}
             <CurrencySelector
               value={displayCurrency}
               onValueChange={setDisplayCurrency}
@@ -77,10 +85,13 @@ export function Navbar() {
             <AssistantTriggerButton />
           </div>
         </div>
-        {/* Mobile/tablet financial metrics display */}
-        {netWorth !== null && netWorthBreakdown && financialMetrics && (
-          <div className="lg:hidden pb-3 border-t pt-3 mt-2">
-            <FinancialMetricsNavbar period="ytd" />
+        {/* Mobile/tablet display */}
+        {hasChartData && (
+          <div className="lg:hidden pb-3 border-t pt-3 mt-2 space-y-3">
+            <FinancialMetricsNavbar />
+            <div className="flex justify-center md:hidden">
+              <PeriodSelector value={period} onChange={setPeriod} />
+            </div>
           </div>
         )}
       </div>

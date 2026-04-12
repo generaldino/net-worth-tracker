@@ -3,6 +3,7 @@
 import { useDemo } from "@/contexts/demo-context";
 import { useEffect } from "react";
 import { useNetWorth } from "@/contexts/net-worth-context";
+import { useChartDataOverride } from "@/contexts/chart-data-context";
 import { DemoChartSection } from "@/components/demo/demo-chart-section";
 import { DemoAccountsSection } from "@/components/demo/demo-accounts-section";
 import {
@@ -10,6 +11,7 @@ import {
   getDemoNetWorthBreakdown,
   getDemoPercentageIncrease,
   getDemoFinancialMetrics,
+  getDemoChartData,
 } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import { FlaskConical } from "lucide-react";
@@ -21,8 +23,10 @@ interface DashboardContentProps {
 export function DashboardContent({ children }: DashboardContentProps) {
   const { isDemoMode } = useDemo();
   const { setNetWorthData, setFinancialMetrics } = useNetWorth();
+  const overrideChartData = useChartDataOverride();
 
-  // Set demo data when demo mode is enabled
+  // Set demo data when demo mode is enabled. Swap back when disabled so the
+  // navbar KPIs and charts return to the user's real data.
   useEffect(() => {
     if (isDemoMode) {
       const netWorth = calculateDemoNetWorth();
@@ -32,8 +36,11 @@ export function DashboardContent({ children }: DashboardContentProps) {
 
       setNetWorthData(netWorth, breakdown, percentageIncrease);
       setFinancialMetrics(metrics);
+      overrideChartData(getDemoChartData());
+    } else {
+      overrideChartData(null);
     }
-  }, [isDemoMode, setNetWorthData, setFinancialMetrics]);
+  }, [isDemoMode, setNetWorthData, setFinancialMetrics, overrideChartData]);
 
   if (isDemoMode) {
     return (
@@ -67,4 +74,3 @@ export function DashboardContent({ children }: DashboardContentProps) {
 
   return <>{children}</>;
 }
-

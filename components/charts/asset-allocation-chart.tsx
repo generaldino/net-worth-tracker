@@ -28,7 +28,7 @@ export function AssetAllocationChart({
   const { isMasked } = useMasking();
 
   const availableMonths = useMemo(
-    () => data.accountTypeData.map((d) => d.month),
+    () => data.accountTypeData.map((d) => d.month).slice().reverse(),
     [data.accountTypeData]
   );
   const [selectedMonth, setSelectedMonth] = useState<string | undefined>(

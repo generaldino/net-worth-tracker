@@ -2,8 +2,8 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import {
-  Area,
-  AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   ReferenceLine,
   ResponsiveContainer,
@@ -169,7 +169,7 @@ export function NetWorthChart({
     >
       <div className={`w-full ${heightClass}`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
+          <BarChart
             data={chartPoints}
             margin={margins}
             onClick={(e) => {
@@ -217,18 +217,15 @@ export function NetWorthChart({
               />
             )}
             {accountTypeKeys.map((key) => (
-              <Area
+              <Bar
                 key={key}
-                type="monotone"
                 dataKey={key}
                 stackId="net-worth"
-                stroke={getAccountTypeColor(key)}
                 fill={getAccountTypeColor(key)}
-                fillOpacity={0.6}
                 isAnimationActive={false}
               />
             ))}
-          </AreaChart>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </ChartCard>

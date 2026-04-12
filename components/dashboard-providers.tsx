@@ -17,8 +17,10 @@ import {
   getFirstEntryNetWorth,
   getFinancialMetrics,
   getInitialExchangeRates,
+  getChartData,
 } from "@/lib/actions";
 import { canUseAssistant } from "@/lib/llm/access";
+import { ChartDataProvider } from "@/contexts/chart-data-context";
 
 interface Session {
   user: {
@@ -53,6 +55,7 @@ export async function DashboardProviders({
     financialMetrics,
     initialExchangeRates,
     assistantAllowed,
+    chartData,
   ] = await Promise.all([
     calculateNetWorth(),
     getNetWorthBreakdown(),
@@ -60,6 +63,7 @@ export async function DashboardProviders({
     getFinancialMetrics(),
     getInitialExchangeRates(),
     canUseAssistant(),
+    getChartData("all"),
   ]);
 
   const percentageIncrease =
@@ -85,22 +89,24 @@ export async function DashboardProviders({
               initialPercentageIncrease={percentageIncrease}
               initialFinancialMetrics={financialMetrics}
             >
-              <DemoProvider initialDemoMode={isDemoMode}>
-                <AssistantProvider canUseAssistant={assistantAllowed}>
-                  <SidebarProvider defaultOpen={sidebarOpen}>
-                    <AppSidebar
-                      name={session.user.name}
-                      email={session.user.email}
-                      avatarUrl={session.user.image ?? null}
-                    />
-                    <SidebarInset className="overflow-x-hidden">
-                      <Navbar />
-                      {children}
-                    </SidebarInset>
-                  </SidebarProvider>
-                  <AssistantDrawer />
-                </AssistantProvider>
-              </DemoProvider>
+              <ChartDataProvider data={chartData}>
+                <DemoProvider initialDemoMode={isDemoMode}>
+                  <AssistantProvider canUseAssistant={assistantAllowed}>
+                    <SidebarProvider defaultOpen={sidebarOpen}>
+                      <AppSidebar
+                        name={session.user.name}
+                        email={session.user.email}
+                        avatarUrl={session.user.image ?? null}
+                      />
+                      <SidebarInset className="overflow-x-hidden">
+                        <Navbar />
+                        {children}
+                      </SidebarInset>
+                    </SidebarProvider>
+                    <AssistantDrawer />
+                  </AssistantProvider>
+                </DemoProvider>
+              </ChartDataProvider>
             </NetWorthProvider>
           </DisplayCurrencyProvider>
         </ExchangeRatesProvider>

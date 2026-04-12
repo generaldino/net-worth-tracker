@@ -1,10 +1,8 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DashboardContent } from "@/components/dashboard-content";
 import { DashboardProviders } from "@/components/dashboard-providers";
-import { DashboardGridSection } from "@/components/charts/dashboard-grid-section";
-import { ChartSectionSkeleton } from "@/components/skeletons/chart-skeleton";
+import { DashboardGrid } from "@/components/charts/dashboard-grid";
 import { hasAnyData } from "@/lib/actions";
 
 interface Session {
@@ -43,9 +41,7 @@ function DashboardMain() {
     <DashboardContent>
       <div className="min-h-[calc(100svh-56px)] bg-background overflow-x-hidden max-w-full">
         <div className="w-full max-w-full py-4 px-4 sm:px-6">
-          <Suspense fallback={<ChartSectionSkeleton />}>
-            <DashboardGridSection />
-          </Suspense>
+          <DashboardGrid />
         </div>
       </div>
     </DashboardContent>
