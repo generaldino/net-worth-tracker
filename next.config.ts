@@ -1,4 +1,5 @@
 const nextConfig = {
+  serverExternalPackages: ["@neondatabase/serverless", "ws"],
   images: {
     remotePatterns: [
       {
