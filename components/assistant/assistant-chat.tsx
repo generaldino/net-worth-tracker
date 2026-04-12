@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useMasking } from "@/contexts/masking-context";
 import { maskAbsoluteAmounts } from "./mask-amounts";
-import { Loader2, Send, Square } from "lucide-react";
+import { AssistantMarkdown } from "./assistant-markdown";
+import { humanizeToolCall } from "./tool-labels";
+import { Loader2, Send, Square, RotateCcw } from "lucide-react";
 import type { Currency } from "@/lib/fx-rates";
 
 type ApiCurrency = Currency;
@@ -16,8 +18,8 @@ type ApiCurrency = Currency;
 const QUICK_PROMPTS = [
   "How did I do last month?",
   "What's my savings rate this year?",
-  "Which account grew the most in 2025?",
-  "Why did I save what I did last month?",
+  "How has my net worth changed this year?",
+  "Compare last month to the month before",
 ];
 
 function resolveCurrency(uiCurrency: string): ApiCurrency {
@@ -40,8 +42,7 @@ export function AssistantChat() {
   const apiCurrency = resolveCurrency(displayCurrency);
 
   // Build the transport once per apiCurrency. `body` is a function so the
-  // latest value is read on every send (belt and braces — the id key makes
-  // this mostly redundant, but it's cheap insurance).
+  // latest value is read on every send.
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -51,7 +52,7 @@ export function AssistantChat() {
     [apiCurrency],
   );
 
-  const { messages, sendMessage, status, stop, error } = useChat({
+  const { messages, sendMessage, status, stop, error, regenerate } = useChat({
     id: `assistant-${apiCurrency}`,
     transport,
   });
@@ -95,8 +96,17 @@ export function AssistantChat() {
             ))
           )}
           {error && (
-            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-              {error.message}
+            <div className="space-y-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              <p>{error.message || "Something went wrong."}</p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => regenerate()}
+                className="h-7 text-xs"
+              >
+                <RotateCcw className="mr-1 size-3" />
+                Retry
+              </Button>
             </div>
           )}
         </div>
@@ -198,17 +208,23 @@ function MessageBubble({
       >
         {parts.map((part, i) => {
           if (part.type === "text") {
-            return (
-              <span key={i} className="whitespace-pre-wrap">
-                {renderText(part.text as string)}
-              </span>
-            );
+            const text = renderText(part.text as string);
+            // User messages: plain whitespace-preserving span.
+            // Assistant messages: markdown.
+            if (isUser) {
+              return (
+                <span key={i} className="whitespace-pre-wrap">
+                  {text}
+                </span>
+              );
+            }
+            return <AssistantMarkdown key={i} text={text} />;
           }
 
           // Tool-call parts in v6 are emitted as `tool-<toolName>` with a
           // `state` field that walks "input-streaming" → "input-available"
-          // → "output-available". Render a subtle "Fetching…" chip until
-          // output arrives, then fade it out.
+          // → "output-available". Show a humanized chip while running,
+          // hide it once output is available.
           if (
             typeof part.type === "string" &&
             part.type.startsWith("tool-")
@@ -216,15 +232,14 @@ function MessageBubble({
             const toolName = part.type.replace(/^tool-/, "");
             const done = part.state === "output-available";
             if (done) return null;
+            const label = humanizeToolCall(toolName, part.input);
             return (
               <div
                 key={i}
                 className="my-1 flex items-center gap-2 text-xs text-muted-foreground"
               >
                 <Loader2 className="size-3 animate-spin" />
-                <span>
-                  Looking up <code className="font-mono">{toolName}</code>…
-                </span>
+                <span>{label}</span>
               </div>
             );
           }

@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { AssistantChat } from "./assistant-chat";
 import { useAssistant } from "./assistant-provider";
 import { cn } from "@/lib/utils";
@@ -47,8 +53,28 @@ export function AssistantDrawer() {
       )}
     >
       <header className="flex items-center justify-between border-b px-4 py-3">
-        <div>
-          <h2 className="text-sm font-semibold">AI Assistant</h2>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold">AI Assistant</h2>
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="How this works"
+                  >
+                    <Info className="size-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  Your questions and the relevant data from your accounts are
+                  sent to Anthropic (Claude) to generate answers. Anthropic
+                  does not train on this data.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           <p className="text-xs text-muted-foreground">
             Ask about your finances
           </p>

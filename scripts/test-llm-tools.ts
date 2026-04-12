@@ -66,6 +66,39 @@ async function main() {
   );
   console.log(JSON.stringify(metricsRes, null, 2));
 
+  // compare_months: prev month vs the one before
+  const prev2 = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+  const prev2Str = `${prev2.getFullYear()}-${String(prev2.getMonth() + 1).padStart(2, "0")}`;
+
+  banner(`compare_months (${monthStr} vs ${prev2Str})`);
+  const cmpRes = await tools.compare_months.execute!(
+    { monthA: monthStr, monthB: prev2Str },
+    { toolCallId: "test-4", messages: [] },
+  );
+  console.log(JSON.stringify(cmpRes, null, 2));
+
+  // get_time_series: 6 months
+  banner("get_time_series (6 months)");
+  const seriesRes = await tools.get_time_series.execute!(
+    { months: 6 },
+    { toolCallId: "test-5", messages: [] },
+  );
+  console.log(JSON.stringify(seriesRes, null, 2));
+
+  // get_account_history: pick the first open account from list_accounts
+  const accountsResult = accountsRes as {
+    accounts: Array<{ id: string; name: string }>;
+  };
+  if (accountsResult.accounts.length > 0) {
+    const firstAccount = accountsResult.accounts[0];
+    banner(`get_account_history (${firstAccount.name}, 6 months)`);
+    const historyRes = await tools.get_account_history.execute!(
+      { accountId: firstAccount.id, limit: 6 },
+      { toolCallId: "test-6", messages: [] },
+    );
+    console.log(JSON.stringify(historyRes, null, 2));
+  }
+
   console.log("\n✅ All tools executed without throwing.");
   process.exit(0);
 }

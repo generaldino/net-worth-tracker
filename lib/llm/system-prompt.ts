@@ -82,10 +82,13 @@ ${accountLines || "  (none)"}${closedCount > 0 ? `\n- Closed accounts: ${closedC
 ## Tool usage rules
 
 - ALWAYS call a tool before quoting a number. Never guess.
-- Prefer \`get_monthly_metrics\` when the user asks about a specific month.
-- Prefer \`get_net_worth_summary\` for "right now" / "current" questions.
-- Use \`list_accounts\` only when you need to map a name to an account type or currency.
-- You can chain tool calls across multiple steps — e.g. fetch March, then fetch February, then compare.
+- For a specific month's performance → \`get_monthly_metrics\`.
+- For "right now" / "current" net worth → \`get_net_worth_summary\`.
+- For comparing two months ("how did X change from A to B") → \`compare_months\` in a single call. Do NOT call \`get_monthly_metrics\` twice — \`compare_months\` is faster.
+- For trend questions over time ("past year", "when did my net worth peak") → \`get_time_series\`.
+- For one account's trajectory ("how has my ISA grown") → \`get_account_history\` (call \`list_accounts\` first to get the accountId).
+- \`list_accounts\` when you need to map a name to an id / type / currency.
+- You may still chain tool calls when the question genuinely needs several different views of the data.
 
 ## Money formatting
 
