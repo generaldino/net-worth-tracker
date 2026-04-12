@@ -16,7 +16,7 @@ import {
   fetchAndSaveExchangeRatesForMonth,
   getExchangeRates,
 } from "@/lib/fx-rates-server";
-import type { AccountType, StaleAccountsData, StaleAccountEntry } from "@/lib/types";
+import type { StaleAccountsData, StaleAccountEntry } from "@/lib/types";
 import { getCategoryFromType, computeExpenditure } from "@/lib/account-helpers";
 
 export async function calculateNetWorth() {
@@ -2495,6 +2495,38 @@ export async function convertCurrency(
   }
 }
 
+// Cheap existence check used to decide whether to render the dashboard grid
+// or an onboarding empty state. A single row is enough — don't use
+// calculateNetWorth() (treats all-zero balances as empty) or getChartData()
+// (expensive).
+export async function hasAnyData(): Promise<boolean> {
+  try {
+    const accessibleUserIds = await getAccessibleUserIds();
+    if (accessibleUserIds.length === 0) return false;
+
+    const accountIds = (
+      await db
+        .select({ id: accountsTable.id })
+        .from(accountsTable)
+        .where(inArray(accountsTable.userId, accessibleUserIds))
+        .limit(1)
+    ).map((a) => a.id);
+
+    if (accountIds.length === 0) return false;
+
+    const entries = await db
+      .select({ id: monthlyEntries.id })
+      .from(monthlyEntries)
+      .innerJoin(accountsTable, eq(monthlyEntries.accountId, accountsTable.id))
+      .where(inArray(accountsTable.userId, accessibleUserIds))
+      .limit(1);
+
+    return entries.length > 0;
+  } catch (error) {
+    console.error("Error checking for data:", error);
+    return false;
+  }
+}
 
 export async function getStaleAccounts(): Promise<StaleAccountsData> {
   try {

@@ -7,11 +7,7 @@ import { AssistantTriggerButton } from "@/components/assistant/assistant-trigger
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useNetWorth } from "@/contexts/net-worth-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
-import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { useUrlState } from "@/hooks/use-url-state";
-
-type MetricsPeriod = "ytd" | "alltime";
 
 export function Navbar() {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
@@ -19,12 +15,8 @@ export function Navbar() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  
-  // URL-based state for shareable metrics period
-  const [period, setPeriod] = useUrlState<MetricsPeriod>("metrics", "ytd");
 
   useEffect(() => {
-    // Check if mobile on mount and resize
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -32,7 +24,6 @@ export function Navbar() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
 
-    // Only apply scroll behavior on mobile
     if (!isMobile) {
       setIsVisible(true);
       return;
@@ -41,12 +32,9 @@ export function Navbar() {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
-      // Show navbar when at top
       if (currentScrollY < 10) {
         setIsVisible(true);
-      }
-      // Hide on scroll down, show on scroll up
-      else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsVisible(false);
       } else if (currentScrollY < lastScrollY) {
         setIsVisible(true);
@@ -76,36 +64,7 @@ export function Navbar() {
             {netWorth !== null && netWorthBreakdown && financialMetrics && (
               <div className="hidden lg:flex items-center gap-3 min-w-0 flex-1">
                 <div className="border-l h-8 ml-2" />
-                <FinancialMetricsNavbar period={period} />
-                <div className="border-l h-8" />
-                <div className="flex shrink-0 items-center">
-                  <div className="flex flex-col gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPeriod("ytd")}
-                      className={`h-7 w-20 px-3 text-xs font-medium ${
-                        period === "ytd"
-                          ? "text-foreground font-semibold hover:bg-accent"
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                      }`}
-                    >
-                      YTD
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPeriod("alltime")}
-                      className={`h-7 w-20 px-3 text-xs font-medium ${
-                        period === "alltime"
-                          ? "text-foreground font-semibold hover:bg-accent"
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                      }`}
-                    >
-                      All Time
-                    </Button>
-                  </div>
-                </div>
+                <FinancialMetricsNavbar period="ytd" />
               </div>
             )}
           </div>
@@ -121,35 +80,7 @@ export function Navbar() {
         {/* Mobile/tablet financial metrics display */}
         {netWorth !== null && netWorthBreakdown && financialMetrics && (
           <div className="lg:hidden pb-3 border-t pt-3 mt-2">
-            <FinancialMetricsNavbar period={period} setPeriod={setPeriod} />
-            <div className="flex justify-center mt-3">
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPeriod("ytd")}
-                  className={`h-7 px-3 text-xs font-medium ${
-                    period === "ytd"
-                      ? "text-foreground font-semibold hover:bg-accent"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  }`}
-                >
-                  YTD
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPeriod("alltime")}
-                  className={`h-7 px-3 text-xs font-medium ${
-                    period === "alltime"
-                      ? "text-foreground font-semibold hover:bg-accent"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                  }`}
-                >
-                  All Time
-                </Button>
-              </div>
-            </div>
+            <FinancialMetricsNavbar period="ytd" />
           </div>
         )}
       </div>

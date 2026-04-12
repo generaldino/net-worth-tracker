@@ -16,6 +16,7 @@ import {
   Moon,
   ChevronUp,
   FlaskConical,
+  Wallet,
 } from "lucide-react";
 import {
   Sidebar,
@@ -52,6 +53,11 @@ const navItems = [
     title: "Dashboard",
     url: "/",
     icon: Home,
+  },
+  {
+    title: "Accounts",
+    url: "/accounts",
+    icon: Wallet,
   },
   {
     title: "Share Dashboard",

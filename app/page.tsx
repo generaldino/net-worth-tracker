@@ -9,7 +9,6 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const session = await auth();
 
-  // Show landing page for unauthenticated users
   if (!session) {
     return (
       <ThemeProvider
@@ -24,7 +23,5 @@ export default async function HomePage() {
     );
   }
 
-  // Show dashboard for authenticated users
-  // The DashboardShell component handles all the providers and parallel loading
   return <DashboardShell session={session} />;
 }
