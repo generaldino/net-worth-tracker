@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  Line,
   ComposedChart,
   PieChart,
   Pie,
@@ -356,7 +355,7 @@ export function ChartDisplay({
         const savingsFromIncome = dataPoint["Savings from Income"] as number;
         metrics["Savings Rate"] = savingsRate || 0;
         metrics["Total Income"] = totalIncome || 0;
-        metrics["Total Expenditure"] = totalExpenditure || 0;
+        metrics["Total Expenditure"] = Math.abs(totalExpenditure || 0);
         metrics["Savings from Income"] = savingsFromIncome || 0;
         primaryValue = savingsRate || 0;
         break;
@@ -1223,7 +1222,7 @@ export function ChartDisplay({
                 : 0,
             "Total Expenditure":
               typeof item["Total Expenditure"] === "number"
-                ? item["Total Expenditure"]
+                ? -Math.abs(item["Total Expenditure"] as number)
                 : 0,
             "Savings from Income":
               typeof item["Savings from Income"] === "number"
@@ -1293,19 +1292,6 @@ export function ChartDisplay({
                   width={width && width < 640 ? 50 : 60}
                   tick={{ fontSize }}
                   domain={["auto", "auto"]}
-                  allowDataOverflow={true}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  hide={true}
-                  tickFormatter={(value) =>
-                    isMasked ? "•••" : `${Math.round(value)}%`
-                  }
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                  domain={[0, 100]}
                   allowDataOverflow={true}
                 />
                 <ChartTooltip
@@ -1431,28 +1417,6 @@ export function ChartDisplay({
                       ? "default"
                       : "pointer",
                   }}
-                />
-                {/* Savings Rate Line */}
-                <Line
-                  type="monotone"
-                  dataKey="Savings Rate"
-                  yAxisId="right"
-                  stroke="#9333EA"
-                  strokeWidth={3}
-                  strokeOpacity={hoveredCardName !== null ? 0.3 : 1}
-                  dot={{ fill: "#9333EA", r: 4 }}
-                  activeDot={{ r: 6 }}
-                  isAnimationActive={false}
-                  onClick={(data) => {
-                    if ("payload" in data) {
-                      const payload = data.payload as {
-                        month: string;
-                        monthKey: string;
-                      };
-                      handlePinToggle(payload.month);
-                    }
-                  }}
-                  style={{ cursor: "pointer" }}
                 />
               </ComposedChart>
             </ResponsiveContainer>
