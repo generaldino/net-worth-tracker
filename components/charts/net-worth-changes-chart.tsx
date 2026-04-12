@@ -14,7 +14,6 @@ import {
 import type { ChartData } from "./types";
 import { ChartCard } from "./chart-card";
 import { ChartLegend, type LegendItem } from "./chart-legend";
-import { ChartTooltip } from "./chart-tooltip";
 import {
   getResponsiveChartMargins,
   getResponsiveFontSize,
@@ -92,12 +91,14 @@ export function NetWorthChangesChart({
     return { savings, interest, gains, total: savings + interest + gains };
   }, [displayedPoint]);
 
+  // Ordered top-of-stack first so the legend reads the same direction as the
+  // visual: Capital Gains sits on top, Savings from Income sits on the bottom.
   const legendItems: LegendItem[] = useMemo(
     () => [
       {
-        name: "Savings from Income",
-        value: displayedValues.savings,
-        color: getSeriesColor("Savings from Income"),
+        name: "Capital Gains",
+        value: displayedValues.gains,
+        color: getSeriesColor("Capital Gains"),
       },
       {
         name: "Interest Earned",
@@ -105,9 +106,9 @@ export function NetWorthChangesChart({
         color: getSeriesColor("Interest Earned"),
       },
       {
-        name: "Capital Gains",
-        value: displayedValues.gains,
-        color: getSeriesColor("Capital Gains"),
+        name: "Savings from Income",
+        value: displayedValues.savings,
+        color: getSeriesColor("Savings from Income"),
       },
     ],
     [displayedValues]
@@ -180,20 +181,13 @@ export function NetWorthChangesChart({
             />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
             <Tooltip
-              content={
-                <ChartTooltip
-                  chartCurrency={chartCurrency}
-                  formatLabel={getSeriesLabel}
-                  showTotal
-                />
-              }
+              content={() => null}
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,
                 strokeDasharray: "5 5",
               }}
               isAnimationActive={false}
-              wrapperStyle={{ outline: "none" }}
             />
             {hovered && (
               <ReferenceLine

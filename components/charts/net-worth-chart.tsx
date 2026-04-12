@@ -14,7 +14,6 @@ import {
 import type { ChartData } from "./types";
 import { ChartCard } from "./chart-card";
 import { ChartLegend, type LegendItem } from "./chart-legend";
-import { ChartTooltip } from "./chart-tooltip";
 import {
   formatAccountTypeName,
   getAccountTypeColor,
@@ -74,7 +73,8 @@ export function NetWorthChart({
     ((displayedPoint?.["Net Worth"] as number) ?? 0) || latestNetWorth;
   const displayedMonth = (displayedPoint?.month as string) ?? "";
 
-  // Legend items for the displayed point — sorted by hierarchy.
+  // Legend items ordered to match the visual stack: assets top-down (matching
+  // bar heights from top of stack), then liabilities below the zero line.
   const legendItems: LegendItem[] = useMemo(() => {
     if (!displayedPoint) return [];
     const items = accountTypeKeys
@@ -85,7 +85,10 @@ export function NetWorthChart({
         color: getAccountTypeColor(key),
       }))
       .filter((i) => i.absValue > 0);
-    return sortAccountTypesByHierarchy(items).map((i) => ({
+    const sorted = sortAccountTypesByHierarchy(items);
+    const positives = sorted.filter((i) => i.value >= 0).reverse();
+    const negatives = sorted.filter((i) => i.value < 0);
+    return [...positives, ...negatives].map((i) => ({
       name: i.name,
       value: i.value,
       color: i.color,
@@ -95,19 +98,30 @@ export function NetWorthChart({
   const margins = getResponsiveChartMargins(width);
   const fontSize = getResponsiveFontSize(width);
 
+  // Use stacked-sign totals (not individual values) so the bar never clips.
+  // Positives stack up from 0, negatives (liabilities) stack down from 0.
   const yDomain = useMemo(() => {
-    const values: number[] = [];
+    if (chartPoints.length === 0) return [0, "auto"] as [number, number | "auto"];
+    let posMax = 0;
+    let negMin = 0;
     chartPoints.forEach((p) => {
+      let pos = 0;
+      let neg = 0;
       accountTypeKeys.forEach((key) => {
         const v = p[key];
-        if (typeof v === "number" && !Number.isNaN(v)) values.push(v);
+        if (typeof v !== "number" || Number.isNaN(v)) return;
+        if (v >= 0) pos += v;
+        else neg += v;
       });
+      if (pos > posMax) posMax = pos;
+      if (neg < negMin) negMin = neg;
     });
-    if (values.length === 0) return [0, "auto"] as [number, number | "auto"];
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const padding = (max - min) * 0.05;
-    return [min < 0 ? min - padding : 0, max + padding] as [number, number];
+    const range = posMax - negMin || posMax || 1;
+    const padding = range * 0.05;
+    return [negMin < 0 ? negMin - padding : 0, posMax + padding] as [
+      number,
+      number
+    ];
   }, [chartPoints, accountTypeKeys]);
 
   return (
@@ -173,21 +187,19 @@ export function NetWorthChart({
               }
               fontSize={fontSize}
             />
+            <ReferenceLine
+              y={0}
+              stroke="hsl(var(--muted-foreground))"
+              strokeOpacity={0.6}
+            />
             <Tooltip
-              content={
-                <ChartTooltip
-                  chartCurrency={chartCurrency}
-                  formatLabel={formatAccountTypeName}
-                  showTotal
-                />
-              }
+              content={() => null}
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,
                 strokeDasharray: "5 5",
               }}
               isAnimationActive={false}
-              wrapperStyle={{ outline: "none" }}
             />
             {hovered && (
               <ReferenceLine

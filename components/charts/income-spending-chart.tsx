@@ -13,7 +13,6 @@ import {
 } from "recharts";
 import type { ChartData } from "./types";
 import { ChartCard } from "./chart-card";
-import { ChartTooltip } from "./chart-tooltip";
 import {
   getResponsiveChartMargins,
   getResponsiveFontSize,
@@ -202,20 +201,13 @@ export function IncomeSpendingChart({
             />
             <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" />
             <Tooltip
-              content={
-                <ChartTooltip
-                  chartCurrency={chartCurrency}
-                  formatLabel={getSeriesLabel}
-                  absoluteValues
-                />
-              }
+              content={() => null}
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,
                 strokeDasharray: "5 5",
               }}
               isAnimationActive={false}
-              wrapperStyle={{ outline: "none" }}
             />
             {hovered && (
               <ReferenceLine
