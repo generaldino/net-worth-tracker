@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ChartData } from "@/components/charts/types";
 import type { TimePeriod } from "@/lib/types";
 
@@ -200,40 +200,3 @@ export function useAccountTypeKeys(
   }, [data]);
 }
 
-// Headless tooltip for Recharts that reports the hovered month to a callback
-// instead of rendering a floating box. Pair with a custom header/legend that
-// updates on hover.
-interface HeadlessHoverTooltipProps {
-  active?: boolean;
-  payload?: Array<{ payload?: Record<string, unknown> }>;
-  onHoverChange: (month: string | null) => void;
-}
-
-export function HeadlessHoverTooltip({
-  active,
-  payload,
-  onHoverChange,
-}: HeadlessHoverTooltipProps) {
-  const lastRef = useRef<{ month: string | null; active: boolean }>({
-    month: null,
-    active: false,
-  });
-  const currentMonth = (payload?.[0]?.payload?.month as string) || null;
-
-  useEffect(() => {
-    const last = lastRef.current;
-    if (active && payload && payload.length) {
-      if (currentMonth !== last.month || !last.active) {
-        lastRef.current = { month: currentMonth, active: true };
-        onHoverChange(currentMonth);
-      }
-    } else if (!active && last.active) {
-      lastRef.current = { month: null, active: false };
-      onHoverChange(null);
-    }
-    // onHoverChange intentionally omitted — callers should pass a stable fn
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, currentMonth]);
-
-  return null;
-}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -17,7 +17,6 @@ import {
   CHART_GREEN,
   CHART_RED,
   COLORS,
-  HeadlessHoverTooltip,
   getResponsiveChartMargins,
   getResponsiveFontSize,
   useChartHover,
@@ -41,13 +40,6 @@ export function IncomeSpendingChart({
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
-
-  const handleHoverChange = useCallback(
-    (month: string | null) => {
-      setHovered(month ? { month } : null);
-    },
-    [setHovered]
-  );
 
   const chartPoints = useMemo(() => {
     return data.sourceData
@@ -168,6 +160,17 @@ export function IncomeSpendingChart({
           <ComposedChart
             data={chartPoints}
             margin={margins}
+            onMouseMove={(e) => {
+              const month = e?.activePayload?.[0]?.payload?.month as
+                | string
+                | undefined;
+              if (month) {
+                setHovered((prev) =>
+                  prev?.month === month ? prev : { month }
+                );
+              }
+            }}
+            onMouseLeave={() => setHovered(null)}
             onClick={(e) => {
               const month = e?.activePayload?.[0]?.payload?.month as
                 | string
@@ -191,12 +194,7 @@ export function IncomeSpendingChart({
             />
             <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" />
             <Tooltip
-              content={(props) => (
-                <HeadlessHoverTooltip
-                  {...props}
-                  onHoverChange={handleHoverChange}
-                />
-              )}
+              content={() => null}
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,

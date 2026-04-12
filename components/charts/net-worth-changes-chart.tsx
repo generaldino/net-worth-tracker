@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -17,7 +17,6 @@ import { ChartLegend, type LegendItem } from "./chart-legend";
 import {
   CHART_GREEN,
   COLORS,
-  HeadlessHoverTooltip,
   getResponsiveChartMargins,
   getResponsiveFontSize,
   useChartHover,
@@ -58,13 +57,6 @@ export function NetWorthChangesChart({
   const { isMasked } = useMasking();
   const [viewType, setViewType] = useState<ViewType>("monthly");
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
-
-  const handleHoverChange = useCallback(
-    (month: string | null) => {
-      setHovered(month ? { month } : null);
-    },
-    [setHovered]
-  );
 
   // Sort chronologically and accumulate if cumulative view is on.
   const chartPoints = useMemo(() => {
@@ -170,6 +162,17 @@ export function NetWorthChangesChart({
           <ComposedChart
             data={chartPoints}
             margin={margins}
+            onMouseMove={(e) => {
+              const month = e?.activePayload?.[0]?.payload?.month as
+                | string
+                | undefined;
+              if (month) {
+                setHovered((prev) =>
+                  prev?.month === month ? prev : { month }
+                );
+              }
+            }}
+            onMouseLeave={() => setHovered(null)}
             onClick={(e) => {
               const month = e?.activePayload?.[0]?.payload?.month as
                 | string
@@ -190,12 +193,7 @@ export function NetWorthChangesChart({
             />
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
             <Tooltip
-              content={(props) => (
-                <HeadlessHoverTooltip
-                  {...props}
-                  onHoverChange={handleHoverChange}
-                />
-              )}
+              content={() => null}
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -19,7 +19,6 @@ import {
   getAccountTypeColor,
   getResponsiveChartMargins,
   getResponsiveFontSize,
-  HeadlessHoverTooltip,
   sortAccountTypesByHierarchy,
   useAccountTypeKeys,
   useChartHover,
@@ -47,13 +46,6 @@ export function NetWorthChart({
   const [viewType, setViewType] = useState<ViewType>("absolute");
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
   const isPercentage = viewType === "percentage";
-
-  const handleHoverChange = useCallback(
-    (month: string | null) => {
-      setHovered(month ? { month } : null);
-    },
-    [setHovered]
-  );
   const accountTypeKeys = useAccountTypeKeys(data.accountTypeData);
 
   // Compose the stacked area chart data — join netWorthData with the
@@ -172,13 +164,23 @@ export function NetWorthChart({
           <BarChart
             data={chartPoints}
             margin={margins}
+            onMouseMove={(e) => {
+              const month = e?.activePayload?.[0]?.payload?.month as
+                | string
+                | undefined;
+              if (month) {
+                setHovered((prev) =>
+                  prev?.month === month ? prev : { month }
+                );
+              }
+            }}
+            onMouseLeave={() => setHovered(null)}
             onClick={(e) => {
               const month = e?.activePayload?.[0]?.payload?.month as
                 | string
                 | undefined;
               if (month) pinPoint({ month });
             }}
-            onMouseLeave={() => setHovered(null)}
           >
             <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
             <XAxis dataKey="month" hide />
@@ -195,12 +197,7 @@ export function NetWorthChart({
               fontSize={fontSize}
             />
             <Tooltip
-              content={(props) => (
-                <HeadlessHoverTooltip
-                  {...props}
-                  onHoverChange={handleHoverChange}
-                />
-              )}
+              content={() => null}
               cursor={{
                 stroke: "hsl(var(--foreground))",
                 strokeWidth: 1,
