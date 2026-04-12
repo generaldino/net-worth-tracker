@@ -36,6 +36,15 @@ export async function POST(req: Request) {
   // on repeat requests. One cache entry covers every currency because the
   // prompt is currency-agnostic (see spec §7).
   const converted = await convertToModelMessages(uiMessages as UIMessage[]);
+
+  // Two system messages by design:
+  // (1) Stable, cached prefix — never contains anything that varies turn-to-turn.
+  // (2) Uncached "context" message carrying today's date and the active display
+  //     currency. These change daily / per-session and would otherwise silently
+  //     bust the cache on message (1). Keeping them in a separate, uncached
+  //     block lets Anthropic reuse the cached prefix forever while still giving
+  //     the model the context it needs.
+  const today = new Date().toISOString().slice(0, 10);
   const modelMessages: ModelMessage[] = [
     {
       role: "system",
@@ -43,6 +52,10 @@ export async function POST(req: Request) {
       providerOptions: {
         anthropic: { cacheControl: { type: "ephemeral" } },
       },
+    },
+    {
+      role: "system",
+      content: `Context: today is ${today}. Session display currency is ${displayCurrency}.`,
     },
     ...converted,
   ];

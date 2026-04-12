@@ -91,13 +91,101 @@ async function main() {
   };
   if (accountsResult.accounts.length > 0) {
     const firstAccount = accountsResult.accounts[0];
-    banner(`get_account_history (${firstAccount.name}, 6 months)`);
+    banner(`get_account_history by id (${firstAccount.name}, 6 months)`);
     const historyRes = await tools.get_account_history.execute!(
       { accountId: firstAccount.id, limit: 6 },
       { toolCallId: "test-6", messages: [] },
     );
     console.log(JSON.stringify(historyRes, null, 2));
+
+    // Also try resolving by name (case-insensitive)
+    banner(`get_account_history by name (${firstAccount.name}, 3 months)`);
+    const historyByNameRes = await tools.get_account_history.execute!(
+      { accountName: firstAccount.name.toLowerCase(), limit: 3 },
+      { toolCallId: "test-6b", messages: [] },
+    );
+    console.log(JSON.stringify(historyByNameRes, null, 2));
   }
+
+  banner("get_time_series (6 months, groupBy=type)");
+  const groupedSeriesRes = await tools.get_time_series.execute!(
+    { months: 6, groupBy: "type" },
+    { toolCallId: "test-7", messages: [] },
+  );
+  console.log(JSON.stringify(groupedSeriesRes, null, 2));
+
+  banner("get_net_worth_breakdown (groupBy=currency)");
+  const nwBreakdownRes = await tools.get_net_worth_breakdown.execute!(
+    { groupBy: "currency" },
+    { toolCallId: "test-8", messages: [] },
+  );
+  console.log(JSON.stringify(nwBreakdownRes, null, 2));
+
+  banner("get_net_worth_breakdown (groupBy=type)");
+  const nwBreakdownTypeRes = await tools.get_net_worth_breakdown.execute!(
+    { groupBy: "type" },
+    { toolCallId: "test-8b", messages: [] },
+  );
+  console.log(JSON.stringify(nwBreakdownTypeRes, null, 2));
+
+  banner("get_account_rankings (absolute_growth, top 5, 12mo)");
+  const rankingsRes = await tools.get_account_rankings.execute!(
+    {
+      metric: "absolute_growth",
+      windowMonths: 12,
+      limit: 5,
+      direction: "top",
+    },
+    { toolCallId: "test-9", messages: [] },
+  );
+  console.log(JSON.stringify(rankingsRes, null, 2));
+
+  banner("get_account_rankings (current_balance, top 3)");
+  const rankingsCurrentRes = await tools.get_account_rankings.execute!(
+    {
+      metric: "current_balance",
+      windowMonths: 12,
+      limit: 3,
+      direction: "top",
+    },
+    { toolCallId: "test-9b", messages: [] },
+  );
+  console.log(JSON.stringify(rankingsCurrentRes, null, 2));
+
+  banner("get_metrics_window (6 months)");
+  const windowRes = await tools.get_metrics_window.execute!(
+    { months: 6 },
+    { toolCallId: "test-10", messages: [] },
+  );
+  console.log(JSON.stringify(windowRes, null, 2));
+
+  banner("find_milestone (net_worth, first_above £500k)");
+  const milestoneRes = await tools.find_milestone.execute!(
+    { metric: "net_worth", threshold: 500000, direction: "first_above" },
+    { toolCallId: "test-11", messages: [] },
+  );
+  console.log(JSON.stringify(milestoneRes, null, 2));
+
+  banner("get_liquidity_snapshot");
+  const liquidityRes = await tools.get_liquidity_snapshot.execute!(
+    {},
+    { toolCallId: "test-12", messages: [] },
+  );
+  console.log(JSON.stringify(liquidityRes, null, 2));
+
+  banner("get_stale_accounts");
+  const staleRes = await tools.get_stale_accounts.execute!(
+    {},
+    { toolCallId: "test-13", messages: [] },
+  );
+  console.log(JSON.stringify(staleRes, null, 2));
+
+  banner("list_projection_scenarios");
+  const projRes = await tools.list_projection_scenarios.execute!(
+    {},
+    { toolCallId: "test-14", messages: [] },
+  );
+  console.log(JSON.stringify(projRes, null, 2));
 
   console.log("\n✅ All tools executed without throwing.");
   process.exit(0);
