@@ -35,7 +35,6 @@ import { useMasking } from "@/contexts/masking-context";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
-import { useProjection } from "@/contexts/projection-context";
 import type { TimePeriod } from "@/lib/types";
 import { ChartSectionSkeleton } from "@/components/skeletons/chart-skeleton";
 
@@ -69,10 +68,6 @@ interface ChartDisplayProps {
   totalOptions?: {
     viewType?: "absolute" | "percentage";
   };
-  projectionOptions?: {
-    viewType?: "absolute" | "percentage";
-    selectedScenario?: string | null;
-  };
   byWealthSourceOptions?: {
     viewType?: "cumulative" | "monthly";
   };
@@ -91,7 +86,6 @@ export function ChartDisplay({
   onTimePeriodChange,
   allocationOptions = { viewType: "account-type", selectedMonth: undefined },
   totalOptions = { viewType: "absolute" },
-  projectionOptions = { viewType: "absolute", selectedScenario: null },
   byWealthSourceOptions = { viewType: "monthly" },
   headerControls,
   hiddenCards = new Set(),
@@ -101,7 +95,6 @@ export function ChartDisplay({
   const { isMasked } = useMasking();
   const { getChartCurrency } = useDisplayCurrency();
   const chartCurrency = getChartCurrency() as Currency;
-  const { projectionData: projectionDataFromContext } = useProjection();
 
   // Hover state management - all hooks must be called before any early returns
   const [hoveredData, setHoveredData] = useState<HoveredData | null>(null);
@@ -270,34 +263,6 @@ export function ChartDisplay({
         }
         break;
       }
-      case "projection": {
-        if (projectionDataFromContext?.projectionData) {
-          const monthData = projectionDataFromContext.projectionData.find(
-            (d) => d.month === month
-          );
-          if (monthData) {
-            const metrics: Record<string, number | string> = {
-              "Net Worth": monthData.netWorth,
-            };
-            monthData.accountBalances.forEach((acc) => {
-              const current = (metrics[acc.accountType] as number) || 0;
-              metrics[acc.accountType] = current + acc.balance;
-            });
-            // Format the month for display (convert "2024-12" to "Dec 2024")
-            const formattedMonth = new Date(month + "-01").toLocaleDateString(
-              "en-GB",
-              { month: "short", year: "numeric" }
-            );
-            pinData = {
-              date: formattedMonth,
-              month: formattedMonth,
-              primaryValue: monthData.netWorth,
-              metrics,
-            };
-          }
-        }
-        break;
-      }
     }
     setPinnedData(pinData);
   };
@@ -358,20 +323,6 @@ export function ChartDisplay({
         metrics["Total Expenditure"] = Math.abs(totalExpenditure || 0);
         metrics["Savings from Income"] = savingsFromIncome || 0;
         primaryValue = savingsRate || 0;
-        break;
-      }
-      case "projection": {
-        primaryValue = dataPoint["Net Worth"] as number;
-        metrics["Net Worth"] = primaryValue;
-        Object.keys(dataPoint).forEach((key) => {
-          if (
-            key !== "month" &&
-            key !== "monthKey" &&
-            typeof dataPoint[key] === "number"
-          ) {
-            metrics[key] = dataPoint[key] as number;
-          }
-        });
         break;
       }
     }
@@ -489,33 +440,6 @@ export function ChartDisplay({
           },
         };
       }
-      case "projection": {
-        if (
-          !projectionDataFromContext ||
-          !projectionDataFromContext.projectionData ||
-          projectionDataFromContext.projectionData.length === 0
-        ) {
-          return null;
-        }
-        const latest =
-          projectionDataFromContext.projectionData[
-            projectionDataFromContext.projectionData.length - 1
-          ];
-        const metrics: Record<string, number | string> = {
-          "Net Worth": latest.netWorth,
-        };
-        // Add account type breakdown
-        latest.accountBalances.forEach((acc) => {
-          const current = (metrics[acc.accountType] as number) || 0;
-          metrics[acc.accountType] = current + acc.balance;
-        });
-        return {
-          date: latest.month,
-          month: latest.month,
-          primaryValue: latest.netWorth,
-          metrics,
-        };
-      }
       default:
         return null;
     }
@@ -523,7 +447,6 @@ export function ChartDisplay({
     chartData,
     chartType,
     allocationOptions,
-    projectionDataFromContext,
     totalOptions?.viewType,
   ]);
 
@@ -1423,243 +1346,6 @@ export function ChartDisplay({
           </ChartContainer>
         );
 
-      case "projection":
-        if (
-          !projectionDataFromContext ||
-          !projectionDataFromContext.projectionData ||
-          projectionDataFromContext.projectionData.length === 0
-        ) {
-          return (
-            <div className="flex flex-col items-center justify-center h-[300px] sm:h-[400px] text-center">
-              <p className="text-muted-foreground mb-2">
-                No projection data available
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Calculate a projection in the Wealth Projection Setup section
-                below, or select a saved scenario.
-              </p>
-            </div>
-          );
-        }
-
-        // Group account balances by account type
-        const projectionAllAccountTypes = new Set<string>();
-
-        projectionDataFromContext.projectionData.forEach((point) => {
-          point.accountBalances.forEach((acc) => {
-            projectionAllAccountTypes.add(acc.accountType);
-          });
-        });
-
-        const projectionAccountTypesArray = Array.from(
-          projectionAllAccountTypes
-        ).sort();
-
-        // Format data for chart with account type breakdown
-        const projectionChartData =
-          projectionDataFromContext.projectionData.map((point) => {
-            const monthFormatted = new Date(
-              point.month + "-01"
-            ).toLocaleDateString("en-GB", {
-              month: "short",
-              year: "numeric",
-            });
-
-            const dataPoint: Record<string, string | number> = {
-              month: monthFormatted,
-              monthKey: point.month,
-              "Net Worth": point.netWorth,
-            };
-
-            // Sum balances by account type
-            const typeBalances = new Map<string, number>();
-            point.accountBalances.forEach((acc) => {
-              const current = typeBalances.get(acc.accountType) || 0;
-              typeBalances.set(acc.accountType, current + acc.balance);
-            });
-
-            // Add account type values
-            projectionAccountTypesArray.forEach((type) => {
-              const balance = typeBalances.get(type) || 0;
-              if (projectionOptions?.viewType === "percentage") {
-                // Calculate percentage of net worth, allowing negative for liabilities
-                // Use absolute net worth for denominator but preserve sign of balance
-                const absNetWorth = Math.abs(point.netWorth);
-                dataPoint[type] =
-                  absNetWorth > 0 ? (balance / absNetWorth) * 100 : 0;
-              } else {
-                dataPoint[type] = balance;
-              }
-            });
-
-            return dataPoint;
-          });
-
-        // Create chart config for account types
-        const projectionChartConfig: Record<
-          string,
-          { label: string; color: string }
-        > = {
-          "Net Worth": {
-            label: "Net Worth",
-            color: "hsl(var(--chart-1))",
-          },
-        };
-
-        projectionAccountTypesArray.forEach((type) => {
-          projectionChartConfig[type] = {
-            label: formatAccountTypeName(type),
-            color: getAccountTypeColor(type),
-          };
-        });
-
-        const isPercentage = projectionOptions?.viewType === "percentage";
-
-        // Calculate actual min/max values from all data points for tighter Y-axis
-        let projectionYAxisMin: number | string = 0;
-        let projectionYAxisMax: number | string = "auto";
-
-        if (isPercentage) {
-          // For percentage, find min/max across all account types
-          const allProjectionValues: number[] = [];
-          projectionChartData.forEach((point) => {
-            projectionAccountTypesArray.forEach((type) => {
-              const value = point[type] as number;
-              if (typeof value === "number" && !isNaN(value)) {
-                allProjectionValues.push(value);
-              }
-            });
-          });
-          if (allProjectionValues.length > 0) {
-            const min = Math.min(...allProjectionValues);
-            const max = Math.max(...allProjectionValues);
-            // Add some padding (5% of range)
-            const padding = (max - min) * 0.05;
-            projectionYAxisMin = Math.min(0, min - padding); // Allow negative, but start from 0 if all positive
-            projectionYAxisMax = max + padding;
-          } else {
-            projectionYAxisMin = 0;
-            projectionYAxisMax = 100;
-          }
-        } else {
-          // For absolute values, find min/max across all account types
-          const allProjectionValues: number[] = [];
-          projectionChartData.forEach((point) => {
-            projectionAccountTypesArray.forEach((type) => {
-              const value = point[type] as number;
-              if (typeof value === "number" && !isNaN(value)) {
-                allProjectionValues.push(value);
-              }
-            });
-          });
-          if (allProjectionValues.length > 0) {
-            const min = Math.min(...allProjectionValues);
-            const max = Math.max(...allProjectionValues);
-            // Add some padding (5% of range)
-            const padding = (max - min) * 0.05;
-            projectionYAxisMin = min < 0 ? min - padding : 0; // Start at 0 if all positive
-            projectionYAxisMax = max + padding;
-          }
-        }
-
-        return (
-          <ChartContainer
-            config={projectionChartConfig}
-            className="h-[250px] sm:h-[350px] md:h-[400px] w-full"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
-                data={projectionChartData}
-                margin={margins}
-                onClick={(data) => {
-                  if (data?.activePayload?.[0]?.payload?.monthKey) {
-                    handlePinToggle(data.activePayload[0].payload.monthKey);
-                  }
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" hide={true} />
-                <YAxis
-                  hide={true}
-                  tickFormatter={(value) =>
-                    isPercentage
-                      ? formatPercentage(value) // Never mask percentages
-                      : isMasked
-                      ? "•••"
-                      : formatCurrencyAmount(value / 1000, chartCurrency, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        }) + "K"
-                  }
-                  fontSize={fontSize}
-                  width={width && width < 640 ? 50 : 60}
-                  tick={{ fontSize }}
-                  domain={[projectionYAxisMin, projectionYAxisMax]}
-                />
-                <ChartTooltip
-                  content={<HeaderUpdateTooltip />}
-                  cursor={{
-                    stroke: "hsl(var(--foreground))",
-                    strokeWidth: 1,
-                    strokeDasharray: "5 5",
-                  }}
-                />
-                {hoveredData && (
-                  <ReferenceLine
-                    x={hoveredData.month}
-                    stroke="hsl(var(--foreground))"
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    label={{
-                      value: hoveredData.date || hoveredData.month,
-                      position: "top",
-                      offset: 5,
-                      fill: "var(--foreground)",
-                      fontSize: 12,
-                    }}
-                  />
-                )}
-                {projectionAccountTypesArray.map((type) => {
-                  const isHovered = hoveredCardName === type;
-                  const hasHover = hoveredCardName !== null;
-                  const isHidden = hiddenCards.has(type);
-                  const accountTypeColor = getAccountTypeColor(type);
-                  const opacity = isHidden
-                    ? 0
-                    : hasHover
-                    ? isHovered
-                      ? 0.9
-                      : 0.2
-                    : 0.6;
-
-                  return (
-                    <Area
-                      key={type}
-                      type="monotone"
-                      dataKey={type}
-                      stackId="projection"
-                      stroke={isHidden ? "transparent" : accountTypeColor}
-                      fill={accountTypeColor}
-                      fillOpacity={opacity}
-                      isAnimationActive={false}
-                      onClick={(data) => {
-                        if ("payload" in data) {
-                          const payload = data.payload as {
-                            month: string;
-                            monthKey: string;
-                            [key: string]: string | number;
-                          };
-                          handlePinToggle(payload.monthKey);
-                        }
-                      }}
-                      style={{ cursor: isHidden ? "default" : "pointer" }}
-                    />
-                  );
-                })}
-              </AreaChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        );
     }
   };
 
@@ -1680,7 +1366,6 @@ export function ChartDisplay({
         latestData={latestData}
         chartCurrency={chartCurrency}
         totalOptions={totalOptions}
-        projectionOptions={projectionOptions}
         headerControls={headerControls}
         hoveredCardName={hoveredCardName}
         onCardHover={setHoveredCardName}

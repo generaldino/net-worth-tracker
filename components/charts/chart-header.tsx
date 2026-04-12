@@ -69,10 +69,6 @@ interface ChartHeaderProps {
   totalOptions?: {
     viewType?: "absolute" | "percentage";
   };
-  projectionOptions?: {
-    viewType?: "absolute" | "percentage";
-    selectedScenario?: string | null;
-  };
   headerControls?: React.ReactNode;
   hoveredCardName?: string | null;
   onCardHover?: (cardName: string | null) => void;
@@ -95,7 +91,6 @@ export function ChartHeader({
   latestData,
   chartCurrency,
   totalOptions,
-  projectionOptions,
   headerControls,
   hoveredCardName,
   onCardHover,
@@ -107,25 +102,9 @@ export function ChartHeader({
   const displayData = pinnedData || hoveredData || latestData;
   const isPinned = !!pinnedData;
 
-  // Extract account types for total and projection charts - must be called before early return
+  // Extract account types for total chart - must be called before early return
   const accountTypesForTotal = useMemo(() => {
     if (chartType !== "total" || !displayData?.metrics) return [];
-
-    const items = Object.entries(displayData.metrics)
-      .filter(([key]) => key !== "Net Worth")
-      .map(([key, value]) => ({
-        name: key,
-        value: value as number,
-        absValue: Math.abs(value as number),
-      }))
-      .filter((item) => item.absValue > 0); // Only show non-zero values
-
-    // Sort by account type hierarchy, then by value within category
-    return sortAccountTypesByHierarchy(items);
-  }, [chartType, displayData]);
-
-  const accountTypesForProjection = useMemo(() => {
-    if (chartType !== "projection" || !displayData?.metrics) return [];
 
     const items = Object.entries(displayData.metrics)
       .filter(([key]) => key !== "Net Worth")
@@ -198,7 +177,6 @@ export function ChartHeader({
         }
         return "";
       case "total":
-      case "projection":
         // For account types, use the account type color mapping to match the badges in the accounts table
         // Check if this metric name is an account type
         if (isAccountType(metricName)) {
@@ -536,73 +514,6 @@ export function ChartHeader({
                   onToggleHidden={onToggleHidden}
                 />
               ) : (
-                <div className="min-h-[70px]"></div>
-              )}
-            </div>
-          </div>
-        );
-      }
-
-      case "projection": {
-        const fullNetWorth =
-          displayData.primaryValue ||
-          (displayData.metrics["Net Worth"] as number);
-        const isPercentage = projectionOptions?.viewType === "percentage";
-
-        // Calculate adjusted net worth excluding hidden cards
-        const adjustedNetWorth =
-          hiddenCards.size > 0
-            ? accountTypesForProjection
-                .filter((item) => !hiddenCards.has(item.name))
-                .reduce((sum, item) => sum + item.value, 0)
-            : fullNetWorth;
-
-        return (
-          <div className="space-y-3">
-            <div>
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                PROJECTED NET WORTH{" "}
-                {hiddenCards.size > 0 && (
-                  <span className="text-xs opacity-60">(filtered)</span>
-                )}
-              </div>
-              <div
-                className={`text-2xl sm:text-3xl font-bold ${
-                  adjustedNetWorth >= 0 ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {formatValue(adjustedNetWorth)}
-              </div>
-            </div>
-
-            {/* Account Type Breakdown - Horizontal Scrollable - Always render to maintain layout */}
-            <div className="w-full min-h-[120px]">
-              <div className="text-xs text-muted-foreground mb-2">
-                BREAKDOWN BY TYPE
-              </div>
-              {accountTypesForProjection.length > 0 ? (
-                <NetWorthCards
-                  netWorth={adjustedNetWorth}
-                  assets={accountTypesForProjection}
-                  chartCurrency={chartCurrency}
-                  getColor={(name, index) =>
-                    getMetricColor(chartType, name, index)
-                  }
-                  allAccountTypeNames={
-                    displayData.metrics
-                      ? Object.keys(displayData.metrics).filter(
-                          (key) => key !== "Net Worth"
-                        )
-                      : accountTypesForProjection.map((acc) => acc.name)
-                  }
-                  isPercentageView={isPercentage}
-                  hoveredCardName={hoveredCardName}
-                  onCardHover={onCardHover}
-                  hiddenCards={hiddenCards}
-                  onToggleHidden={onToggleHidden}
-                />
-              ) : (
-                // Placeholder to maintain space when no account types
                 <div className="min-h-[70px]"></div>
               )}
             </div>

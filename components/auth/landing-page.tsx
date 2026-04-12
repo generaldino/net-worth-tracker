@@ -476,9 +476,9 @@ export function LandingPage() {
             },
             {
               icon: BarChart3,
-              title: "9+ chart types",
+              title: "Rich dashboards",
               description:
-                "Visualize your wealth with intuitive charts: net worth trends, income & spending, allocation, projections, and more.",
+                "Visualize your wealth with intuitive charts: net worth trends, income & spending, and asset allocation.",
             },
             {
               icon: Shield,

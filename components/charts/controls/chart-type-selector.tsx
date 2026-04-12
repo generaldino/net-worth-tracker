@@ -30,7 +30,6 @@ export function ChartTypeSelector({
         <SelectItem value="income-spending">Income & Spending</SelectItem>
         <SelectItem value="net-worth-changes">Net Worth Changes</SelectItem>
         <SelectItem value="allocation">Asset Allocation</SelectItem>
-        <SelectItem value="projection">Projection</SelectItem>
       </SelectContent>
     </Select>
   );

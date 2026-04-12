@@ -2,8 +2,7 @@ export type ChartType =
   | "total"
   | "net-worth-changes"
   | "income-spending"
-  | "allocation"
-  | "projection";
+  | "allocation";
 
 export interface Account {
   id: string;

@@ -220,10 +220,6 @@ export function DemoChartSection() {
                     <option value="monthly">Monthly</option>
                   </select>
                 </label>
-              ) : chartType === "projection" ? (
-                <div className="text-sm text-muted-foreground italic">
-                  Projections not available in demo mode
-                </div>
               ) : chartType === "allocation" ? (
                 <label className="flex-shrink-0 flex items-center gap-2 text-xs sm:text-sm">
                   <span className="whitespace-nowrap">Month:</span>
