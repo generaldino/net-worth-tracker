@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback, ReactNode } from "react";
 import { setMaskingPreference } from "@/lib/preferences";
 
 interface MaskingContextType {
@@ -21,15 +21,14 @@ interface MaskingProviderProps {
 export function MaskingProvider({ children, initialMasked = true }: MaskingProviderProps) {
   const [isMasked, setIsMasked] = useState(initialMasked);
 
-  // Toggle masking - update state immediately (optimistic) and persist to cookie
   const toggleMasking = useCallback(() => {
-    setIsMasked((prev) => {
-      const newValue = !prev;
-      // Fire and forget - persist to cookie via server action
-      setMaskingPreference(newValue).catch(console.error);
-      return newValue;
-    });
+    setIsMasked((prev) => !prev);
   }, []);
+
+  useEffect(() => {
+    if (isMasked === initialMasked) return;
+    void setMaskingPreference(isMasked).catch(console.error);
+  }, [isMasked, initialMasked]);
 
   const formatCurrency = useCallback((value: number): string => {
     if (isMasked) {

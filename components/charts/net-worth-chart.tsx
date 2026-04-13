@@ -23,6 +23,10 @@ import {
   useAccountTypeKeys,
   useChartHover,
 } from "./chart-shared";
+import {
+  BarSegmentTooltipOverlay,
+  useBarSegmentTooltip,
+} from "./bar-segment-tooltip";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
@@ -42,6 +46,7 @@ export function NetWorthChart({
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
+  const segmentTooltip = useBarSegmentTooltip();
   const accountTypeKeys = useAccountTypeKeys(data.accountTypeData);
 
   const chartPoints = useMemo(() => {
@@ -152,7 +157,12 @@ export function NetWorthChart({
         </div>
       }
     >
-      <div className={`w-full ${heightClass}`}>
+      <div
+        ref={segmentTooltip.containerRef}
+        className={`relative w-full ${heightClass}`}
+        onMouseMove={segmentTooltip.handleMouseMove}
+        onMouseLeave={segmentTooltip.handleMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartPoints}
@@ -216,10 +226,17 @@ export function NetWorthChart({
                 stackId="net-worth"
                 fill={getAccountTypeColor(key)}
                 isAnimationActive={false}
+                {...segmentTooltip.makeBarProps(key, getAccountTypeColor(key))}
               />
             ))}
           </BarChart>
         </ResponsiveContainer>
+        <BarSegmentTooltipOverlay
+          segment={segmentTooltip.segment}
+          pos={segmentTooltip.pos}
+          chartCurrency={chartCurrency}
+          formatLabel={formatAccountTypeName}
+        />
       </div>
     </ChartCard>
   );

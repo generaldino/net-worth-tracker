@@ -21,6 +21,10 @@ import {
   getSeriesLabel,
   useChartHover,
 } from "./chart-shared";
+import {
+  BarSegmentTooltipOverlay,
+  useBarSegmentTooltip,
+} from "./bar-segment-tooltip";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
@@ -54,6 +58,7 @@ export function NetWorthChangesChart({
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
+  const segmentTooltip = useBarSegmentTooltip();
 
   // Sort chronologically and accumulate if cumulative view is on.
   const chartPoints = useMemo(() => {
@@ -145,7 +150,12 @@ export function NetWorthChangesChart({
         </div>
       }
     >
-      <div className={`w-full ${heightClass}`}>
+      <div
+        ref={segmentTooltip.containerRef}
+        className={`relative w-full ${heightClass}`}
+        onMouseMove={segmentTooltip.handleMouseMove}
+        onMouseLeave={segmentTooltip.handleMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartPoints}
@@ -204,10 +214,17 @@ export function NetWorthChangesChart({
                 stackId="changes"
                 fill={getSeriesColor(key)}
                 isAnimationActive={false}
+                {...segmentTooltip.makeBarProps(key, getSeriesColor(key))}
               />
             ))}
           </ComposedChart>
         </ResponsiveContainer>
+        <BarSegmentTooltipOverlay
+          segment={segmentTooltip.segment}
+          pos={segmentTooltip.pos}
+          chartCurrency={chartCurrency}
+          formatLabel={getSeriesLabel}
+        />
       </div>
     </ChartCard>
   );

@@ -20,6 +20,10 @@ import {
   getSeriesLabel,
   useChartHover,
 } from "./chart-shared";
+import {
+  BarSegmentTooltipOverlay,
+  useBarSegmentTooltip,
+} from "./bar-segment-tooltip";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
@@ -39,6 +43,7 @@ export function IncomeSpendingChart({
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
   const { hovered, pinPoint, setHovered, displayed } = useChartHover();
+  const segmentTooltip = useBarSegmentTooltip();
 
   const chartPoints = useMemo(() => {
     return data.sourceData
@@ -162,7 +167,12 @@ export function IncomeSpendingChart({
         </div>
       }
     >
-      <div className={`w-full ${heightClass}`}>
+      <div
+        ref={segmentTooltip.containerRef}
+        className={`relative w-full ${heightClass}`}
+        onMouseMove={segmentTooltip.handleMouseMove}
+        onMouseLeave={segmentTooltip.handleMouseLeave}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartPoints}
@@ -223,21 +233,39 @@ export function IncomeSpendingChart({
               dataKey="Total Income"
               fill={getSeriesColor("Total Income")}
               isAnimationActive={false}
+              {...segmentTooltip.makeBarProps(
+                "Total Income",
+                getSeriesColor("Total Income")
+              )}
             />
             <Bar
               yAxisId="left"
               dataKey="Total Expenditure"
               fill={getSeriesColor("Total Expenditure")}
               isAnimationActive={false}
+              {...segmentTooltip.makeBarProps(
+                "Total Expenditure",
+                getSeriesColor("Total Expenditure")
+              )}
             />
             <Bar
               yAxisId="left"
               dataKey="Savings from Income"
               fill={getSeriesColor("Savings from Income")}
               isAnimationActive={false}
+              {...segmentTooltip.makeBarProps(
+                "Savings from Income",
+                getSeriesColor("Savings from Income")
+              )}
             />
           </ComposedChart>
         </ResponsiveContainer>
+        <BarSegmentTooltipOverlay
+          segment={segmentTooltip.segment}
+          pos={segmentTooltip.pos}
+          chartCurrency={chartCurrency}
+          formatLabel={getSeriesLabel}
+        />
       </div>
     </ChartCard>
   );
