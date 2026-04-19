@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import type { ChartData } from "./types";
 import { ChartCard } from "./chart-card";
 import {
@@ -8,6 +8,7 @@ import {
   getAccountTypeColor,
   sortAccountTypesByHierarchy,
 } from "./chart-shared";
+import { BarSegmentTooltipOverlay } from "./bar-segment-tooltip";
 import { formatCurrencyAmount, formatPercentage } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
@@ -72,6 +73,27 @@ export function AssetAllocationChart({
     [segments]
   );
 
+  const barRef = useRef<HTMLDivElement | null>(null);
+  const [hoverSegment, setHoverSegment] = useState<{
+    name: string;
+    value: number;
+    color: string;
+  } | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(
+    null
+  );
+
+  const handleBarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = barRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+
+  const handleBarMouseLeave = () => {
+    setHoverSegment(null);
+    setHoverPos(null);
+  };
+
   return (
     <ChartCard
       title="Asset Allocation"
@@ -113,24 +135,43 @@ export function AssetAllocationChart({
         ) : (
           <div className="w-full space-y-3">
             {/* Horizontal stacked bar */}
-            <div className="w-full h-8 rounded-md overflow-hidden flex">
-              {segments.map((seg) => {
-                const percent =
-                  totalAssets > 0 ? (seg.value / totalAssets) * 100 : 0;
-                return (
-                  <div
-                    key={seg.name}
-                    className="h-full flex items-center justify-center text-[10px] font-semibold text-white overflow-hidden"
-                    style={{
-                      width: `${percent}%`,
-                      backgroundColor: seg.color,
-                    }}
-                    title={`${formatAccountTypeName(seg.name)}: ${formatPercentage(percent)}`}
-                  >
-                    {percent >= 8 ? formatPercentage(percent) : ""}
-                  </div>
-                );
-              })}
+            <div
+              ref={barRef}
+              className="relative w-full"
+              onMouseMove={handleBarMouseMove}
+              onMouseLeave={handleBarMouseLeave}
+            >
+              <div className="w-full h-8 rounded-md overflow-hidden flex">
+                {segments.map((seg) => {
+                  const percent =
+                    totalAssets > 0 ? (seg.value / totalAssets) * 100 : 0;
+                  return (
+                    <div
+                      key={seg.name}
+                      className="h-full flex items-center justify-center text-[10px] font-semibold text-white overflow-hidden cursor-default"
+                      style={{
+                        width: `${percent}%`,
+                        backgroundColor: seg.color,
+                      }}
+                      onMouseEnter={() =>
+                        setHoverSegment({
+                          name: seg.name,
+                          value: seg.value,
+                          color: seg.color,
+                        })
+                      }
+                    >
+                      {percent >= 8 ? formatPercentage(percent) : ""}
+                    </div>
+                  );
+                })}
+              </div>
+              <BarSegmentTooltipOverlay
+                segment={hoverSegment}
+                pos={hoverPos}
+                chartCurrency={chartCurrency}
+                formatLabel={formatAccountTypeName}
+              />
             </div>
 
             {/* Per-segment rows with absolute values */}

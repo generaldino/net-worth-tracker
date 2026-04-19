@@ -61,6 +61,10 @@ interface OverlayProps {
   pos: MousePos | null;
   chartCurrency: Currency;
   formatLabel?: (name: string) => string;
+  // When true, render negative values with a leading "−" so liabilities read
+  // as negative. Off by default since some charts (income/spending) store
+  // outflows negative purely for stack direction and want absolute display.
+  showSign?: boolean;
 }
 
 export function BarSegmentTooltipOverlay({
@@ -68,17 +72,23 @@ export function BarSegmentTooltipOverlay({
   pos,
   chartCurrency,
   formatLabel,
+  showSign = false,
 }: OverlayProps) {
   const { isMasked } = useMasking();
   const containerWidth =
     typeof window !== "undefined" ? window.innerWidth : 0;
   if (!segment || !pos) return null;
   const label = formatLabel ? formatLabel(segment.name) : segment.name;
-  // Show absolute value — series like "Total Expenditure" are stored negative
-  // for the chart but the user thinks of them as positive amounts.
+  const isNegative = segment.value < 0;
+  const formatted = formatCurrencyAmount(
+    Math.abs(segment.value),
+    chartCurrency
+  );
   const display = isMasked
     ? "••••"
-    : formatCurrencyAmount(Math.abs(segment.value), chartCurrency);
+    : showSign && isNegative
+    ? `−${formatted}`
+    : formatted;
 
   // Flip to the left of the cursor when close to the right edge so the
   // tooltip never gets clipped by the chart container.
@@ -99,7 +109,11 @@ export function BarSegmentTooltipOverlay({
         />
         <span className="text-muted-foreground">{label}</span>
       </div>
-      <div className="mt-0.5 font-medium tabular-nums text-foreground">
+      <div
+        className={`mt-0.5 font-medium tabular-nums ${
+          showSign && isNegative ? "text-red-600" : "text-foreground"
+        }`}
+      >
         {display}
       </div>
     </div>

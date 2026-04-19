@@ -3,8 +3,9 @@
 import React, { useMemo } from "react";
 import {
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -153,6 +154,7 @@ export function NetWorthChart({
             chartCurrency={chartCurrency}
             className="mt-3"
             formatLabel={formatAccountTypeName}
+            splitByValue
           />
         </div>
       }
@@ -164,9 +166,10 @@ export function NetWorthChart({
         onMouseLeave={segmentTooltip.handleMouseLeave}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart
+          <ComposedChart
             data={chartPoints}
             margin={margins}
+            stackOffset="sign"
             onMouseMove={(e) => {
               const month = e?.activePayload?.[0]?.payload?.month as
                 | string
@@ -193,14 +196,10 @@ export function NetWorthChart({
               tickFormatter={(v) =>
                 isMasked
                   ? "•••"
-                  : formatCurrencyAmount(v / 1000, chartCurrency) + "K"
+                  : formatCurrencyAmount(Math.abs(v) / 1000, chartCurrency) +
+                    "K"
               }
               fontSize={fontSize}
-            />
-            <ReferenceLine
-              y={0}
-              stroke="hsl(var(--muted-foreground))"
-              strokeOpacity={0.6}
             />
             <Tooltip
               content={() => null}
@@ -229,14 +228,38 @@ export function NetWorthChart({
                 {...segmentTooltip.makeBarProps(key, getAccountTypeColor(key))}
               />
             ))}
-          </BarChart>
+            <ReferenceLine
+              y={0}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={2}
+              ifOverflow="extendDomain"
+            />
+            <Line
+              type="monotone"
+              dataKey="Net Worth"
+              stroke="hsl(var(--foreground))"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 3.5 }}
+              isAnimationActive={false}
+            />
+          </ComposedChart>
         </ResponsiveContainer>
         <BarSegmentTooltipOverlay
           segment={segmentTooltip.segment}
           pos={segmentTooltip.pos}
           chartCurrency={chartCurrency}
           formatLabel={formatAccountTypeName}
+          showSign
         />
+        <div className="pointer-events-none absolute left-1.5 top-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Assets
+        </div>
+        {yDomain[0] < 0 && (
+          <div className="pointer-events-none absolute left-1.5 bottom-1 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Liabilities
+          </div>
+        )}
       </div>
     </ChartCard>
   );

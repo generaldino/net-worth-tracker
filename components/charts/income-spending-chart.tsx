@@ -265,6 +265,7 @@ export function IncomeSpendingChart({
           pos={segmentTooltip.pos}
           chartCurrency={chartCurrency}
           formatLabel={getSeriesLabel}
+          showSign
         />
       </div>
     </ChartCard>
