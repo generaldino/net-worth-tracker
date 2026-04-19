@@ -132,6 +132,7 @@ export function MonthlyEntryDialog({
         name: a.name,
         type: a.type,
         currency: (a.currency ?? "GBP") as Currency,
+        owner: a.owner ?? "",
       })),
     [accounts],
   );
@@ -278,7 +279,9 @@ export function MonthlyEntryDialog({
                       <div>
                         <h4 className="font-medium">{account.name}</h4>
                         <span className="text-xs text-muted-foreground">
-                          {account.type} · {account.currency || "GBP"}{" "}
+                          {account.type}
+                          {account.owner ? ` · ${account.owner}` : ""} ·{" "}
+                          {account.currency || "GBP"}{" "}
                           {getCurrencySymbol(account.currency || "GBP")}
                         </span>
                       </div>

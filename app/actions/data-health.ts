@@ -74,6 +74,7 @@ async function loadAccessibleAccounts(): Promise<CheckAccount[]> {
     name: row.name,
     type: row.type,
     currency: (row.currency ?? "GBP") as Currency,
+    owner: row.owner ?? "",
   }));
 }
 

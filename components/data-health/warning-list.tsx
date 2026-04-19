@@ -73,8 +73,15 @@ export function WarningList({
                 {showAccount && (
                   <span className="text-xs text-muted-foreground truncate">
                     {w.accountName}
+                    {w.accountOwner ? ` · ${w.accountOwner}` : ""}
                     {w.counterparty && (
-                      <> ↔ {w.counterparty.accountName}</>
+                      <>
+                        {" ↔ "}
+                        {w.counterparty.accountName}
+                        {w.counterparty.accountOwner
+                          ? ` · ${w.counterparty.accountOwner}`
+                          : ""}
+                      </>
                     )}
                   </span>
                 )}

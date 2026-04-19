@@ -13,6 +13,7 @@ export interface DataHealthWarning {
   severity: WarningSeverity;
   accountId: string;
   accountName: string;
+  accountOwner: string;
   accountCurrency: Currency;
   accountType: AccountType;
   month: string;
@@ -21,6 +22,7 @@ export interface DataHealthWarning {
   counterparty?: {
     accountId: string;
     accountName: string;
+    accountOwner: string;
     accountCurrency: Currency;
   };
 }
@@ -30,6 +32,7 @@ export interface CheckAccount {
   name: string;
   type: AccountType;
   currency: Currency;
+  owner: string;
 }
 
 export interface CheckEntry {
@@ -64,6 +67,7 @@ export function checkIncomeVsCashIn(
     severity: "warning",
     accountId: account.id,
     accountName: account.name,
+    accountOwner: account.owner,
     accountCurrency: account.currency,
     accountType: account.type,
     month: entry.month,
@@ -97,6 +101,7 @@ export function checkCurrentAccountGrowth(
     severity: "warning",
     accountId: account.id,
     accountName: account.name,
+    accountOwner: account.owner,
     accountCurrency: account.currency,
     accountType: account.type,
     month: entry.month,
@@ -156,14 +161,16 @@ export function detectPossibleTransfers(
       severity: "info",
       accountId: outAcc.id,
       accountName: outAcc.name,
+      accountOwner: outAcc.owner,
       accountCurrency: outAcc.currency,
       accountType: outAcc.type,
       month: out.entry.month,
       title: "Possible internal transfer",
-      detail: `${formatCurrencyAmount(out.entry.cashOut, outAcc.currency)} left ${outAcc.name} and ${formatCurrencyAmount(matched.entry.cashIn, inAcc.currency)} entered ${inAcc.name} the same month. If this is a transfer between your own accounts, it shouldn't count as new income or spending.`,
+      detail: `${formatCurrencyAmount(out.entry.cashOut, outAcc.currency)} left ${outAcc.name} (${outAcc.owner}) and ${formatCurrencyAmount(matched.entry.cashIn, inAcc.currency)} entered ${inAcc.name} (${inAcc.owner}) the same month. If this is a transfer between your own accounts, it shouldn't count as new income or spending.`,
       counterparty: {
         accountId: inAcc.id,
         accountName: inAcc.name,
+        accountOwner: inAcc.owner,
         accountCurrency: inAcc.currency,
       },
     });
