@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,9 +18,16 @@ import { Plus } from "lucide-react";
 import { addMonthlyEntry, getCurrentValue } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
+import type { Currency } from "@/lib/fx-rates";
 import { shouldShowIncome, getFieldLabels, computeExpenditure } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { InfoButton } from "@/components/ui/info-button";
+import {
+  getMonthDataHealthContext,
+  type DataHealthMonthContext,
+} from "@/app/actions/data-health";
+import { computeLiveWarnings } from "@/lib/data-health";
+import { WarningList } from "@/components/data-health/warning-list";
 
 interface AddMonthDialogProps {
   account: Account;
@@ -36,6 +43,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [income, setIncome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
+  const [healthContext, setHealthContext] =
+    useState<DataHealthMonthContext | null>(null);
 
   const { contributionsLabel, withdrawalsLabel } = getFieldLabels(account.type);
   const showIncome = shouldShowIncome(account.type);
@@ -47,6 +56,59 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
     }
     fetchCurrentValue();
   }, [account.id]);
+
+  useEffect(() => {
+    if (!open || !month) {
+      setHealthContext(null);
+      return;
+    }
+    let cancelled = false;
+    getMonthDataHealthContext(month).then((ctx) => {
+      if (!cancelled) setHealthContext(ctx);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, month]);
+
+  const liveWarnings = useMemo(() => {
+    if (!healthContext || !month) return [];
+    const cashInN = Number.parseFloat(cashIn) || 0;
+    const cashOutN = Number.parseFloat(cashOut) || 0;
+    const endingN = Number.parseFloat(endingBalance) || 0;
+    const incomeN = showIncome ? Number.parseFloat(income) || 0 : 0;
+
+    const draftEntry = {
+      accountId: account.id,
+      month,
+      endingBalance: endingN,
+      cashIn: cashInN,
+      cashOut: cashOutN,
+      income: incomeN,
+    };
+
+    const others = healthContext.monthEntriesByAccount
+      .filter((e) => e.accountId !== account.id)
+      .map((e) => e.entry);
+
+    return computeLiveWarnings({
+      entries: [draftEntry, ...others],
+      accounts: healthContext.accounts,
+      previousEntries: healthContext.previousEntries,
+      fxRate: healthContext.fxRate,
+    }).filter(
+      (w) => w.accountId === account.id || w.counterparty?.accountId === account.id,
+    );
+  }, [
+    healthContext,
+    month,
+    cashIn,
+    cashOut,
+    endingBalance,
+    income,
+    showIncome,
+    account.id,
+  ]);
 
   const handleSubmit = async () => {
     if (!month) {
@@ -261,6 +323,11 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
             />
           </div>
         </div>
+        {liveWarnings.length > 0 && (
+          <div className="pb-3">
+            <WarningList warnings={liveWarnings} showAccount={false} showMonth={false} />
+          </div>
+        )}
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
             type="submit"
