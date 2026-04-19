@@ -36,6 +36,7 @@ export interface CheckEntry {
 }
 
 const CURRENT_GROWTH_PCT = 0.01;
+const CURRENT_GROWTH_FLOW_PCT = 0.02;
 const CURRENT_GROWTH_MIN_ABS_GBP = 50;
 const DUST = 1;
 
@@ -79,9 +80,17 @@ export function checkCurrentAccountGrowth(
     Math.abs(entry.endingBalance),
     Math.abs(previousEntry.endingBalance),
   );
-  const pctThreshold = reference * CURRENT_GROWTH_PCT;
+  const flowReference = Math.max(
+    Math.abs(entry.cashIn),
+    Math.abs(entry.cashOut),
+  );
+  const balanceThreshold = reference * CURRENT_GROWTH_PCT;
+  // Tolerate fees/FX spread/small timing differences as a fraction of the
+  // month's flow volume. A £300 gap on a £50k throughput account is noise;
+  // the same gap on a mostly-dormant account is a missing transaction.
+  const flowThreshold = flowReference * CURRENT_GROWTH_FLOW_PCT;
   const absFloor = CURRENT_GROWTH_MIN_ABS_GBP * gbpMultiplier;
-  const threshold = Math.max(pctThreshold, absFloor);
+  const threshold = Math.max(balanceThreshold, flowThreshold, absFloor);
   if (Math.abs(impliedGrowth) < threshold) return null;
   const direction = impliedGrowth > 0 ? "up" : "down";
   return {
