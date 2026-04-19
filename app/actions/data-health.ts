@@ -47,6 +47,7 @@ export interface SaveMonthlyEntryInput {
   cashIn: number;
   cashOut: number;
   income: number;
+  expenditure?: number;
 }
 
 export interface SaveMonthlyEntriesResult {
@@ -268,7 +269,8 @@ export async function saveMonthlyEntriesForMonth(
       });
       continue;
     }
-    const expenditure = computeExpenditure(account.type, input.cashOut);
+    const expenditure =
+      input.expenditure ?? computeExpenditure(account.type, input.cashOut);
     const isIncomeAccount = account.type === "Current";
     const payload = {
       endingBalance: input.endingBalance.toString(),

@@ -41,6 +41,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [cashIn, setCashIn] = useState("");
   const [cashOut, setCashOut] = useState("");
   const [income, setIncome] = useState("");
+  const [expenditure, setExpenditure] = useState("");
+  const [expenditureEdited, setExpenditureEdited] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
   const [healthContext, setHealthContext] =
@@ -48,6 +50,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
 
   const { contributionsLabel, withdrawalsLabel } = getFieldLabels(account.type);
   const showIncome = shouldShowIncome(account.type);
+  const showExpenditure =
+    account.type === "Current" || account.type === "Credit_Card";
 
   useEffect(() => {
     async function fetchCurrentValue() {
@@ -126,13 +130,20 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
       const cashOutValue = Number.parseFloat(cashOut) || 0;
       const cashInValue = Number.parseFloat(cashIn) || 0;
       const incomeValue = showIncome ? Number.parseFloat(income) || 0 : 0;
-      const expenditure = computeExpenditure(account.type, cashOutValue);
+      const expenditureOverride =
+        showExpenditure && expenditureEdited
+          ? Number.parseFloat(expenditure) || 0
+          : undefined;
+      const expenditureStored =
+        expenditureOverride ??
+        computeExpenditure(account.type, cashOutValue);
 
       const result = await addMonthlyEntry(account.id, month, {
         endingBalance: Number.parseFloat(endingBalance) || 0,
         cashIn: cashInValue,
         cashOut: cashOutValue,
         income: incomeValue,
+        expenditure: expenditureOverride,
         internalTransfersOut: 0,
         debtPayments: 0,
       });
@@ -146,7 +157,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           cashIn: cashInValue,
           cashOut: cashOutValue,
           income: incomeValue,
-          expenditure,
+          expenditure: expenditureStored,
           internalTransfersOut: 0,
           debtPayments: 0,
           cashFlow: cashInValue - cashOutValue,
@@ -161,6 +172,8 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         setCashIn("");
         setCashOut("");
         setIncome("");
+        setExpenditure("");
+        setExpenditureEdited(false);
         setOpen(false);
 
         toast({
@@ -318,10 +331,74 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               id="cash-out"
               type="number"
               value={cashOut}
-              onChange={(e) => setCashOut(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setCashOut(next);
+                if (showExpenditure && !expenditureEdited) {
+                  setExpenditure(next);
+                }
+              }}
               placeholder="0"
             />
           </div>
+          {showExpenditure && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <Label htmlFor="expenditure">Expenditure</Label>
+                {(() => {
+                  const explanation = getFieldExplanation(
+                    account.type,
+                    "expenditure",
+                  );
+                  return explanation ? (
+                    <InfoButton
+                      title={explanation.title}
+                      description={explanation.description}
+                    />
+                  ) : null;
+                })()}
+                {expenditureEdited ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpenditure(cashOut);
+                      setExpenditureEdited(false);
+                    }}
+                    className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                  >
+                    Reset to {withdrawalsLabel.toLowerCase()}
+                  </button>
+                ) : (
+                  <span className="ml-auto text-[10px] text-muted-foreground">
+                    Auto — tracks {withdrawalsLabel.toLowerCase()}
+                  </span>
+                )}
+              </div>
+              <Input
+                id="expenditure"
+                type="number"
+                value={expenditureEdited ? expenditure : cashOut}
+                onChange={(e) => {
+                  setExpenditure(e.target.value);
+                  setExpenditureEdited(true);
+                }}
+                placeholder="0"
+              />
+              {expenditureEdited &&
+                (Number.parseFloat(cashOut) || 0) >
+                  (Number.parseFloat(expenditure) || 0) && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Transfer amount: {" "}
+                    {formatCurrencyAmount(
+                      (Number.parseFloat(cashOut) || 0) -
+                        (Number.parseFloat(expenditure) || 0),
+                      account.currency || "GBP",
+                    )}{" "}
+                    (excluded from savings rate).
+                  </p>
+                )}
+            </div>
+          )}
         </div>
         {liveWarnings.length > 0 && (
           <div className="pb-3">

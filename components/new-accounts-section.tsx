@@ -67,6 +67,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getFieldExplanation } from "@/lib/field-explanations";
+import { InfoButton } from "@/components/ui/info-button";
 import {
   type Account,
   type MonthlyEntry,
@@ -883,6 +884,7 @@ export function NewAccountsSection({
               cashIn: newEntry.cashIn,
               cashOut: newEntry.cashOut,
               income: newEntry.income || 0,
+              expenditure: newEntry.expenditure,
               internalTransfersOut: 0,
               debtPayments: 0,
             }
@@ -911,8 +913,22 @@ export function NewAccountsSection({
         accountType={
           accounts.find((a) => a.id === selectedEntry?.accountId)?.type
         }
+        accountCurrency={
+          (accounts.find((a) => a.id === selectedEntry?.accountId)
+            ?.currency ?? "GBP") as Currency
+        }
         onSave={async (updatedEntry) => {
           if (!selectedEntry) return;
+          const accountType = accounts.find(
+            (a) => a.id === selectedEntry.accountId,
+          )?.type;
+          const isExpAccount =
+            accountType === "Current" || accountType === "Credit_Card";
+          const expenditureOverride =
+            isExpAccount &&
+            Math.abs(updatedEntry.expenditure - updatedEntry.cashOut) > 0.01
+              ? updatedEntry.expenditure
+              : undefined;
           const result = await updateMonthlyEntry(
             selectedEntry.accountId,
             updatedEntry.month,
@@ -921,6 +937,7 @@ export function NewAccountsSection({
               cashIn: updatedEntry.cashIn,
               cashOut: updatedEntry.cashOut,
               income: updatedEntry.income || 0,
+              expenditure: expenditureOverride,
               internalTransfersOut: 0,
               debtPayments: 0,
             }
@@ -1001,6 +1018,8 @@ function StyledMonthlyHistoryTable({
   onDeleteEntry,
 }: StyledMonthlyHistoryTableProps) {
   const isCurrentAccount = shouldShowIncome(accountType);
+  const showExpenditureColumn =
+    accountType === "Current" || accountType === "Credit_Card";
 
   const FieldHeader = ({
     label,
@@ -1013,7 +1032,8 @@ function StyledMonthlyHistoryTable({
       | "cashOut"
       | "cashFlow"
       | "accountGrowth"
-      | "income";
+      | "income"
+      | "expenditure";
   }) => {
     const explanation = getFieldExplanation(accountType, field);
     return (
@@ -1077,6 +1097,11 @@ function StyledMonthlyHistoryTable({
             <th className="text-center p-2 font-medium">
               <FieldHeader label={getFieldLabels(accountType).withdrawalsLabel} field="cashOut" />
             </th>
+            {showExpenditureColumn && (
+              <th className="text-center p-2 font-medium">
+                <FieldHeader label="Expenditure" field="expenditure" />
+              </th>
+            )}
             <th className="text-center p-2 font-medium">
               <FieldHeader label="Cash Flow" field="cashFlow" />
             </th>
@@ -1105,6 +1130,7 @@ function StyledMonthlyHistoryTable({
                 displayCurrency={displayCurrency}
                 isMasked={isMasked}
                 isCurrentAccount={isCurrentAccount}
+                showExpenditure={showExpenditureColumn}
                 cashFlow={cashFlow}
                 accountGrowth={accountGrowth}
                 onEditEntry={onEditEntry}
@@ -1124,6 +1150,7 @@ interface StyledMonthlyHistoryRowProps {
   displayCurrency: Currency;
   isMasked: boolean;
   isCurrentAccount: boolean;
+  showExpenditure: boolean;
   cashFlow: number;
   accountGrowth: number;
   onEditEntry: (entry: MonthlyEntry) => void;
@@ -1136,6 +1163,7 @@ function StyledMonthlyHistoryRow({
   displayCurrency,
   isMasked,
   isCurrentAccount,
+  showExpenditure,
   cashFlow,
   accountGrowth,
   onEditEntry,
@@ -1165,6 +1193,16 @@ function StyledMonthlyHistoryRow({
     displayCurrency,
     entry.month
   );
+  const storedExpenditure = Number(entry.expenditure ?? 0);
+  const { convertedAmount: convertedExpenditure } = useCurrencyConversion(
+    storedExpenditure,
+    accountCurrency,
+    displayCurrency,
+    entry.month
+  );
+  const expenditureOverridden =
+    showExpenditure &&
+    Math.abs(storedExpenditure - Number(entry.cashOut)) > 0.01;
   const { convertedAmount: convertedCashFlow } = useCurrencyConversion(
     cashFlow,
     accountCurrency,
@@ -1205,6 +1243,26 @@ function StyledMonthlyHistoryRow({
           ? "••••••"
           : formatCurrencyAmount(convertedCashOut, displayCurrency)}
       </td>
+      {showExpenditure && (
+        <td className="p-2 text-center tabular-nums">
+          {isMasked ? (
+            "••••••"
+          ) : (
+            <span
+              className={
+                expenditureOverridden ? "text-amber-600 dark:text-amber-400" : ""
+              }
+              title={
+                expenditureOverridden
+                  ? "Expenditure overridden — excludes internal transfer"
+                  : undefined
+              }
+            >
+              {formatCurrencyAmount(convertedExpenditure, displayCurrency)}
+            </span>
+          )}
+        </td>
+      )}
       <td
         className={cn(
           "p-2 text-center tabular-nums font-medium",
@@ -2097,11 +2155,14 @@ function AddEntryDialog({
     cashIn: number;
     cashOut: number;
     income?: number;
+    expenditure?: number;
     internalTransfersOut?: number;
     debtPayments?: number;
   }) => void;
 }) {
   const isIncomeAccount = account ? shouldShowIncome(account.type) : false;
+  const showExpenditure =
+    account?.type === "Current" || account?.type === "Credit_Card";
 
   const [formData, setFormData] = React.useState({
     month: "",
@@ -2109,7 +2170,9 @@ function AddEntryDialog({
     cashIn: "",
     cashOut: "",
     income: "",
+    expenditure: "",
   });
+  const [expenditureEdited, setExpenditureEdited] = React.useState(false);
 
   // Reset form when dialog opens/closes
   React.useEffect(() => {
@@ -2120,18 +2183,25 @@ function AddEntryDialog({
         cashIn: "",
         cashOut: "",
         income: "",
+        expenditure: "",
       });
+      setExpenditureEdited(false);
     }
   }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const expenditureOverride =
+      showExpenditure && expenditureEdited
+        ? Number.parseFloat(formData.expenditure) || 0
+        : undefined;
     onSave({
       month: formData.month,
       endingBalance: Number.parseFloat(formData.endingBalance) || 0,
       cashIn: Number.parseFloat(formData.cashIn) || 0,
       cashOut: Number.parseFloat(formData.cashOut) || 0,
       income: Number.parseFloat(formData.income) || 0,
+      expenditure: expenditureOverride,
       internalTransfersOut: 0,
       debtPayments: 0,
     });
@@ -2202,15 +2272,79 @@ function AddEntryDialog({
                 type="number"
                 step="0.01"
                 value={formData.cashOut}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    cashOut: e.target.value,
-                  })
-                }
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    cashOut: next,
+                    expenditure: expenditureEdited ? prev.expenditure : next,
+                  }));
+                }}
               />
             </div>
           </div>
+
+          {showExpenditure && account && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <Label htmlFor="expenditure">Expenditure</Label>
+                {(() => {
+                  const explanation = getFieldExplanation(
+                    account.type,
+                    "expenditure",
+                  );
+                  return explanation ? (
+                    <InfoButton
+                      title={explanation.title}
+                      description={explanation.description}
+                    />
+                  ) : null;
+                })()}
+                {expenditureEdited ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        expenditure: prev.cashOut,
+                      }));
+                      setExpenditureEdited(false);
+                    }}
+                    className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                  >
+                    Reset to {getFieldLabels(account.type).withdrawalsLabel.toLowerCase()}
+                  </button>
+                ) : (
+                  <span className="ml-auto text-[10px] text-muted-foreground">
+                    Auto — tracks {getFieldLabels(account.type).withdrawalsLabel.toLowerCase()}
+                  </span>
+                )}
+              </div>
+              <Input
+                id="expenditure"
+                type="number"
+                step="0.01"
+                value={expenditureEdited ? formData.expenditure : formData.cashOut}
+                onChange={(e) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    expenditure: e.target.value,
+                  }));
+                  setExpenditureEdited(true);
+                }}
+              />
+              {expenditureEdited &&
+                (Number.parseFloat(formData.cashOut) || 0) >
+                  (Number.parseFloat(formData.expenditure) || 0) && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Transfer amount excluded from savings rate:{" "}
+                    {(Number.parseFloat(formData.cashOut) || 0) -
+                      (Number.parseFloat(formData.expenditure) || 0)}{" "}
+                    {account.currency || "GBP"}
+                  </p>
+                )}
+            </div>
+          )}
 
           {isIncomeAccount && (
             <>
@@ -2255,15 +2389,19 @@ function EditEntryDialog({
   onOpenChange,
   entry,
   accountType,
+  accountCurrency,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: { accountId: string; entry: MonthlyEntry } | null;
   accountType?: AccountType;
-  onSave: (entry: MonthlyEntry) => void;
+  accountCurrency?: Currency;
+  onSave: (entry: MonthlyEntry & { expenditure: number }) => void;
 }) {
   const isIncomeAccount = accountType ? shouldShowIncome(accountType) : false;
+  const showExpenditure =
+    accountType === "Current" || accountType === "Credit_Card";
 
   const [formData, setFormData] = React.useState({
     month: "",
@@ -2271,30 +2409,50 @@ function EditEntryDialog({
     cashIn: "",
     cashOut: "",
     income: "",
+    expenditure: "",
   });
+  const [expenditureEdited, setExpenditureEdited] = React.useState(false);
 
   React.useEffect(() => {
     if (entry) {
+      const cashOutStr = entry.entry.cashOut.toString();
+      const storedExpenditure = Number(entry.entry.expenditure ?? 0);
+      const defaultExpenditure =
+        accountType === "Current" || accountType === "Credit_Card"
+          ? Number(entry.entry.cashOut)
+          : 0;
+      const isOverridden =
+        showExpenditure &&
+        Math.abs(storedExpenditure - defaultExpenditure) > 0.01;
       setFormData({
         month: entry.entry.month,
         endingBalance: entry.entry.endingBalance.toString(),
         cashIn: entry.entry.cashIn.toString(),
-        cashOut: entry.entry.cashOut.toString(),
+        cashOut: cashOutStr,
         income: (entry.entry.income || 0).toString(),
+        expenditure: isOverridden ? storedExpenditure.toString() : cashOutStr,
       });
+      setExpenditureEdited(isOverridden);
     }
-  }, [entry]);
+  }, [entry, accountType, showExpenditure]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (entry) {
+      const cashOutN = Number.parseFloat(formData.cashOut) || 0;
+      const expenditureN = showExpenditure && expenditureEdited
+        ? Number.parseFloat(formData.expenditure) || 0
+        : showExpenditure
+          ? cashOutN
+          : 0;
       onSave({
         ...entry.entry,
         month: formData.month,
         endingBalance: Number.parseFloat(formData.endingBalance) || 0,
         cashIn: Number.parseFloat(formData.cashIn) || 0,
-        cashOut: Number.parseFloat(formData.cashOut) || 0,
+        cashOut: cashOutN,
         income: Number.parseFloat(formData.income) || 0,
+        expenditure: expenditureN,
         internalTransfersOut: 0,
         debtPayments: 0,
       });
@@ -2368,16 +2526,80 @@ function EditEntryDialog({
                 type="number"
                 step="0.01"
                 value={formData.cashOut}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    cashOut: e.target.value,
-                  })
-                }
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    cashOut: next,
+                    expenditure: expenditureEdited ? prev.expenditure : next,
+                  }));
+                }}
                 required
               />
             </div>
           </div>
+
+          {showExpenditure && accountType && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <Label htmlFor="edit-expenditure">Expenditure</Label>
+                {(() => {
+                  const explanation = getFieldExplanation(
+                    accountType,
+                    "expenditure",
+                  );
+                  return explanation ? (
+                    <InfoButton
+                      title={explanation.title}
+                      description={explanation.description}
+                    />
+                  ) : null;
+                })()}
+                {expenditureEdited ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        expenditure: prev.cashOut,
+                      }));
+                      setExpenditureEdited(false);
+                    }}
+                    className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                  >
+                    Reset to {getFieldLabels(accountType).withdrawalsLabel.toLowerCase()}
+                  </button>
+                ) : (
+                  <span className="ml-auto text-[10px] text-muted-foreground">
+                    Auto — tracks {getFieldLabels(accountType).withdrawalsLabel.toLowerCase()}
+                  </span>
+                )}
+              </div>
+              <Input
+                id="edit-expenditure"
+                type="number"
+                step="0.01"
+                value={expenditureEdited ? formData.expenditure : formData.cashOut}
+                onChange={(e) => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    expenditure: e.target.value,
+                  }));
+                  setExpenditureEdited(true);
+                }}
+              />
+              {expenditureEdited &&
+                (Number.parseFloat(formData.cashOut) || 0) >
+                  (Number.parseFloat(formData.expenditure) || 0) && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Transfer amount excluded from savings rate:{" "}
+                    {(Number.parseFloat(formData.cashOut) || 0) -
+                      (Number.parseFloat(formData.expenditure) || 0)}{" "}
+                    {accountCurrency || "GBP"}
+                  </p>
+                )}
+            </div>
+          )}
 
           {isIncomeAccount && (
             <>

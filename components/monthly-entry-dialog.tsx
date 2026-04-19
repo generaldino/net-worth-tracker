@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type Account, type MonthlyEntry } from "@/lib/types";
+import { type Account, type AccountType, type MonthlyEntry } from "@/lib/types";
 import {
   getMonthDataHealthContext,
   getMonthEditorData,
@@ -40,22 +40,52 @@ interface MonthlyEntryDialogProps {
 
 type DraftEntry = {
   accountId: string;
+  accountType: AccountType;
   month: string;
   endingBalance: number;
   cashIn: number;
   cashOut: number;
   income: number;
+  expenditure: number;
+  /** True once the user has manually edited expenditure; otherwise it tracks cashOut. */
+  expenditureEdited: boolean;
 };
 
-function toDraft(entry: MonthlyEntry | undefined, month: string, accountId: string): DraftEntry {
+function toDraft(
+  entry: MonthlyEntry | undefined,
+  month: string,
+  account: Account,
+): DraftEntry {
+  const cashOut = entry ? Number(entry.cashOut) : 0;
+  const storedExpenditure = entry ? Number(entry.expenditure) : 0;
+  // Treat a stored expenditure that differs from cashOut as a deliberate override.
+  const tracksCashOut = !entry || expenditureMatchesCashOut(storedExpenditure, cashOut, account.type);
   return {
-    accountId,
+    accountId: account.id,
+    accountType: account.type,
     month,
     endingBalance: entry ? Number(entry.endingBalance) : 0,
     cashIn: entry ? Number(entry.cashIn) : 0,
-    cashOut: entry ? Number(entry.cashOut) : 0,
+    cashOut,
     income: entry ? Number(entry.income) : 0,
+    expenditure: tracksCashOut
+      ? defaultExpenditure(account.type, cashOut)
+      : storedExpenditure,
+    expenditureEdited: !tracksCashOut,
   };
+}
+
+function defaultExpenditure(type: AccountType, cashOut: number) {
+  return type === "Current" || type === "Credit_Card" ? cashOut : 0;
+}
+
+function expenditureMatchesCashOut(expenditure: number, cashOut: number, type: AccountType) {
+  const expected = defaultExpenditure(type, cashOut);
+  return Math.abs(expenditure - expected) < 0.01;
+}
+
+function isExpenditureField(type: AccountType) {
+  return type === "Current" || type === "Credit_Card";
 }
 
 export function MonthlyEntryDialog({
@@ -92,7 +122,7 @@ export function MonthlyEntryDialog({
             const existing = editorData.existingEntries.find(
               (e) => e.accountId === account.id,
             );
-            return toDraft(existing, month, account.id);
+            return toDraft(existing, month, account);
           }),
         );
         setHealthContext(ctx);
@@ -164,14 +194,41 @@ export function MonthlyEntryDialog({
 
   const handleFieldChange = (
     accountId: string,
-    field: "endingBalance" | "cashIn" | "cashOut" | "income",
+    field: "endingBalance" | "cashIn" | "cashOut" | "income" | "expenditure",
     value: string,
   ) => {
     const num = Number.parseFloat(value);
+    const safe = Number.isFinite(num) ? num : 0;
+    setDrafts((prev) =>
+      prev.map((d) => {
+        if (d.accountId !== accountId) return d;
+        if (field === "cashOut") {
+          // Keep expenditure pinned to cashOut unless the user has overridden it.
+          return {
+            ...d,
+            cashOut: safe,
+            expenditure: d.expenditureEdited
+              ? d.expenditure
+              : defaultExpenditure(d.accountType, safe),
+          };
+        }
+        if (field === "expenditure") {
+          return { ...d, expenditure: safe, expenditureEdited: true };
+        }
+        return { ...d, [field]: safe };
+      }),
+    );
+  };
+
+  const handleResetExpenditure = (accountId: string) => {
     setDrafts((prev) =>
       prev.map((d) =>
         d.accountId === accountId
-          ? { ...d, [field]: Number.isFinite(num) ? num : 0 }
+          ? {
+              ...d,
+              expenditure: defaultExpenditure(d.accountType, d.cashOut),
+              expenditureEdited: false,
+            }
           : d,
       ),
     );
@@ -188,6 +245,8 @@ export function MonthlyEntryDialog({
           cashIn: d.cashIn,
           cashOut: d.cashOut,
           income: d.income,
+          // Only send an explicit expenditure when the user has overridden the default.
+          ...(d.expenditureEdited ? { expenditure: d.expenditure } : {}),
         })),
       );
       if (result.success) {
@@ -415,6 +474,63 @@ export function MonthlyEntryDialog({
                           placeholder="0"
                         />
                       </div>
+                      {draft && isExpenditureField(account.type) && (
+                        <div className="space-y-1 sm:col-span-2">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-sm">Expenditure</Label>
+                            {(() => {
+                              const explanation = getFieldExplanation(
+                                account.type,
+                                "expenditure",
+                              );
+                              return explanation ? (
+                                <InfoButton
+                                  title={explanation.title}
+                                  description={explanation.description}
+                                />
+                              ) : null;
+                            })()}
+                            {draft.expenditureEdited ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleResetExpenditure(account.id)
+                                }
+                                className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                              >
+                                Reset to {withdrawalsLabel.toLowerCase()}
+                              </button>
+                            ) : (
+                              <span className="ml-auto text-[10px] text-muted-foreground">
+                                Auto — tracks {withdrawalsLabel.toLowerCase()}
+                              </span>
+                            )}
+                          </div>
+                          <Input
+                            type="number"
+                            value={draft.expenditure}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                account.id,
+                                "expenditure",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="0"
+                          />
+                          {draft.expenditureEdited &&
+                            draft.cashOut > draft.expenditure && (
+                              <p className="text-[11px] text-muted-foreground">
+                                Transfer amount: {" "}
+                                {formatCurrencyAmount(
+                                  draft.cashOut - draft.expenditure,
+                                  account.currency || "GBP",
+                                )}{" "}
+                                (excluded from savings rate).
+                              </p>
+                            )}
+                        </div>
+                      )}
                     </div>
                     {accountWarnings.length > 0 && (
                       <WarningList

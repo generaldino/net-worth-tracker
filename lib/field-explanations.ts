@@ -14,6 +14,7 @@ type FieldExplanations = Record<
     cashFlow: FieldExplanation;
     accountGrowth: FieldExplanation;
     income?: FieldExplanation;
+    expenditure?: FieldExplanation;
   }
 >;
 
@@ -48,6 +49,11 @@ export const fieldExplanations: FieldExplanations = {
       title: "Income",
       description:
         "The portion of deposits that represents earned income (salary, wages, etc.). Used to calculate your savings rate.",
+    },
+    expenditure: {
+      title: "Expenditure",
+      description:
+        "The portion of withdrawals that was actual spending. Defaults to the Withdrawals total. Lower it if some of the cashOut was an internal transfer to another account (e.g. moving money to savings) — transfers shouldn't count as spending.",
     },
   },
   Savings: {
@@ -102,6 +108,11 @@ export const fieldExplanations: FieldExplanations = {
       title: "Interest Charges",
       description:
         "The change in balance that isn't explained by payments and charges. This is automatically calculated and typically represents interest charges or fees.",
+    },
+    expenditure: {
+      title: "Expenditure",
+      description:
+        "The portion of new charges that was actual spending. Defaults to New Charges total. Lower it if some charges were repaid the same month by an internal transfer you don't want counted as spending.",
     },
   },
   Loan: {

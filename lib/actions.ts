@@ -1109,6 +1109,7 @@ export async function addMonthlyEntry(
     cashIn: number;
     cashOut: number;
     income: number;
+    expenditure?: number;
     internalTransfersOut?: number;
     debtPayments?: number;
   },
@@ -1149,8 +1150,11 @@ export async function addMonthlyEntry(
       };
     }
 
-    // Auto-compute expenditure based on account type
-    const expenditure = computeExpenditure(accountType, entry.cashOut);
+    // Expenditure defaults to cashOut on Current/Credit_Card (all other types = 0).
+    // Callers may override with an explicit value when cashOut contains an
+    // internal transfer that shouldn't count as spending.
+    const expenditure =
+      entry.expenditure ?? computeExpenditure(accountType, entry.cashOut);
     const isIncomeAccount = accountType === "Current";
 
     // Insert the new entry
@@ -1202,6 +1206,7 @@ export async function updateMonthlyEntry(
     cashIn: number;
     cashOut: number;
     income: number;
+    expenditure?: number;
     internalTransfersOut?: number;
     debtPayments?: number;
   },
@@ -1242,8 +1247,11 @@ export async function updateMonthlyEntry(
       };
     }
 
-    // Auto-compute expenditure based on account type
-    const expenditure = computeExpenditure(accountType, entry.cashOut);
+    // Expenditure defaults to cashOut on Current/Credit_Card (all other types = 0).
+    // Respect an explicit value from the caller — lets users exclude internal
+    // transfers from real spending without touching cashOut.
+    const expenditure =
+      entry.expenditure ?? computeExpenditure(accountType, entry.cashOut);
     const isIncomeAccount = accountType === "Current";
 
     // Update the entry
