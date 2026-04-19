@@ -18,7 +18,6 @@ import { Plus } from "lucide-react";
 import { addMonthlyEntry, getCurrentValue } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
-import type { Currency } from "@/lib/fx-rates";
 import { shouldShowIncome, getFieldLabels, computeExpenditure } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { InfoButton } from "@/components/ui/info-button";
