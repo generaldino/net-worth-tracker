@@ -374,7 +374,7 @@ export function MonthlyEntryDialog({
                         </div>
                         <Input
                           type="number"
-                          value={draft?.endingBalance ?? 0}
+                          value={draft?.endingBalance || ""}
                           onChange={(e) =>
                             handleFieldChange(
                               account.id,
@@ -382,6 +382,7 @@ export function MonthlyEntryDialog({
                               e.target.value,
                             )
                           }
+                          onFocus={(e) => e.currentTarget.select()}
                           placeholder="0"
                         />
                       </div>
@@ -404,7 +405,7 @@ export function MonthlyEntryDialog({
                           </div>
                           <Input
                             type="number"
-                            value={draft?.income ?? 0}
+                            value={draft?.income || ""}
                             onChange={(e) =>
                               handleFieldChange(
                                 account.id,
@@ -412,6 +413,7 @@ export function MonthlyEntryDialog({
                                 e.target.value,
                               )
                             }
+                            onFocus={(e) => e.currentTarget.select()}
                             placeholder="0"
                           />
                         </div>
@@ -434,7 +436,7 @@ export function MonthlyEntryDialog({
                         </div>
                         <Input
                           type="number"
-                          value={draft?.cashIn ?? 0}
+                          value={draft?.cashIn || ""}
                           onChange={(e) =>
                             handleFieldChange(
                               account.id,
@@ -442,6 +444,7 @@ export function MonthlyEntryDialog({
                               e.target.value,
                             )
                           }
+                          onFocus={(e) => e.currentTarget.select()}
                           placeholder="0"
                         />
                       </div>
@@ -463,7 +466,7 @@ export function MonthlyEntryDialog({
                         </div>
                         <Input
                           type="number"
-                          value={draft?.cashOut ?? 0}
+                          value={draft?.cashOut || ""}
                           onChange={(e) =>
                             handleFieldChange(
                               account.id,
@@ -471,6 +474,7 @@ export function MonthlyEntryDialog({
                               e.target.value,
                             )
                           }
+                          onFocus={(e) => e.currentTarget.select()}
                           placeholder="0"
                         />
                       </div>
@@ -508,7 +512,7 @@ export function MonthlyEntryDialog({
                           </div>
                           <Input
                             type="number"
-                            value={draft.expenditure}
+                            value={draft.expenditure || ""}
                             onChange={(e) =>
                               handleFieldChange(
                                 account.id,
@@ -516,6 +520,7 @@ export function MonthlyEntryDialog({
                                 e.target.value,
                               )
                             }
+                            onFocus={(e) => e.currentTarget.select()}
                             placeholder="0"
                           />
                           {draft.expenditureEdited &&

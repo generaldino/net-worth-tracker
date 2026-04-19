@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeftRight } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type {
@@ -12,7 +12,6 @@ import type {
 const CODE_ICONS: Record<WarningCode, typeof AlertTriangle> = {
   INCOME_GT_CASHIN: AlertTriangle,
   GROWTH_ON_CURRENT: AlertTriangle,
-  POSSIBLE_TRANSFER: ArrowLeftRight,
 };
 
 const SEVERITY_CLASSES: Record<
@@ -74,15 +73,6 @@ export function WarningList({
                   <span className="text-xs text-muted-foreground truncate">
                     {w.accountName}
                     {w.accountOwner ? ` · ${w.accountOwner}` : ""}
-                    {w.counterparty && (
-                      <>
-                        {" ↔ "}
-                        {w.counterparty.accountName}
-                        {w.counterparty.accountOwner
-                          ? ` · ${w.counterparty.accountOwner}`
-                          : ""}
-                      </>
-                    )}
                   </span>
                 )}
                 {showMonth && (

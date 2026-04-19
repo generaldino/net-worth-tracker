@@ -100,9 +100,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
       accounts: healthContext.accounts,
       previousEntries: healthContext.previousEntries,
       fxRate: healthContext.fxRate,
-    }).filter(
-      (w) => w.accountId === account.id || w.counterparty?.accountId === account.id,
-    );
+    }).filter((w) => w.accountId === account.id);
   }, [
     healthContext,
     month,
@@ -261,6 +259,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               type="number"
               value={endingBalance}
               onChange={(e) => setEndingBalance(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
               placeholder="0"
             />
           </div>
@@ -286,6 +285,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
                 type="number"
                 value={income}
                 onChange={(e) => setIncome(e.target.value)}
+                onFocus={(e) => e.currentTarget.select()}
                 placeholder="0"
               />
             </div>
@@ -308,6 +308,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               type="number"
               value={cashIn}
               onChange={(e) => setCashIn(e.target.value)}
+              onFocus={(e) => e.currentTarget.select()}
               placeholder="0"
             />
           </div>
@@ -338,6 +339,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
                   setExpenditure(next);
                 }
               }}
+              onFocus={(e) => e.currentTarget.select()}
               placeholder="0"
             />
           </div>
@@ -382,6 +384,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
                   setExpenditure(e.target.value);
                   setExpenditureEdited(true);
                 }}
+                onFocus={(e) => e.currentTarget.select()}
                 placeholder="0"
               />
               {expenditureEdited &&

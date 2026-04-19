@@ -2245,6 +2245,7 @@ function AddEntryDialog({
                   endingBalance: e.target.value,
                 })
               }
+              onFocus={(e) => e.currentTarget.select()}
             />
           </div>
 
@@ -2262,6 +2263,7 @@ function AddEntryDialog({
                     cashIn: e.target.value,
                   })
                 }
+                onFocus={(e) => e.currentTarget.select()}
               />
             </div>
 
@@ -2280,6 +2282,7 @@ function AddEntryDialog({
                     expenditure: expenditureEdited ? prev.expenditure : next,
                   }));
                 }}
+                onFocus={(e) => e.currentTarget.select()}
               />
             </div>
           </div>
@@ -2332,6 +2335,7 @@ function AddEntryDialog({
                   }));
                   setExpenditureEdited(true);
                 }}
+                onFocus={(e) => e.currentTarget.select()}
               />
               {expenditureEdited &&
                 (Number.parseFloat(formData.cashOut) || 0) >
@@ -2362,6 +2366,7 @@ function AddEntryDialog({
                         income: e.target.value,
                       })
                     }
+                    onFocus={(e) => e.currentTarget.select()}
                   />
                 </div>
               </div>
@@ -2497,6 +2502,7 @@ function EditEntryDialog({
                   endingBalance: e.target.value,
                 })
               }
+              onFocus={(e) => e.currentTarget.select()}
               required
             />
           </div>
@@ -2515,6 +2521,7 @@ function EditEntryDialog({
                     cashIn: e.target.value,
                   })
                 }
+                onFocus={(e) => e.currentTarget.select()}
                 required
               />
             </div>
@@ -2534,6 +2541,7 @@ function EditEntryDialog({
                     expenditure: expenditureEdited ? prev.expenditure : next,
                   }));
                 }}
+                onFocus={(e) => e.currentTarget.select()}
                 required
               />
             </div>
@@ -2587,6 +2595,7 @@ function EditEntryDialog({
                   }));
                   setExpenditureEdited(true);
                 }}
+                onFocus={(e) => e.currentTarget.select()}
               />
               {expenditureEdited &&
                 (Number.parseFloat(formData.cashOut) || 0) >
@@ -2617,6 +2626,7 @@ function EditEntryDialog({
                         income: e.target.value,
                       })
                     }
+                    onFocus={(e) => e.currentTarget.select()}
                   />
                 </div>
               </div>

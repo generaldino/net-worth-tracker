@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeftRight, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import type { DataHealthWarning, WarningCode } from "@/lib/data-health";
 
 interface WarningSummaryProps {
@@ -42,15 +42,6 @@ export function WarningSummary({ warnings }: WarningSummaryProps) {
           <span>
             {counts.GROWTH_ON_CURRENT} unexplained balance change
             {counts.GROWTH_ON_CURRENT === 1 ? "" : "s"}
-          </span>
-        </div>
-      )}
-      {(counts.POSSIBLE_TRANSFER ?? 0) > 0 && (
-        <div className="flex items-center gap-1.5 rounded-md border border-sky-500/40 bg-sky-500/5 px-2 py-1">
-          <ArrowLeftRight className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" />
-          <span>
-            {counts.POSSIBLE_TRANSFER} possible transfer
-            {counts.POSSIBLE_TRANSFER === 1 ? "" : "s"}
           </span>
         </div>
       )}

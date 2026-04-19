@@ -1,10 +1,7 @@
 import type { AccountType } from "./types";
 import { formatCurrencyAmount, type Currency } from "./fx-rates";
 
-export type WarningCode =
-  | "INCOME_GT_CASHIN"
-  | "GROWTH_ON_CURRENT"
-  | "POSSIBLE_TRANSFER";
+export type WarningCode = "INCOME_GT_CASHIN" | "GROWTH_ON_CURRENT";
 
 export type WarningSeverity = "warning" | "info";
 
@@ -19,12 +16,6 @@ export interface DataHealthWarning {
   month: string;
   title: string;
   detail: string;
-  counterparty?: {
-    accountId: string;
-    accountName: string;
-    accountOwner: string;
-    accountCurrency: Currency;
-  };
 }
 
 export interface CheckAccount {
@@ -46,14 +37,11 @@ export interface CheckEntry {
 
 const CURRENT_GROWTH_PCT = 0.01;
 const CURRENT_GROWTH_MIN_ABS_GBP = 50;
-const TRANSFER_PCT_TOLERANCE = 0.02;
-const TRANSFER_MIN_GBP_TOLERANCE = 50;
 const DUST = 1;
 
 export const WARNING_LABELS: Record<WarningCode, string> = {
   INCOME_GT_CASHIN: "Income > cash in",
   GROWTH_ON_CURRENT: "Unexplained balance change",
-  POSSIBLE_TRANSFER: "Possible internal transfer",
 };
 
 export function checkIncomeVsCashIn(
@@ -111,79 +99,6 @@ export function checkCurrentAccountGrowth(
 }
 
 /**
- * Scan one month of entries across multiple accounts. For each cashOut,
- * find the single best-matching cashIn on a different account (same GBP
- * amount within tolerance). Each inflow is claimed by at most one outflow,
- * and a warning is emitted per matched outflow.
- */
-export function detectPossibleTransfers(
-  monthEntries: ReadonlyArray<CheckEntry & { account: CheckAccount }>,
-  toGBP: (amount: number, currency: Currency) => number,
-): DataHealthWarning[] {
-  const warnings: DataHealthWarning[] = [];
-  const outflows = monthEntries
-    .filter((e) => e.cashOut > DUST)
-    .map((e) => ({ entry: e, gbp: toGBP(e.cashOut, e.account.currency) }));
-  const inflows = monthEntries
-    .filter((e) => e.cashIn > DUST)
-    .map((e) => ({ entry: e, gbp: toGBP(e.cashIn, e.account.currency) }));
-
-  const claimedInflows = new Set<string>();
-
-  for (const out of outflows) {
-    const tolerance = Math.max(
-      out.gbp * TRANSFER_PCT_TOLERANCE,
-      TRANSFER_MIN_GBP_TOLERANCE,
-    );
-    let bestIdx = -1;
-    let bestDiff = Number.POSITIVE_INFINITY;
-    for (let i = 0; i < inflows.length; i++) {
-      const inFlow = inflows[i];
-      if (inFlow.entry.accountId === out.entry.accountId) continue;
-      const key = inflowKey(inFlow.entry);
-      if (claimedInflows.has(key)) continue;
-      const diff = Math.abs(inFlow.gbp - out.gbp);
-      if (diff > tolerance) continue;
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        bestIdx = i;
-      }
-    }
-    if (bestIdx === -1) continue;
-
-    const matched = inflows[bestIdx];
-    claimedInflows.add(inflowKey(matched.entry));
-
-    const outAcc = out.entry.account;
-    const inAcc = matched.entry.account;
-    warnings.push({
-      code: "POSSIBLE_TRANSFER",
-      severity: "info",
-      accountId: outAcc.id,
-      accountName: outAcc.name,
-      accountOwner: outAcc.owner,
-      accountCurrency: outAcc.currency,
-      accountType: outAcc.type,
-      month: out.entry.month,
-      title: "Possible internal transfer",
-      detail: `${formatCurrencyAmount(out.entry.cashOut, outAcc.currency)} left ${outAcc.name} (${outAcc.owner}) and ${formatCurrencyAmount(matched.entry.cashIn, inAcc.currency)} entered ${inAcc.name} (${inAcc.owner}) the same month. If this is a transfer between your own accounts, it shouldn't count as new income or spending.`,
-      counterparty: {
-        accountId: inAcc.id,
-        accountName: inAcc.name,
-        accountOwner: inAcc.owner,
-        accountCurrency: inAcc.currency,
-      },
-    });
-  }
-
-  return warnings;
-}
-
-function inflowKey(entry: CheckEntry) {
-  return `${entry.accountId}:${entry.month}`;
-}
-
-/**
  * FX shape: month (YYYY-MM) -> { GBP, EUR, USD, AED } where each rate is
  * "X units of currency per 1 GBP" (matches the exchange_rates table).
  * `null` is allowed if no rate exists for that month — callers fall back to 1:1.
@@ -192,18 +107,6 @@ export type FxRatesByMonth = ReadonlyMap<
   string,
   Record<Currency, number> | null
 >;
-
-export function makeToGBP(
-  fxRatesByMonth: FxRatesByMonth,
-): (month: string, amount: number, currency: Currency) => number {
-  return (month, amount, currency) => {
-    if (currency === "GBP") return amount;
-    const rates = fxRatesByMonth.get(month);
-    const rate = rates?.[currency];
-    if (!rate || rate === 0) return amount;
-    return amount / rate;
-  };
-}
 
 export interface LiveWarningInput {
   entries: ReadonlyArray<CheckEntry>;
@@ -224,11 +127,9 @@ export function computeLiveWarnings(input: LiveWarningInput): DataHealthWarning[
   );
   const warnings: DataHealthWarning[] = [];
 
-  const enriched: Array<CheckEntry & { account: CheckAccount }> = [];
   for (const entry of input.entries) {
     const account = accountById.get(entry.accountId);
     if (!account) continue;
-    enriched.push({ ...entry, account });
 
     const incomeWarning = checkIncomeVsCashIn(entry, account);
     if (incomeWarning) warnings.push(incomeWarning);
@@ -246,14 +147,6 @@ export function computeLiveWarnings(input: LiveWarningInput): DataHealthWarning[
     if (growthWarning) warnings.push(growthWarning);
   }
 
-  const toGBP = (amount: number, currency: Currency) => {
-    if (currency === "GBP") return amount;
-    const rate = input.fxRate?.[currency];
-    if (!rate || rate === 0) return amount;
-    return amount / rate;
-  };
-  warnings.push(...detectPossibleTransfers(enriched, toGBP));
-
   return warnings;
 }
 
@@ -263,7 +156,6 @@ export function computeAllWarnings(
   fxRatesByMonth: FxRatesByMonth,
 ): DataHealthWarning[] {
   const accountById = new Map(accounts.map((a) => [a.id, a]));
-  const toGBP = makeToGBP(fxRatesByMonth);
   const warnings: DataHealthWarning[] = [];
 
   const entriesByAccount = new Map<string, CheckEntry[]>();
@@ -274,15 +166,6 @@ export function computeAllWarnings(
   }
   for (const arr of entriesByAccount.values()) {
     arr.sort((a, b) => a.month.localeCompare(b.month));
-  }
-
-  const entriesByMonth = new Map<string, Array<CheckEntry & { account: CheckAccount }>>();
-  for (const entry of entries) {
-    const account = accountById.get(entry.accountId);
-    if (!account) continue;
-    const arr = entriesByMonth.get(entry.month) ?? [];
-    arr.push({ ...entry, account });
-    entriesByMonth.set(entry.month, arr);
   }
 
   for (const [accountId, list] of entriesByAccount) {
@@ -308,13 +191,6 @@ export function computeAllWarnings(
       );
       if (growthWarning) warnings.push(growthWarning);
     }
-  }
-
-  for (const [month, monthEntries] of entriesByMonth) {
-    const transferWarnings = detectPossibleTransfers(monthEntries, (amount, currency) =>
-      toGBP(month, amount, currency),
-    );
-    warnings.push(...transferWarnings);
   }
 
   warnings.sort((a, b) => {

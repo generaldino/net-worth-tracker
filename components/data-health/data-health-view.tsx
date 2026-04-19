@@ -21,7 +21,6 @@ const FILTER_LABELS: Record<CodeFilter, string> = {
   ALL: "All",
   INCOME_GT_CASHIN: "Income > cash in",
   GROWTH_ON_CURRENT: "Unexplained balance",
-  POSSIBLE_TRANSFER: "Possible transfers",
 };
 
 export function DataHealthView({ report }: DataHealthViewProps) {
@@ -34,12 +33,10 @@ export function DataHealthView({ report }: DataHealthViewProps) {
   }>({ open: false, month: "", highlightAccountIds: [] });
 
   const openWarning = (warning: DataHealthWarning) => {
-    const ids = [warning.accountId];
-    if (warning.counterparty) ids.push(warning.counterparty.accountId);
     setDialogState({
       open: true,
       month: warning.month,
-      highlightAccountIds: ids,
+      highlightAccountIds: [warning.accountId],
     });
   };
 
@@ -54,7 +51,6 @@ export function DataHealthView({ report }: DataHealthViewProps) {
     const counts: Record<WarningCode, number> = {
       INCOME_GT_CASHIN: 0,
       GROWTH_ON_CURRENT: 0,
-      POSSIBLE_TRANSFER: 0,
     };
     for (const w of report.warnings) counts[w.code] += 1;
     return counts;
