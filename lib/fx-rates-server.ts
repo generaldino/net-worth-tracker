@@ -247,18 +247,9 @@ export async function fetchAndSaveExchangeRatesForMonth(
       return true;
     }
 
-    // Fetch rates for each currency pair
-    const eurRate = await fetchCurrencyPairRate("GBP", "EUR", dateStr);
-    // Small delay to avoid rate limiting
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const usdRate = await fetchCurrencyPairRate("GBP", "USD", dateStr);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    const aedRate = await fetchCurrencyPairRate("GBP", "AED", dateStr);
-
-    // Check if we got all required rates
-    if (!eurRate || !usdRate || !aedRate) {
+    // Fetch rates for each currency pair from the API
+    const fetched = await fetchExchangeRatePairs(dateStr);
+    if (!fetched) {
       return false;
     }
 
@@ -267,9 +258,9 @@ export async function fetchAndSaveExchangeRatesForMonth(
       date: dateStr,
       baseCurrency: "GBP",
       gbpRate: "1",
-      eurRate: eurRate.toString(),
-      usdRate: usdRate.toString(),
-      aedRate: aedRate.toString(),
+      eurRate: fetched.eurRate.toString(),
+      usdRate: fetched.usdRate.toString(),
+      aedRate: fetched.aedRate.toString(),
     });
 
     console.log(
@@ -278,6 +269,88 @@ export async function fetchAndSaveExchangeRatesForMonth(
     return true;
   } catch (error) {
     console.error(`Error fetching and saving FX rates for ${month}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Fetches the GBP-based rate pairs for a specific date from the API.
+ * @param dateStr - Date in "YYYY-MM-DD" format
+ * @returns An object with eur/usd/aed rates, or null if any pair failed
+ */
+async function fetchExchangeRatePairs(
+  dateStr: string,
+): Promise<{ eurRate: number; usdRate: number; aedRate: number } | null> {
+  const eurRate = await fetchCurrencyPairRate("GBP", "EUR", dateStr);
+  // Small delay to avoid rate limiting
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const usdRate = await fetchCurrencyPairRate("GBP", "USD", dateStr);
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const aedRate = await fetchCurrencyPairRate("GBP", "AED", dateStr);
+
+  // Check if we got all required rates
+  if (!eurRate || !usdRate || !aedRate) {
+    return null;
+  }
+
+  return { eurRate, usdRate, aedRate };
+}
+
+/**
+ * Force-refreshes exchange rates for a month by re-fetching from the API and
+ * overwriting any existing stored rate. Unlike fetchAndSaveExchangeRatesForMonth,
+ * this does NOT short-circuit when a rate already exists — it is used to recover
+ * from a failed/incorrect auto-update.
+ * @param month - Month in "YYYY-MM" format
+ * @returns true if rates were successfully refreshed, false if the API failed
+ *          (in which case the existing stored rate is left untouched)
+ */
+export async function refreshExchangeRatesForMonth(
+  month: string,
+): Promise<boolean> {
+  try {
+    const dateStr = getLastDayOfMonth(month);
+
+    // Fetch fresh rates BEFORE touching the DB so a failed fetch never wipes
+    // out a good existing value.
+    const fetched = await fetchExchangeRatePairs(dateStr);
+    if (!fetched) {
+      return false;
+    }
+
+    const existing = await db
+      .select()
+      .from(exchangeRates)
+      .where(eq(exchangeRates.date, dateStr))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .update(exchangeRates)
+        .set({
+          gbpRate: "1",
+          eurRate: fetched.eurRate.toString(),
+          usdRate: fetched.usdRate.toString(),
+          aedRate: fetched.aedRate.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(exchangeRates.date, dateStr));
+    } else {
+      await db.insert(exchangeRates).values({
+        date: dateStr,
+        baseCurrency: "GBP",
+        gbpRate: "1",
+        eurRate: fetched.eurRate.toString(),
+        usdRate: fetched.usdRate.toString(),
+        aedRate: fetched.aedRate.toString(),
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error refreshing FX rates for ${month}:`, error);
     return false;
   }
 }
