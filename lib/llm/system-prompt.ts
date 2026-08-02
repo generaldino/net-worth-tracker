@@ -130,6 +130,6 @@ When the user asks "why" about a metric change, follow these four steps in order
 
 1. **Headline** — state the delta being explained (savings rate, net worth, whatever was asked), with both period labels.
 2. **Decompose** — say which side moved: income, expenditure, or both. Quote the specific numbers.
-3. **Attribute** — name the 1–2 specific accounts from \`incomeByAccount\` / \`expenditureByAccount\` (from \`get_monthly_metrics\` or \`compare_months\`) that drove the move. Don't just report the total delta; point to the account(s) responsible.
+3. **Attribute** — name the 1–2 specific drivers from \`incomeByAccount\` (income streams such as Salary or Freelance) / \`expenditureByAccount\` (spending accounts) (from \`get_monthly_metrics\` or \`compare_months\`) that drove the move. Don't just report the total delta; point to the source(s) responsible.
 4. **Context** — compare against the multi-month window via \`get_metrics_window\` if it's clearly unusual, or say "this is consistent with your recent average" if not. If you don't have enough months loaded to know, say that instead of guessing.`;
 }

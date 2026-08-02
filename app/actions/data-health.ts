@@ -9,6 +9,7 @@ import {
 } from "@/db/schema";
 import type { Currency } from "@/lib/fx-rates";
 import { getAccessibleUserIds } from "@/app/actions/sharing";
+import { getMonthIncomeData, type MonthIncomeData } from "@/app/actions/income";
 import { getUserId } from "@/lib/auth-helpers";
 import {
   computeAllWarnings,
@@ -18,7 +19,6 @@ import {
   type FxRatesByMonth,
 } from "@/lib/data-health";
 import type { Account, MonthlyEntry } from "@/lib/types";
-import { computeExpenditure } from "@/lib/account-helpers";
 import { fetchAndSaveExchangeRatesForMonth } from "@/lib/fx-rates-server";
 import { revalidatePath } from "next/cache";
 
@@ -39,15 +39,12 @@ export interface MonthEditorData {
   month: string;
   accounts: Account[];
   existingEntries: MonthlyEntry[];
+  income: MonthIncomeData;
 }
 
 export interface SaveMonthlyEntryInput {
   accountId: string;
   endingBalance: number;
-  cashIn: number;
-  cashOut: number;
-  income: number;
-  expenditure?: number;
 }
 
 export interface SaveMonthlyEntriesResult {
@@ -160,8 +157,9 @@ export async function getMonthEditorData(
   month: string,
 ): Promise<MonthEditorData> {
   const accessibleUserIds = await getAccessibleUserIds();
+  const income = await getMonthIncomeData(month);
   if (accessibleUserIds.length === 0) {
-    return { month, accounts: [], existingEntries: [] };
+    return { month, accounts: [], existingEntries: [], income };
   }
 
   const rows = await db
@@ -184,7 +182,7 @@ export async function getMonthEditorData(
 
   const accountIds = accounts.map((a) => a.id);
   if (accountIds.length === 0) {
-    return { month, accounts, existingEntries: [] };
+    return { month, accounts, existingEntries: [], income };
   }
 
   const entryRows = await db
@@ -212,7 +210,7 @@ export async function getMonthEditorData(
     accountGrowth: 0,
   }));
 
-  return { month, accounts, existingEntries };
+  return { month, accounts, existingEntries, income };
 }
 
 export async function saveMonthlyEntriesForMonth(
@@ -269,17 +267,16 @@ export async function saveMonthlyEntriesForMonth(
       });
       continue;
     }
-    const expenditure =
-      input.expenditure ?? computeExpenditure(account.type, input.cashOut);
-    const isIncomeAccount = account.type === "Current";
+    // Balance-only entry: net worth uses ending balance; cash-flow columns are
+    // retained in the DB (historical data) but written as 0 for new entries.
     const payload = {
       endingBalance: input.endingBalance.toString(),
-      cashIn: input.cashIn.toString(),
-      cashOut: input.cashOut.toString(),
-      income: isIncomeAccount ? (input.income || 0).toString() : "0",
+      cashIn: "0",
+      cashOut: "0",
+      income: "0",
       internalTransfersOut: "0",
       debtPayments: "0",
-      expenditure: expenditure.toString(),
+      expenditure: "0",
       updatedAt: new Date(),
     };
 

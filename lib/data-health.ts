@@ -73,6 +73,10 @@ export function checkCurrentAccountGrowth(
 ): DataHealthWarning | null {
   if (account.type !== "Current") return null;
   if (!previousEntry) return null;
+  // Balance-only entries record no cash flow, so there is nothing to reconcile
+  // the balance change against. Only run on entries that carry cash-flow data
+  // (historical entries entered before the balance-only simplification).
+  if (entry.cashIn === 0 && entry.cashOut === 0) return null;
   const cashFlow = entry.cashIn - entry.cashOut;
   const impliedGrowth =
     entry.endingBalance - previousEntry.endingBalance - cashFlow;

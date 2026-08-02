@@ -16,7 +16,6 @@ import {
 import { InfoButton } from "@/components/ui/info-button";
 import { toast } from "@/components/ui/use-toast";
 import { addMonthlyEntry } from "@/lib/actions";
-import { shouldShowIncome, getFieldLabels } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { formatCurrencyAmount, getCurrencySymbol } from "@/lib/fx-rates";
 import type { AccountType, StaleAccountsData } from "@/lib/types";
@@ -74,18 +73,12 @@ export function StaleAccountsWizard({
 
   // Form state
   const [endingBalance, setEndingBalance] = React.useState("");
-  const [cashIn, setCashIn] = React.useState("0");
-  const [cashOut, setCashOut] = React.useState("0");
-  const [income, setIncome] = React.useState("0");
 
   // Reset form when current entry changes
   React.useEffect(() => {
     if (currentIndex < entries.length) {
       const entry = entries[currentIndex];
       setEndingBalance(String(entry.previousBalance));
-      setCashIn("0");
-      setCashOut("0");
-      setIncome("0");
     }
   }, [currentIndex, entries]);
 
@@ -121,11 +114,6 @@ export function StaleAccountsWizard({
     try {
       const result = await addMonthlyEntry(entry.account.id, entry.missingMonth, {
         endingBalance: Number(endingBalance) || 0,
-        cashIn: Number(cashIn) || 0,
-        cashOut: Number(cashOut) || 0,
-        income: Number(income) || 0,
-        internalTransfersOut: 0,
-        debtPayments: 0,
       });
 
       if (result.success) {
@@ -163,8 +151,6 @@ export function StaleAccountsWizard({
   if (entries.length === 0) return null;
 
   const currentEntry = entries[currentIndex];
-  const showIncome = currentEntry ? shouldShowIncome(currentEntry.account.type) : false;
-  const fieldLabels = currentEntry ? getFieldLabels(currentEntry.account.type) : { contributionsLabel: "Contributions", withdrawalsLabel: "Withdrawals" };
 
   const progressPercent = isCompleted
     ? 100
@@ -238,7 +224,7 @@ export function StaleAccountsWizard({
               )}
 
               {/* Form fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 <FieldInput
                   label="Ending Balance"
                   field="endingBalance"
@@ -246,32 +232,6 @@ export function StaleAccountsWizard({
                   currency={currentEntry.account.currency as Currency}
                   value={endingBalance}
                   onChange={setEndingBalance}
-                />
-                {showIncome && (
-                  <FieldInput
-                    label="Income"
-                    field="income"
-                    accountType={currentEntry.account.type}
-                    currency={currentEntry.account.currency as Currency}
-                    value={income}
-                    onChange={setIncome}
-                  />
-                )}
-                <FieldInput
-                  label={fieldLabels.contributionsLabel}
-                  field="cashIn"
-                  accountType={currentEntry.account.type}
-                  currency={currentEntry.account.currency as Currency}
-                  value={cashIn}
-                  onChange={setCashIn}
-                />
-                <FieldInput
-                  label={fieldLabels.withdrawalsLabel}
-                  field="cashOut"
-                  accountType={currentEntry.account.type}
-                  currency={currentEntry.account.currency as Currency}
-                  value={cashOut}
-                  onChange={setCashOut}
                 />
               </div>
             </div>

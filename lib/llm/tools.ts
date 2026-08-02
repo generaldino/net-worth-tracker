@@ -5,6 +5,7 @@ import { db } from "@/db";
 import {
   financialAccounts as accountsTable,
   monthlyEntries,
+  incomeStreams,
   projectionScenarios,
 } from "@/db/schema";
 import { getAccessibleUserIds } from "@/app/actions/sharing";
@@ -74,7 +75,6 @@ async function computeMonthlyMetrics(
 
   const rows = await db
     .select({
-      income: monthlyEntries.income,
       expenditure: monthlyEntries.expenditure,
       accountCurrency: accountsTable.currency,
       accountName: accountsTable.name,
@@ -88,7 +88,22 @@ async function computeMonthlyMetrics(
       ),
     );
 
-  if (rows.length === 0) {
+  // Income comes from user-entered income streams (decoupled from accounts).
+  const streamRows = await db
+    .select({
+      name: incomeStreams.name,
+      amount: incomeStreams.amount,
+      currency: incomeStreams.currency,
+    })
+    .from(incomeStreams)
+    .where(
+      and(
+        inArray(incomeStreams.userId, accessibleUserIds),
+        eq(incomeStreams.month, month),
+      ),
+    );
+
+  if (rows.length === 0 && streamRows.length === 0) {
     return { month, error: `No entries found for ${month}` };
   }
 
@@ -97,24 +112,25 @@ async function computeMonthlyMetrics(
   const incomeByAccount: Array<{ account: string; amount: Money }> = [];
   const expenditureByAccount: Array<{ account: string; amount: Money }> = [];
 
+  for (const stream of streamRows) {
+    const amountNum = Number(stream.amount);
+    if (amountNum <= 0) continue;
+    const converted = await convertCurrency(
+      amountNum,
+      (stream.currency ?? "GBP") as Currency,
+      displayCurrency,
+      month,
+    );
+    totalIncome += converted;
+    incomeByAccount.push({
+      account: stream.name,
+      amount: formatMoney(converted, displayCurrency),
+    });
+  }
+
   for (const row of rows) {
-    const incomeNum = Number(row.income);
     const expNum = Number(row.expenditure);
     const nativeCurrency = row.accountCurrency as Currency;
-
-    if (incomeNum > 0) {
-      const converted = await convertCurrency(
-        incomeNum,
-        nativeCurrency,
-        displayCurrency,
-        month,
-      );
-      totalIncome += converted;
-      incomeByAccount.push({
-        account: row.accountName,
-        amount: formatMoney(converted, displayCurrency),
-      });
-    }
 
     if (expNum > 0) {
       const converted = await convertCurrency(

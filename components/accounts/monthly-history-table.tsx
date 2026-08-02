@@ -71,17 +71,8 @@ export function MonthlyHistoryTable({
     const editedEntry = editingValues[accountId]?.[month];
     if (editedEntry) {
       try {
-        const cashOutValue = Number.parseFloat(editedEntry.cashOut) || 0;
-
         const result = await updateMonthlyEntry(accountId, month, {
           endingBalance: Number.parseFloat(editedEntry.endingBalance) || 0,
-          cashIn: Number.parseFloat(editedEntry.cashIn) || 0,
-          cashOut: cashOutValue,
-          income: showIncome
-            ? Number.parseFloat(editedEntry.income) || 0
-            : 0,
-          internalTransfersOut: 0,
-          debtPayments: 0,
         });
 
         if (result.success) {

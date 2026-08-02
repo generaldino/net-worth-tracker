@@ -67,7 +67,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getFieldExplanation } from "@/lib/field-explanations";
-import { InfoButton } from "@/components/ui/info-button";
 import {
   type Account,
   type MonthlyEntry,
@@ -881,12 +880,6 @@ export function NewAccountsSection({
             newEntry.month,
             {
               endingBalance: newEntry.endingBalance,
-              cashIn: newEntry.cashIn,
-              cashOut: newEntry.cashOut,
-              income: newEntry.income || 0,
-              expenditure: newEntry.expenditure,
-              internalTransfersOut: 0,
-              debtPayments: 0,
             }
           );
           if (result.success) {
@@ -919,27 +912,11 @@ export function NewAccountsSection({
         }
         onSave={async (updatedEntry) => {
           if (!selectedEntry) return;
-          const accountType = accounts.find(
-            (a) => a.id === selectedEntry.accountId,
-          )?.type;
-          const isExpAccount =
-            accountType === "Current" || accountType === "Credit_Card";
-          const expenditureOverride =
-            isExpAccount &&
-            Math.abs(updatedEntry.expenditure - updatedEntry.cashOut) > 0.01
-              ? updatedEntry.expenditure
-              : undefined;
           const result = await updateMonthlyEntry(
             selectedEntry.accountId,
             updatedEntry.month,
             {
               endingBalance: updatedEntry.endingBalance,
-              cashIn: updatedEntry.cashIn,
-              cashOut: updatedEntry.cashOut,
-              income: updatedEntry.income || 0,
-              expenditure: expenditureOverride,
-              internalTransfersOut: 0,
-              debtPayments: 0,
             }
           );
           if (result.success) {
@@ -2149,61 +2126,25 @@ function AddEntryDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   account: Account | null;
-  onSave: (entry: {
-    month: string;
-    endingBalance: number;
-    cashIn: number;
-    cashOut: number;
-    income?: number;
-    expenditure?: number;
-    internalTransfersOut?: number;
-    debtPayments?: number;
-  }) => void;
+  onSave: (entry: { month: string; endingBalance: number }) => void;
 }) {
-  const isIncomeAccount = account ? shouldShowIncome(account.type) : false;
-  const showExpenditure =
-    account?.type === "Current" || account?.type === "Credit_Card";
-
   const [formData, setFormData] = React.useState({
     month: "",
     endingBalance: "",
-    cashIn: "",
-    cashOut: "",
-    income: "",
-    expenditure: "",
   });
-  const [expenditureEdited, setExpenditureEdited] = React.useState(false);
 
   // Reset form when dialog opens/closes
   React.useEffect(() => {
     if (open) {
-      setFormData({
-        month: "",
-        endingBalance: "",
-        cashIn: "",
-        cashOut: "",
-        income: "",
-        expenditure: "",
-      });
-      setExpenditureEdited(false);
+      setFormData({ month: "", endingBalance: "" });
     }
   }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const expenditureOverride =
-      showExpenditure && expenditureEdited
-        ? Number.parseFloat(formData.expenditure) || 0
-        : undefined;
     onSave({
       month: formData.month,
       endingBalance: Number.parseFloat(formData.endingBalance) || 0,
-      cashIn: Number.parseFloat(formData.cashIn) || 0,
-      cashOut: Number.parseFloat(formData.cashOut) || 0,
-      income: Number.parseFloat(formData.income) || 0,
-      expenditure: expenditureOverride,
-      internalTransfersOut: 0,
-      debtPayments: 0,
     });
   };
 
@@ -2215,7 +2156,7 @@ function AddEntryDialog({
         <DialogHeader>
           <DialogTitle>Add Monthly Entry</DialogTitle>
           <DialogDescription>
-            Add a new monthly entry for {account.name}
+            Add this month&rsquo;s ending balance for {account.name}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -2249,130 +2190,6 @@ function AddEntryDialog({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="cashIn">{account ? getFieldLabels(account.type).contributionsLabel : "Cash In"}</Label>
-              <Input
-                id="cashIn"
-                type="number"
-                step="0.01"
-                value={formData.cashIn}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    cashIn: e.target.value,
-                  })
-                }
-                onFocus={(e) => e.currentTarget.select()}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cashOut">{account ? getFieldLabels(account.type).withdrawalsLabel : "Cash Out"}</Label>
-              <Input
-                id="cashOut"
-                type="number"
-                step="0.01"
-                value={formData.cashOut}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setFormData((prev) => ({
-                    ...prev,
-                    cashOut: next,
-                    expenditure: expenditureEdited ? prev.expenditure : next,
-                  }));
-                }}
-                onFocus={(e) => e.currentTarget.select()}
-              />
-            </div>
-          </div>
-
-          {showExpenditure && account && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <Label htmlFor="expenditure">Expenditure</Label>
-                {(() => {
-                  const explanation = getFieldExplanation(
-                    account.type,
-                    "expenditure",
-                  );
-                  return explanation ? (
-                    <InfoButton
-                      title={explanation.title}
-                      description={explanation.description}
-                    />
-                  ) : null;
-                })()}
-                {expenditureEdited ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        expenditure: prev.cashOut,
-                      }));
-                      setExpenditureEdited(false);
-                    }}
-                    className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
-                  >
-                    Reset to {getFieldLabels(account.type).withdrawalsLabel.toLowerCase()}
-                  </button>
-                ) : (
-                  <span className="ml-auto text-[10px] text-muted-foreground">
-                    Auto — tracks {getFieldLabels(account.type).withdrawalsLabel.toLowerCase()}
-                  </span>
-                )}
-              </div>
-              <Input
-                id="expenditure"
-                type="number"
-                step="0.01"
-                value={expenditureEdited ? formData.expenditure : formData.cashOut}
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    expenditure: e.target.value,
-                  }));
-                  setExpenditureEdited(true);
-                }}
-                onFocus={(e) => e.currentTarget.select()}
-              />
-              {expenditureEdited &&
-                (Number.parseFloat(formData.cashOut) || 0) >
-                  (Number.parseFloat(formData.expenditure) || 0) && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Transfer amount excluded from savings rate:{" "}
-                    {(Number.parseFloat(formData.cashOut) || 0) -
-                      (Number.parseFloat(formData.expenditure) || 0)}{" "}
-                    {account.currency || "GBP"}
-                  </p>
-                )}
-            </div>
-          )}
-
-          {isIncomeAccount && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="income">Income</Label>
-                  <Input
-                    id="income"
-                    type="number"
-                    step="0.01"
-                    value={formData.income}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        income: e.target.value,
-                      })
-                    }
-                    onFocus={(e) => e.currentTarget.select()}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
           <DialogFooter>
             <Button
               type="button"
@@ -2393,8 +2210,6 @@ function EditEntryDialog({
   open,
   onOpenChange,
   entry,
-  accountType,
-  accountCurrency,
   onSave,
 }: {
   open: boolean;
@@ -2402,64 +2217,28 @@ function EditEntryDialog({
   entry: { accountId: string; entry: MonthlyEntry } | null;
   accountType?: AccountType;
   accountCurrency?: Currency;
-  onSave: (entry: MonthlyEntry & { expenditure: number }) => void;
+  onSave: (entry: { month: string; endingBalance: number }) => void;
 }) {
-  const isIncomeAccount = accountType ? shouldShowIncome(accountType) : false;
-  const showExpenditure =
-    accountType === "Current" || accountType === "Credit_Card";
-
   const [formData, setFormData] = React.useState({
     month: "",
     endingBalance: "",
-    cashIn: "",
-    cashOut: "",
-    income: "",
-    expenditure: "",
   });
-  const [expenditureEdited, setExpenditureEdited] = React.useState(false);
 
   React.useEffect(() => {
     if (entry) {
-      const cashOutStr = entry.entry.cashOut.toString();
-      const storedExpenditure = Number(entry.entry.expenditure ?? 0);
-      const defaultExpenditure =
-        accountType === "Current" || accountType === "Credit_Card"
-          ? Number(entry.entry.cashOut)
-          : 0;
-      const isOverridden =
-        showExpenditure &&
-        Math.abs(storedExpenditure - defaultExpenditure) > 0.01;
       setFormData({
         month: entry.entry.month,
         endingBalance: entry.entry.endingBalance.toString(),
-        cashIn: entry.entry.cashIn.toString(),
-        cashOut: cashOutStr,
-        income: (entry.entry.income || 0).toString(),
-        expenditure: isOverridden ? storedExpenditure.toString() : cashOutStr,
       });
-      setExpenditureEdited(isOverridden);
     }
-  }, [entry, accountType, showExpenditure]);
+  }, [entry]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (entry) {
-      const cashOutN = Number.parseFloat(formData.cashOut) || 0;
-      const expenditureN = showExpenditure && expenditureEdited
-        ? Number.parseFloat(formData.expenditure) || 0
-        : showExpenditure
-          ? cashOutN
-          : 0;
       onSave({
-        ...entry.entry,
         month: formData.month,
         endingBalance: Number.parseFloat(formData.endingBalance) || 0,
-        cashIn: Number.parseFloat(formData.cashIn) || 0,
-        cashOut: cashOutN,
-        income: Number.parseFloat(formData.income) || 0,
-        expenditure: expenditureN,
-        internalTransfersOut: 0,
-        debtPayments: 0,
       });
     }
   };
@@ -2472,7 +2251,7 @@ function EditEntryDialog({
         <DialogHeader>
           <DialogTitle>Edit Monthly Entry</DialogTitle>
           <DialogDescription>
-            Update the monthly entry for {formData.month}
+            Update the ending balance for {formData.month}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -2506,132 +2285,6 @@ function EditEntryDialog({
               required
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-cashIn">{accountType ? getFieldLabels(accountType).contributionsLabel : "Cash In"}</Label>
-              <Input
-                id="edit-cashIn"
-                type="number"
-                step="0.01"
-                value={formData.cashIn}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    cashIn: e.target.value,
-                  })
-                }
-                onFocus={(e) => e.currentTarget.select()}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-cashOut">{accountType ? getFieldLabels(accountType).withdrawalsLabel : "Cash Out"}</Label>
-              <Input
-                id="edit-cashOut"
-                type="number"
-                step="0.01"
-                value={formData.cashOut}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setFormData((prev) => ({
-                    ...prev,
-                    cashOut: next,
-                    expenditure: expenditureEdited ? prev.expenditure : next,
-                  }));
-                }}
-                onFocus={(e) => e.currentTarget.select()}
-                required
-              />
-            </div>
-          </div>
-
-          {showExpenditure && accountType && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <Label htmlFor="edit-expenditure">Expenditure</Label>
-                {(() => {
-                  const explanation = getFieldExplanation(
-                    accountType,
-                    "expenditure",
-                  );
-                  return explanation ? (
-                    <InfoButton
-                      title={explanation.title}
-                      description={explanation.description}
-                    />
-                  ) : null;
-                })()}
-                {expenditureEdited ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        expenditure: prev.cashOut,
-                      }));
-                      setExpenditureEdited(false);
-                    }}
-                    className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
-                  >
-                    Reset to {getFieldLabels(accountType).withdrawalsLabel.toLowerCase()}
-                  </button>
-                ) : (
-                  <span className="ml-auto text-[10px] text-muted-foreground">
-                    Auto — tracks {getFieldLabels(accountType).withdrawalsLabel.toLowerCase()}
-                  </span>
-                )}
-              </div>
-              <Input
-                id="edit-expenditure"
-                type="number"
-                step="0.01"
-                value={expenditureEdited ? formData.expenditure : formData.cashOut}
-                onChange={(e) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    expenditure: e.target.value,
-                  }));
-                  setExpenditureEdited(true);
-                }}
-                onFocus={(e) => e.currentTarget.select()}
-              />
-              {expenditureEdited &&
-                (Number.parseFloat(formData.cashOut) || 0) >
-                  (Number.parseFloat(formData.expenditure) || 0) && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Transfer amount excluded from savings rate:{" "}
-                    {(Number.parseFloat(formData.cashOut) || 0) -
-                      (Number.parseFloat(formData.expenditure) || 0)}{" "}
-                    {accountCurrency || "GBP"}
-                  </p>
-                )}
-            </div>
-          )}
-
-          {isIncomeAccount && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-income">Income</Label>
-                  <Input
-                    id="edit-income"
-                    type="number"
-                    step="0.01"
-                    value={formData.income}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        income: e.target.value,
-                      })
-                    }
-                    onFocus={(e) => e.currentTarget.select()}
-                  />
-                </div>
-              </div>
-            </>
-          )}
 
           <DialogFooter>
             <Button
