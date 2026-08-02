@@ -18,6 +18,7 @@ import {
   FlaskConical,
   Wallet,
   ShieldAlert,
+  Coins,
 } from "lucide-react";
 import {
   Sidebar,
@@ -64,6 +65,11 @@ const navItems = [
     title: "Data Health",
     url: "/data-health",
     icon: ShieldAlert,
+  },
+  {
+    title: "FX Rate",
+    url: "/fx-rates",
+    icon: Coins,
   },
   {
     title: "Share Dashboard",
