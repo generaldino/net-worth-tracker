@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
 import { AssistantTriggerButton } from "@/components/assistant/assistant-trigger-button";
@@ -9,7 +10,11 @@ import { useChartData } from "@/contexts/chart-data-context";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { PeriodSelector } from "@/components/charts/period-selector";
-import { AccountFilter } from "@/components/charts/account-filter";
+import {
+  DashboardAccountFilters,
+  DashboardFilterChips,
+} from "@/components/charts/dashboard-account-filters";
+import { ChartDataFilterSync } from "@/components/charts/chart-data-filter-sync";
 import { useUrlState } from "@/hooks/use-url-state";
 import type { TimePeriod } from "@/lib/types";
 
@@ -19,6 +24,8 @@ export function Navbar() {
   const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
   const [isVisible, setIsVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [filtersPending, setFiltersPending] = useState(false);
+  const pathname = usePathname();
   // Scroll bookkeeping lives in refs so scroll events don't re-subscribe the
   // listener on every tick.
   const lastScrollYRef = useRef(0);
@@ -63,6 +70,10 @@ export function Navbar() {
   }, [isMobile]);
 
   const hasChartData = !!chartData && chartData.sourceData.length > 0;
+  // The accounts page renders the same filter control in its own toolbar —
+  // both read the same URL state, so showing it twice would just be a
+  // duplicate of itself.
+  const showFilters = hasChartData && pathname !== "/accounts";
 
   return (
     <nav
@@ -83,9 +94,14 @@ export function Navbar() {
           </div>
           <div className="flex items-center gap-2 shrink-0 ml-auto">
             {hasChartData && (
+              <ChartDataFilterSync onPendingChange={setFiltersPending} />
+            )}
+            {hasChartData && (
               <div className="hidden md:flex items-center gap-2">
                 <PeriodSelector value={period} onChange={setPeriod} />
-                <AccountFilter />
+                {showFilters && (
+                  <DashboardAccountFilters isPending={filtersPending} />
+                )}
               </div>
             )}
             <CurrencySelector
@@ -96,13 +112,19 @@ export function Navbar() {
             <AssistantTriggerButton />
           </div>
         </div>
+        {/* Active filters stay visible once the popover closes. */}
+        {showFilters && (
+          <DashboardFilterChips className="pb-3 -mt-1" />
+        )}
         {/* Mobile/tablet display */}
         {hasChartData && (
           <div className="lg:hidden pb-3 border-t pt-3 mt-2 space-y-3">
             <FinancialMetricsNavbar />
             <div className="flex justify-center gap-2 md:hidden">
               <PeriodSelector value={period} onChange={setPeriod} />
-              <AccountFilter />
+              {showFilters && (
+                <DashboardAccountFilters isPending={filtersPending} />
+              )}
             </div>
           </div>
         )}

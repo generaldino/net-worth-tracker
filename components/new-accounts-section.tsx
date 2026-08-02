@@ -12,7 +12,6 @@ import {
   Archive,
   ArchiveRestore,
   Download,
-  Filter,
   Info,
   ArrowUp,
   ArrowDown,
@@ -58,17 +57,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { getFieldExplanation } from "@/lib/field-explanations";
+import { useAccountFilters } from "@/hooks/use-account-filters";
+import { accountMatchesFilters } from "@/lib/account-filters";
+import { buildAccountFacets } from "@/components/filters/account-facets";
+import { AccountFiltersPopover } from "@/components/filters/account-filters-popover";
+import { ActiveFilterChips } from "@/components/filters/active-filter-chips";
 import {
   type Account,
   type MonthlyEntry,
@@ -210,18 +209,10 @@ export function NewAccountsSection({
     React.useState<ValueTimePeriod>("3M");
   const [showClosed, setShowClosed] = React.useState(false);
 
-  const [filterAccountTypes, setFilterAccountTypes] = React.useState<
-    Set<AccountType>
-  >(new Set());
-  const [filterCategories, setFilterCategories] = React.useState<
-    Set<AccountCategory>
-  >(new Set());
-  const [filterCurrencies, setFilterCurrencies] = React.useState<Set<Currency>>(
-    new Set()
-  );
-  const [filterOwners, setFilterOwners] = React.useState<Set<string>>(
-    new Set()
-  );
+  // Filters live in the URL and are shared with the navbar control, so the
+  // account list and the chart KPIs always agree on what's being shown.
+  const { filters, activeCount, toggle, clearFacet, clearAll } =
+    useAccountFilters();
 
   const [showAddAccountDialog, setShowAddAccountDialog] = React.useState(false);
   const [showEditAccountDialog, setShowEditAccountDialog] =
@@ -277,21 +268,13 @@ export function NewAccountsSection({
 
   const filteredAccounts = accounts.filter((acc) => {
     if (!showClosed && acc.isClosed) return false;
-    if (filterAccountTypes.size > 0 && !filterAccountTypes.has(acc.type))
-      return false;
-    if (filterCategories.size > 0 && !filterCategories.has(acc.category))
-      return false;
-    if (filterCurrencies.size > 0 && !filterCurrencies.has(acc.currency))
-      return false;
-    if (filterOwners.size > 0 && !filterOwners.has(acc.owner)) return false;
     if (filterNeedsUpdate && !needsUpdateIds.has(acc.id)) return false;
-    return true;
+    return accountMatchesFilters(acc, filters);
   });
 
-  const uniqueAccountTypes = Array.from(new Set(accounts.map((a) => a.type)));
-  const uniqueCategories = Array.from(new Set(accounts.map((a) => a.category)));
-  const uniqueCurrencies = Array.from(new Set(accounts.map((a) => a.currency)));
-  const uniqueOwners = Array.from(new Set(accounts.map((a) => a.owner)));
+  // Options come from every account (not just the visible ones) so the choices
+  // don't disappear as you narrow the list.
+  const facets = React.useMemo(() => buildAccountFacets(accounts), [accounts]);
 
   const exportToCSV = () => {
     const headers = [
@@ -340,26 +323,6 @@ export function NewAccountsSection({
     link.click();
     document.body.removeChild(link);
   };
-
-  const toggleFilterItem = <T,>(
-    set: Set<T>,
-    item: T,
-    setter: (set: Set<T>) => void
-  ) => {
-    const newSet = new Set(set);
-    if (newSet.has(item)) {
-      newSet.delete(item);
-    } else {
-      newSet.add(item);
-    }
-    setter(newSet);
-  };
-
-  const activeFilterCount =
-    filterAccountTypes.size +
-    filterCategories.size +
-    filterCurrencies.size +
-    filterOwners.size;
 
   // Calculate value changes for all accounts
   const calculatedValueChanges = React.useMemo(() => {
@@ -427,149 +390,15 @@ export function NewAccountsSection({
             </Button>
           )}
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 relative bg-transparent"
-              >
-                <Filter className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Filters</span>
-                {activeFilterCount > 0 && (
-                  <Badge
-                    variant="default"
-                    className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
-                  >
-                    {activeFilterCount}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[280px] p-3" align="start">
-              <div className="space-y-3">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Account Type</h4>
-                  <div className="space-y-1.5">
-                    {uniqueAccountTypes.map((type) => (
-                      <label
-                        key={type}
-                        className="flex items-center gap-2 cursor-pointer text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filterAccountTypes.has(type)}
-                          onChange={() =>
-                            toggleFilterItem(
-                              filterAccountTypes,
-                              type,
-                              setFilterAccountTypes
-                            )
-                          }
-                          className="rounded border-gray-300"
-                        />
-                        <span>{type.replace("_", " ")}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t pt-3">
-                  <h4 className="text-sm font-medium mb-2">Category</h4>
-                  <div className="space-y-1.5">
-                    {uniqueCategories.map((category) => (
-                      <label
-                        key={category}
-                        className="flex items-center gap-2 cursor-pointer text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filterCategories.has(category)}
-                          onChange={() =>
-                            toggleFilterItem(
-                              filterCategories,
-                              category,
-                              setFilterCategories
-                            )
-                          }
-                          className="rounded border-gray-300"
-                        />
-                        <span>{category}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t pt-3">
-                  <h4 className="text-sm font-medium mb-2">Currency</h4>
-                  <div className="space-y-1.5">
-                    {uniqueCurrencies.map((currency) => (
-                      <label
-                        key={currency}
-                        className="flex items-center gap-2 cursor-pointer text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filterCurrencies.has(currency)}
-                          onChange={() =>
-                            toggleFilterItem(
-                              filterCurrencies,
-                              currency,
-                              setFilterCurrencies
-                            )
-                          }
-                          className="rounded border-gray-300"
-                        />
-                        <span>{currency}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t pt-3">
-                  <h4 className="text-sm font-medium mb-2">Owner</h4>
-                  <div className="space-y-1.5">
-                    {uniqueOwners.map((owner) => (
-                      <label
-                        key={owner}
-                        className="flex items-center gap-2 cursor-pointer text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={filterOwners.has(owner)}
-                          onChange={() =>
-                            toggleFilterItem(
-                              filterOwners,
-                              owner,
-                              setFilterOwners
-                            )
-                          }
-                          className="rounded border-gray-300"
-                        />
-                        <span>{owner}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {activeFilterCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full h-7 text-xs"
-                    onClick={() => {
-                      setFilterAccountTypes(new Set());
-                      setFilterCategories(new Set());
-                      setFilterCurrencies(new Set());
-                      setFilterOwners(new Set());
-                    }}
-                  >
-                    Clear All Filters
-                  </Button>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
+          <AccountFiltersPopover
+            facets={facets}
+            filters={filters}
+            activeCount={activeCount}
+            onToggle={toggle}
+            onClearFacet={clearFacet}
+            onClearAll={clearAll}
+            align="start"
+          />
 
           <div className="flex items-center gap-2 px-2 py-1 rounded-md border h-8">
             <Label
@@ -623,6 +452,13 @@ export function NewAccountsSection({
             </Button>
           )}
         </div>
+
+        <ActiveFilterChips
+          facets={facets}
+          filters={filters}
+          onToggle={toggle}
+          onClearAll={clearAll}
+        />
       </div>
 
       <div className="border rounded-lg overflow-hidden">
@@ -838,16 +674,14 @@ export function NewAccountsSection({
       {filteredAccounts.length === 0 && (
         <div className="text-center py-8 border rounded-lg bg-muted/30">
           <p className="text-sm text-muted-foreground">No accounts found</p>
-          {activeFilterCount > 0 && (
+          {(activeCount > 0 || filterNeedsUpdate) && (
             <Button
               variant="link"
               size="sm"
               className="mt-2"
               onClick={() => {
-                setFilterAccountTypes(new Set());
-                setFilterCategories(new Set());
-                setFilterCurrencies(new Set());
-                setFilterOwners(new Set());
+                clearAll();
+                setFilterNeedsUpdate(false);
               }}
             >
               Clear filters

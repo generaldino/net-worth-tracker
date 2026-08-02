@@ -1338,6 +1338,8 @@ export async function getChartData(
   selectedAccountIds: string[] = [],
   selectedTypes: string[] = [],
   selectedCategories: string[] = [],
+  selectedOwners: string[] = [],
+  selectedCurrencies: string[] = [],
 ) {
   try {
     type Currency = "GBP" | "EUR" | "USD" | "AED";
@@ -1385,6 +1387,21 @@ export async function getChartData(
     if (selectedCategories.length > 0) {
       filteredAccounts = filteredAccounts.filter((account) =>
         selectedCategories.includes(account.category),
+      );
+    }
+
+    // Filter accounts by selected owners if specified. Multi-select variant of
+    // the single `owner` argument above — both apply when both are given.
+    if (selectedOwners.length > 0) {
+      filteredAccounts = filteredAccounts.filter((account) =>
+        selectedOwners.includes(account.owner),
+      );
+    }
+
+    // Filter accounts by selected currencies if specified
+    if (selectedCurrencies.length > 0) {
+      filteredAccounts = filteredAccounts.filter((account) =>
+        selectedCurrencies.includes(account.currency),
       );
     }
 
@@ -1942,6 +1959,7 @@ export async function getChartData(
         isISA: account.isISA,
         owner: account.owner,
         category: account.category,
+        currency: account.currency,
       })),
     };
   } catch (error) {
