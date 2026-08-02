@@ -15,6 +15,8 @@ import {
   Info,
   ArrowUp,
   ArrowDown,
+  Wallet,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,8 +92,7 @@ import {
 } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
-import { StaleAccountsBanner } from "@/components/stale-accounts-banner";
-import { StaleAccountsWizard } from "@/components/stale-accounts-wizard";
+import { IncomeDialog } from "@/components/income-dialog";
 import { shouldShowIncome, getFieldLabels } from "@/lib/account-helpers";
 import { createAccount } from "@/lib/actions";
 
@@ -183,7 +184,6 @@ export function NewAccountsSection({
   staleAccountsData,
 }: NewAccountsSectionProps) {
   const router = useRouter();
-  const [showStaleWizard, setShowStaleWizard] = React.useState(false);
 
   // Normalize currentValues to always be Record<string, number>
   const currentValues = React.useMemo(() => {
@@ -220,6 +220,8 @@ export function NewAccountsSection({
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showAddEntryDialog, setShowAddEntryDialog] = React.useState(false);
   const [showEditEntryDialog, setShowEditEntryDialog] = React.useState(false);
+  const [showIncomeDialog, setShowIncomeDialog] = React.useState(false);
+  const [filterNeedsUpdate, setFilterNeedsUpdate] = React.useState(false);
   const [showDeleteEntryDialog, setShowDeleteEntryDialog] =
     React.useState(false);
   const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(
@@ -245,8 +247,28 @@ export function NewAccountsSection({
     setExpandedAccounts(newExpanded);
   };
 
+  // Accounts that need this cycle's update: open accounts missing an entry for
+  // the previous completed calendar month (e.g. July when today is August), that
+  // already have an earlier value (so they were being tracked). Derived from the
+  // same missing-month computation the app already runs.
+  const needsUpdateIds = React.useMemo(() => {
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
+    const ids = new Set<string>();
+    if (staleAccountsData) {
+      for (const entry of staleAccountsData.staleEntries) {
+        if (entry.missingMonth === prevMonthKey && entry.previousMonth !== null) {
+          ids.add(entry.account.id);
+        }
+      }
+    }
+    return ids;
+  }, [staleAccountsData]);
+
   const filteredAccounts = accounts.filter((acc) => {
     if (!showClosed && acc.isClosed) return false;
+    if (filterNeedsUpdate && !needsUpdateIds.has(acc.id)) return false;
     return accountMatchesFilters(acc, filters);
   });
 
@@ -348,6 +370,26 @@ export function NewAccountsSection({
             </SelectContent>
           </Select>
 
+          {/* Needs-update filter: accounts missing last month's value */}
+          {!isDemo && (needsUpdateIds.size > 0 || filterNeedsUpdate) && (
+            <Button
+              variant={filterNeedsUpdate ? "default" : "outline"}
+              size="sm"
+              className="h-8 gap-1.5"
+              onClick={() => setFilterNeedsUpdate((v) => !v)}
+              aria-pressed={filterNeedsUpdate}
+            >
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Needs update</span>
+              <Badge
+                variant="secondary"
+                className="ml-0.5 h-4 min-w-4 px-1 text-[10px]"
+              >
+                {needsUpdateIds.size}
+              </Badge>
+            </Button>
+          )}
+
           <AccountFiltersPopover
             facets={facets}
             filters={filters}
@@ -384,6 +426,19 @@ export function NewAccountsSection({
             <span className="hidden sm:inline">Export CSV</span>
           </Button>
 
+          {/* Income Button */}
+          {!isDemo && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowIncomeDialog(true)}
+              className="h-8 gap-1.5 bg-transparent"
+            >
+              <Wallet className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Income</span>
+            </Button>
+          )}
+
           {/* Add Account Button */}
           {!isDemo && (
             <Button
@@ -405,13 +460,6 @@ export function NewAccountsSection({
           onClearAll={clearAll}
         />
       </div>
-
-      {!isDemo && staleAccountsData && (
-        <StaleAccountsBanner
-          staleAccountsData={staleAccountsData}
-          onUpdateNow={() => setShowStaleWizard(true)}
-        />
-      )}
 
       <div className="border rounded-lg overflow-hidden">
         {/* Desktop table view - hidden on mobile */}
@@ -626,12 +674,15 @@ export function NewAccountsSection({
       {filteredAccounts.length === 0 && (
         <div className="text-center py-8 border rounded-lg bg-muted/30">
           <p className="text-sm text-muted-foreground">No accounts found</p>
-          {activeCount > 0 && (
+          {(activeCount > 0 || filterNeedsUpdate) && (
             <Button
               variant="link"
               size="sm"
               className="mt-2"
-              onClick={clearAll}
+              onClick={() => {
+                clearAll();
+                setFilterNeedsUpdate(false);
+              }}
             >
               Clear filters
             </Button>
@@ -644,6 +695,13 @@ export function NewAccountsSection({
         account={selectedAccount}
         open={showEditAccountDialog}
         onOpenChange={setShowEditAccountDialog}
+      />
+
+      {/* Income Dialog */}
+      <IncomeDialog
+        open={showIncomeDialog}
+        onOpenChange={setShowIncomeDialog}
+        onSaved={() => router.refresh()}
       />
 
       {/* Add Account Dialog */}
@@ -794,14 +852,6 @@ export function NewAccountsSection({
         }}
       />
 
-      {!isDemo && staleAccountsData && (
-        <StaleAccountsWizard
-          open={showStaleWizard}
-          onOpenChange={setShowStaleWizard}
-          staleAccountsData={staleAccountsData}
-          onComplete={() => router.refresh()}
-        />
-      )}
     </div>
   );
 }

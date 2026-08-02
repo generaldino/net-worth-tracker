@@ -41,37 +41,48 @@ export async function getMonthIncomeData(month: string): Promise<MonthIncomeData
     return { month, streams: [], suggestedNames: [] };
   }
 
-  const rows = await db
-    .select()
-    .from(incomeStreams)
-    .where(and(eq(incomeStreams.userId, userId), eq(incomeStreams.month, month)));
-
-  const streams: IncomeStreamRow[] = rows.map((r) => ({
-    id: r.id,
-    name: r.name,
-    amount: Number(r.amount),
-    currency: (r.currency ?? "GBP") as Currency,
-  }));
-
-  // Carry-forward: names from the most recent month before this one.
-  let suggestedNames: string[] = [];
-  if (streams.length === 0) {
-    const priorRows = await db
-      .select({ month: incomeStreams.month, name: incomeStreams.name })
+  // Guarded so the month editor still opens if income is unavailable (e.g. the
+  // migration has not been applied yet) — it just shows no income.
+  try {
+    const rows = await db
+      .select()
       .from(incomeStreams)
-      .where(and(eq(incomeStreams.userId, userId), lt(incomeStreams.month, month)))
-      .orderBy(desc(incomeStreams.month));
+      .where(
+        and(eq(incomeStreams.userId, userId), eq(incomeStreams.month, month)),
+      );
 
-    const latestPriorMonth = priorRows[0]?.month;
-    if (latestPriorMonth) {
-      const names = priorRows
-        .filter((r) => r.month === latestPriorMonth)
-        .map((r) => r.name);
-      suggestedNames = Array.from(new Set(names));
+    const streams: IncomeStreamRow[] = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      amount: Number(r.amount),
+      currency: (r.currency ?? "GBP") as Currency,
+    }));
+
+    // Carry-forward: names from the most recent month before this one.
+    let suggestedNames: string[] = [];
+    if (streams.length === 0) {
+      const priorRows = await db
+        .select({ month: incomeStreams.month, name: incomeStreams.name })
+        .from(incomeStreams)
+        .where(
+          and(eq(incomeStreams.userId, userId), lt(incomeStreams.month, month)),
+        )
+        .orderBy(desc(incomeStreams.month));
+
+      const latestPriorMonth = priorRows[0]?.month;
+      if (latestPriorMonth) {
+        const names = priorRows
+          .filter((r) => r.month === latestPriorMonth)
+          .map((r) => r.name);
+        suggestedNames = Array.from(new Set(names));
+      }
     }
-  }
 
-  return { month, streams, suggestedNames };
+    return { month, streams, suggestedNames };
+  } catch (err) {
+    console.error("Income streams unavailable for month editor:", err);
+    return { month, streams: [], suggestedNames: [] };
+  }
 }
 
 /**

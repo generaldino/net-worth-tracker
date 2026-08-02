@@ -15,6 +15,7 @@ import {
   getStaleAccounts,
 } from "@/lib/actions";
 import { convertCurrency, type Currency } from "@/lib/fx-rates-server";
+import { getMonthlyExpenseTotals } from "@/lib/expenses-server";
 
 export interface AssistantContext {
   displayCurrency: Currency;
@@ -89,21 +90,32 @@ async function computeMonthlyMetrics(
     );
 
   // Income comes from user-entered income streams (decoupled from accounts).
-  const streamRows = await db
-    .select({
-      name: incomeStreams.name,
-      amount: incomeStreams.amount,
-      currency: incomeStreams.currency,
-    })
-    .from(incomeStreams)
-    .where(
-      and(
-        inArray(incomeStreams.userId, accessibleUserIds),
-        eq(incomeStreams.month, month),
-      ),
-    );
+  let streamRows: Array<{ name: string; amount: string; currency: Currency }> =
+    [];
+  try {
+    streamRows = await db
+      .select({
+        name: incomeStreams.name,
+        amount: incomeStreams.amount,
+        currency: incomeStreams.currency,
+      })
+      .from(incomeStreams)
+      .where(
+        and(
+          inArray(incomeStreams.userId, accessibleUserIds),
+          eq(incomeStreams.month, month),
+        ),
+      );
+  } catch (err) {
+    console.error("Income streams unavailable, treating as none:", err);
+  }
 
-  if (rows.length === 0 && streamRows.length === 0) {
+  // Spend comes from the budget module when the month has expense rows,
+  // otherwise from the legacy per-account expenditure column.
+  const expenseTotals = await getMonthlyExpenseTotals(accessibleUserIds);
+  const monthExpenses = expenseTotals.get(month) ?? [];
+
+  if (rows.length === 0 && streamRows.length === 0 && monthExpenses.length === 0) {
     return { month, error: `No entries found for ${month}` };
   }
 
@@ -128,22 +140,40 @@ async function computeMonthlyMetrics(
     });
   }
 
-  for (const row of rows) {
-    const expNum = Number(row.expenditure);
-    const nativeCurrency = row.accountCurrency as Currency;
-
-    if (expNum > 0) {
+  if (monthExpenses.length > 0) {
+    for (const total of monthExpenses) {
       const converted = await convertCurrency(
-        expNum,
-        nativeCurrency,
+        total.amount,
+        total.currency,
         displayCurrency,
         month,
       );
       totalExpenditure += converted;
-      expenditureByAccount.push({
-        account: row.accountName,
-        amount: formatMoney(converted, displayCurrency),
-      });
+    }
+    // Per-category attribution lives on the budget page; the assistant reports
+    // the month total here.
+    expenditureByAccount.push({
+      account: "All spending",
+      amount: formatMoney(totalExpenditure, displayCurrency),
+    });
+  } else {
+    for (const row of rows) {
+      const expNum = Number(row.expenditure);
+      const nativeCurrency = row.accountCurrency as Currency;
+
+      if (expNum > 0) {
+        const converted = await convertCurrency(
+          expNum,
+          nativeCurrency,
+          displayCurrency,
+          month,
+        );
+        totalExpenditure += converted;
+        expenditureByAccount.push({
+          account: row.accountName,
+          amount: formatMoney(converted, displayCurrency),
+        });
+      }
     }
   }
 
