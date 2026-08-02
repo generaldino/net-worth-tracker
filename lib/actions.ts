@@ -9,6 +9,7 @@ import {
   exchangeRates as exchangeRatesTable,
   financialAccounts as accountsTable,
   monthlyEntries,
+  incomeStreams,
 } from "@/db/schema";
 import { getUserId } from "@/lib/auth-helpers";
 import type { Currency } from "@/lib/fx-rates";
@@ -18,7 +19,7 @@ import {
   getExchangeRates,
 } from "@/lib/fx-rates-server";
 import type { StaleAccountsData, StaleAccountEntry } from "@/lib/types";
-import { getCategoryFromType, computeExpenditure } from "@/lib/account-helpers";
+import { getCategoryFromType } from "@/lib/account-helpers";
 
 export async function calculateNetWorth() {
   try {
@@ -355,23 +356,49 @@ export async function getFinancialMetrics() {
       (entry) => entry.month === latestMonth,
     );
 
+    // Income now comes from user-entered income streams (decoupled from
+    // accounts), summed per currency per month.
+    const incomeStreamRows = await db
+      .select({
+        month: incomeStreams.month,
+        amount: incomeStreams.amount,
+        currency: incomeStreams.currency,
+      })
+      .from(incomeStreams)
+      .where(inArray(incomeStreams.userId, accessibleUserIds));
+
+    // Income per month per currency, reused for the YTD / all-time comparisons.
+    const incomeByMonthCurrency = new Map<string, Map<Currency, number>>();
+
+    incomeStreamRows.forEach((row) => {
+      const currency = (row.currency || "GBP") as Currency;
+      const amount = Number(row.amount || 0);
+      const isYTDMonth = row.month.startsWith(currentYear);
+      if (isYTDMonth) {
+        incomeByCurrencyYTD.set(
+          currency,
+          (incomeByCurrencyYTD.get(currency) || 0) + amount,
+        );
+      }
+      incomeByCurrencyAllTime.set(
+        currency,
+        (incomeByCurrencyAllTime.get(currency) || 0) + amount,
+      );
+
+      const monthMap =
+        incomeByMonthCurrency.get(row.month) ?? new Map<Currency, number>();
+      monthMap.set(currency, (monthMap.get(currency) || 0) + amount);
+      incomeByMonthCurrency.set(row.month, monthMap);
+    });
+
+    // Expenditure still derives from Current/Credit_Card monthly entries
+    // (historical data preserved; new balance-only entries record 0 until the
+    // Budget module lands).
     entries.forEach((entry) => {
       const currency = (entry.accountCurrency || "GBP") as Currency;
-      const income = Number(entry.income || 0);
       const expenditure = Number(entry.expenditure || 0);
       const isYTDMonth = entry.month.startsWith(currentYear);
 
-      // Income from Current accounts only
-      if (entry.accountType === "Current") {
-        if (isYTDMonth) {
-          const current = incomeByCurrencyYTD.get(currency) || 0;
-          incomeByCurrencyYTD.set(currency, current + income);
-        }
-        const current = incomeByCurrencyAllTime.get(currency) || 0;
-        incomeByCurrencyAllTime.set(currency, current + income);
-      }
-
-      // Expenditure from Current and Credit_Card accounts
       if (
         entry.accountType === "Current" ||
         entry.accountType === "Credit_Card"
@@ -486,19 +513,14 @@ export async function getFinancialMetrics() {
     // Calculate YTD changes: Compare Jan 2025 to current month (Oct 2025)
     if (latestMonth.startsWith(currentYear)) {
       const ytdStartMonth = `${currentYear}-01`;
-      const januaryIncomeByCurrency = new Map<Currency, number>();
+      const januaryIncomeByCurrency =
+        incomeByMonthCurrency.get(ytdStartMonth) ?? new Map<Currency, number>();
       const januaryExpenditureByCurrency = new Map<Currency, number>();
 
       entries.forEach((entry) => {
         if (entry.month === ytdStartMonth) {
           const currency = (entry.accountCurrency || "GBP") as Currency;
-          const income = Number(entry.income || 0);
           const expenditure = Number(entry.expenditure || 0);
-
-          if (entry.accountType === "Current") {
-            const current = januaryIncomeByCurrency.get(currency) || 0;
-            januaryIncomeByCurrency.set(currency, current + income);
-          }
 
           if (
             entry.accountType === "Current" ||
@@ -582,19 +604,14 @@ export async function getFinancialMetrics() {
     // Calculate All Time changes: Compare first entry to current
     if (allEntriesOrdered.length > 0) {
       const firstMonth = allEntriesOrdered[0].month;
-      const firstMonthIncomeByCurrency = new Map<Currency, number>();
+      const firstMonthIncomeByCurrency =
+        incomeByMonthCurrency.get(firstMonth) ?? new Map<Currency, number>();
       const firstMonthExpenditureByCurrency = new Map<Currency, number>();
 
       allEntriesOrdered.forEach((entry) => {
         if (entry.month === firstMonth) {
           const currency = (entry.accountCurrency || "GBP") as Currency;
-          const income = Number(entry.income || 0);
           const expenditure = Number(entry.expenditure || 0);
-
-          if (entry.accountType === "Current") {
-            const current = firstMonthIncomeByCurrency.get(currency) || 0;
-            firstMonthIncomeByCurrency.set(currency, current + income);
-          }
 
           if (
             entry.accountType === "Current" ||
@@ -1106,16 +1123,10 @@ export async function addMonthlyEntry(
   month: string,
   entry: {
     endingBalance: number;
-    cashIn: number;
-    cashOut: number;
-    income: number;
-    expenditure?: number;
-    internalTransfersOut?: number;
-    debtPayments?: number;
   },
 ) {
   try {
-    // Get the account to check its type
+    // Get the account to confirm it exists
     const account = await db
       .select()
       .from(accountsTable)
@@ -1128,8 +1139,6 @@ export async function addMonthlyEntry(
         error: "Account not found",
       };
     }
-
-    const accountType = account[0].type;
 
     // Check if an entry already exists for this account and month
     const existingEntry = await db
@@ -1150,24 +1159,18 @@ export async function addMonthlyEntry(
       };
     }
 
-    // Expenditure defaults to cashOut on Current/Credit_Card (all other types = 0).
-    // Callers may override with an explicit value when cashOut contains an
-    // internal transfer that shouldn't count as spending.
-    const expenditure =
-      entry.expenditure ?? computeExpenditure(accountType, entry.cashOut);
-    const isIncomeAccount = accountType === "Current";
-
-    // Insert the new entry
+    // Balance-only entry: net worth uses ending balance. Cash-flow columns are
+    // kept in the DB for historical data but written as 0 for new entries.
     const newEntry = {
       accountId,
       month,
       endingBalance: entry.endingBalance.toString(),
-      cashIn: entry.cashIn.toString(),
-      cashOut: entry.cashOut.toString(),
-      income: isIncomeAccount ? (entry.income || 0).toString() : "0",
+      cashIn: "0",
+      cashOut: "0",
+      income: "0",
       internalTransfersOut: "0",
       debtPayments: "0",
-      expenditure: expenditure.toString(),
+      expenditure: "0",
     };
 
     await db.insert(monthlyEntries).values(newEntry);
@@ -1203,16 +1206,10 @@ export async function updateMonthlyEntry(
   month: string,
   entry: {
     endingBalance: number;
-    cashIn: number;
-    cashOut: number;
-    income: number;
-    expenditure?: number;
-    internalTransfersOut?: number;
-    debtPayments?: number;
   },
 ) {
   try {
-    // Get the account to check its type
+    // Get the account to confirm it exists
     const account = await db
       .select()
       .from(accountsTable)
@@ -1225,8 +1222,6 @@ export async function updateMonthlyEntry(
         error: "Account not found",
       };
     }
-
-    const accountType = account[0].type;
 
     // Check if the entry exists
     const existingEntry = await db
@@ -1247,24 +1242,18 @@ export async function updateMonthlyEntry(
       };
     }
 
-    // Expenditure defaults to cashOut on Current/Credit_Card (all other types = 0).
-    // Respect an explicit value from the caller — lets users exclude internal
-    // transfers from real spending without touching cashOut.
-    const expenditure =
-      entry.expenditure ?? computeExpenditure(accountType, entry.cashOut);
-    const isIncomeAccount = accountType === "Current";
-
-    // Update the entry
+    // Balance-only entry: only the ending balance is edited. Cash-flow columns
+    // are reset to 0 (historical values on untouched rows are preserved).
     await db
       .update(monthlyEntries)
       .set({
         endingBalance: entry.endingBalance.toString(),
-        cashIn: entry.cashIn.toString(),
-        cashOut: entry.cashOut.toString(),
-        income: isIncomeAccount ? (entry.income || 0).toString() : "0",
+        cashIn: "0",
+        cashOut: "0",
+        income: "0",
         internalTransfersOut: "0",
         debtPayments: "0",
-        expenditure: expenditure.toString(),
+        expenditure: "0",
         updatedAt: new Date(),
       })
       .where(
@@ -1398,6 +1387,32 @@ export async function getChartData(
             .where(inArray(monthlyEntries.accountId, filteredAccountIds))
             .orderBy(desc(monthlyEntries.month))
         : [];
+
+    // Income streams are decoupled from accounts (household-level), so they are
+    // loaded for all accessible users and not narrowed by the account filters.
+    const incomeStreamRows = await db
+      .select({
+        month: incomeStreams.month,
+        name: incomeStreams.name,
+        amount: incomeStreams.amount,
+        currency: incomeStreams.currency,
+      })
+      .from(incomeStreams)
+      .where(inArray(incomeStreams.userId, accessibleUserIds));
+
+    const incomeStreamsByMonth = new Map<
+      string,
+      Array<{ name: string; amount: number; currency: Currency }>
+    >();
+    for (const r of incomeStreamRows) {
+      const arr = incomeStreamsByMonth.get(r.month) ?? [];
+      arr.push({
+        name: r.name,
+        amount: Number(r.amount || 0),
+        currency: (r.currency || "GBP") as Currency,
+      });
+      incomeStreamsByMonth.set(r.month, arr);
+    }
 
     // Transform the data into the required format
     const monthlyData: Record<
@@ -1759,29 +1774,9 @@ export async function getChartData(
 
         const accountCurrency = (account.currency || "GBP") as Currency;
 
-        // Add income to total (only from Current accounts)
+        // Add expenditure from Current accounts (convert to GBP). Income no
+        // longer comes from accounts — see income streams below.
         if (account.type === "Current") {
-          const income = Number(entry.income || 0);
-          // Convert to GBP before adding to total for accurate rate calculations
-          totalWorkIncome += convertToGBPForMonth(
-            income,
-            accountCurrency,
-            month,
-          );
-
-          // Track accounts that received income for breakdown (keep in original currency)
-          if (income > 0) {
-            savingsAccounts.push({
-              accountId: account.id,
-              name: account.name,
-              type: account.type,
-              amount: income, // Show income in breakdown in original currency
-              currency: accountCurrency,
-              owner: account.owner || "Unknown",
-            });
-          }
-
-          // Add expenditure from Current accounts (convert to GBP)
           const expenditure = Number(entry.expenditure || 0);
           totalExpenditure += convertToGBPForMonth(
             expenditure,
@@ -1840,6 +1835,26 @@ export async function getChartData(
           });
         }
       });
+
+      // Income comes from user-entered income streams for the month.
+      const monthIncomeStreams = incomeStreamsByMonth.get(month) ?? [];
+      for (const stream of monthIncomeStreams) {
+        totalWorkIncome += convertToGBPForMonth(
+          stream.amount,
+          stream.currency,
+          month,
+        );
+        if (stream.amount > 0) {
+          savingsAccounts.push({
+            accountId: `income:${stream.name}`,
+            name: stream.name,
+            type: "Income",
+            amount: stream.amount, // original currency for breakdown
+            currency: stream.currency,
+            owner: "Unknown",
+          });
+        }
+      }
 
       // Calculate savings from income: Income - Expenditure (both already in GBP)
       // This represents the net cash saved from work income (after spending)

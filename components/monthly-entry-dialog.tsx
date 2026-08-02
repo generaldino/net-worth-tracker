@@ -12,23 +12,30 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { type Account, type AccountType, type MonthlyEntry } from "@/lib/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { type Account, type AccountType } from "@/lib/types";
+import { supportedCurrencies } from "@/lib/types";
 import {
   getMonthDataHealthContext,
   getMonthEditorData,
   saveMonthlyEntriesForMonth,
   type DataHealthMonthContext,
 } from "@/app/actions/data-health";
+import { saveIncomeStreams } from "@/app/actions/income";
 import { computeLiveWarnings, type CheckAccount } from "@/lib/data-health";
 import { WarningList } from "@/components/data-health/warning-list";
 import { WarningSummary } from "@/components/data-health/warning-summary";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
-import { shouldShowIncome, getFieldLabels } from "@/lib/account-helpers";
-import { getFieldExplanation } from "@/lib/field-explanations";
-import { InfoButton } from "@/components/ui/info-button";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { Plus, Trash2 } from "lucide-react";
 
 interface MonthlyEntryDialogProps {
   open: boolean;
@@ -43,50 +50,13 @@ type DraftEntry = {
   accountType: AccountType;
   month: string;
   endingBalance: number;
-  cashIn: number;
-  cashOut: number;
-  income: number;
-  expenditure: number;
-  /** True once the user has manually edited expenditure; otherwise it tracks cashOut. */
-  expenditureEdited: boolean;
 };
 
-function toDraft(
-  entry: MonthlyEntry | undefined,
-  month: string,
-  account: Account,
-): DraftEntry {
-  const cashOut = entry ? Number(entry.cashOut) : 0;
-  const storedExpenditure = entry ? Number(entry.expenditure) : 0;
-  // Treat a stored expenditure that differs from cashOut as a deliberate override.
-  const tracksCashOut = !entry || expenditureMatchesCashOut(storedExpenditure, cashOut, account.type);
-  return {
-    accountId: account.id,
-    accountType: account.type,
-    month,
-    endingBalance: entry ? Number(entry.endingBalance) : 0,
-    cashIn: entry ? Number(entry.cashIn) : 0,
-    cashOut,
-    income: entry ? Number(entry.income) : 0,
-    expenditure: tracksCashOut
-      ? defaultExpenditure(account.type, cashOut)
-      : storedExpenditure,
-    expenditureEdited: !tracksCashOut,
-  };
-}
-
-function defaultExpenditure(type: AccountType, cashOut: number) {
-  return type === "Current" || type === "Credit_Card" ? cashOut : 0;
-}
-
-function expenditureMatchesCashOut(expenditure: number, cashOut: number, type: AccountType) {
-  const expected = defaultExpenditure(type, cashOut);
-  return Math.abs(expenditure - expected) < 0.01;
-}
-
-function isExpenditureField(type: AccountType) {
-  return type === "Current" || type === "Credit_Card";
-}
+type IncomeDraft = {
+  name: string;
+  amount: number;
+  currency: Currency;
+};
 
 export function MonthlyEntryDialog({
   open,
@@ -98,6 +68,7 @@ export function MonthlyEntryDialog({
   const [month, setMonth] = useState(selectedMonth);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [drafts, setDrafts] = useState<DraftEntry[]>([]);
+  const [incomeDrafts, setIncomeDrafts] = useState<IncomeDraft[]>([]);
   const [healthContext, setHealthContext] =
     useState<DataHealthMonthContext | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -122,9 +93,35 @@ export function MonthlyEntryDialog({
             const existing = editorData.existingEntries.find(
               (e) => e.accountId === account.id,
             );
-            return toDraft(existing, month, account);
+            return {
+              accountId: account.id,
+              accountType: account.type,
+              month,
+              endingBalance: existing ? Number(existing.endingBalance) : 0,
+            };
           }),
         );
+        // Seed income streams: existing rows, else carry-forward names, else one blank line.
+        const existingStreams = editorData.income.streams;
+        if (existingStreams.length > 0) {
+          setIncomeDrafts(
+            existingStreams.map((s) => ({
+              name: s.name,
+              amount: s.amount,
+              currency: s.currency,
+            })),
+          );
+        } else if (editorData.income.suggestedNames.length > 0) {
+          setIncomeDrafts(
+            editorData.income.suggestedNames.map((name) => ({
+              name,
+              amount: 0,
+              currency: "GBP" as Currency,
+            })),
+          );
+        } else {
+          setIncomeDrafts([{ name: "Salary", amount: 0, currency: "GBP" }]);
+        }
         setHealthContext(ctx);
       })
       .finally(() => {
@@ -143,7 +140,6 @@ export function MonthlyEntryDialog({
     const el = rowRefs.current.get(first);
     if (el) {
       lastHighlighted.current = first;
-      // defer so the dialog has laid out
       const timer = setTimeout(() => {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 50);
@@ -169,8 +165,17 @@ export function MonthlyEntryDialog({
 
   const liveWarnings = useMemo(() => {
     if (!healthContext) return [];
+    // Balance-only drafts: cash-flow fields are 0, so cash-flow-based checks
+    // are inert for new entries and only historical entries surface warnings.
     return computeLiveWarnings({
-      entries: drafts,
+      entries: drafts.map((d) => ({
+        accountId: d.accountId,
+        month: d.month,
+        endingBalance: d.endingBalance,
+        cashIn: 0,
+        cashOut: 0,
+        income: 0,
+      })),
       accounts: dialogAccounts,
       previousEntries: healthContext.previousEntries,
       fxRate: healthContext.fxRate,
@@ -192,67 +197,66 @@ export function MonthlyEntryDialog({
     [highlightAccountIds],
   );
 
-  const handleFieldChange = (
-    accountId: string,
-    field: "endingBalance" | "cashIn" | "cashOut" | "income" | "expenditure",
-    value: string,
-  ) => {
+  const handleBalanceChange = (accountId: string, value: string) => {
     const num = Number.parseFloat(value);
     const safe = Number.isFinite(num) ? num : 0;
     setDrafts((prev) =>
-      prev.map((d) => {
-        if (d.accountId !== accountId) return d;
-        if (field === "cashOut") {
-          // Keep expenditure pinned to cashOut unless the user has overridden it.
-          return {
-            ...d,
-            cashOut: safe,
-            expenditure: d.expenditureEdited
-              ? d.expenditure
-              : defaultExpenditure(d.accountType, safe),
-          };
-        }
-        if (field === "expenditure") {
-          return { ...d, expenditure: safe, expenditureEdited: true };
-        }
-        return { ...d, [field]: safe };
-      }),
-    );
-  };
-
-  const handleResetExpenditure = (accountId: string) => {
-    setDrafts((prev) =>
       prev.map((d) =>
-        d.accountId === accountId
-          ? {
-              ...d,
-              expenditure: defaultExpenditure(d.accountType, d.cashOut),
-              expenditureEdited: false,
-            }
-          : d,
+        d.accountId === accountId ? { ...d, endingBalance: safe } : d,
       ),
     );
   };
 
+  const updateIncome = (
+    index: number,
+    patch: Partial<IncomeDraft>,
+  ) => {
+    setIncomeDrafts((prev) =>
+      prev.map((d, i) => (i === index ? { ...d, ...patch } : d)),
+    );
+  };
+
+  const addIncomeLine = () => {
+    setIncomeDrafts((prev) => [
+      ...prev,
+      { name: "", amount: 0, currency: "GBP" },
+    ]);
+  };
+
+  const removeIncomeLine = (index: number) => {
+    setIncomeDrafts((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const incomeTotal = useMemo(
+    () => incomeDrafts.reduce((sum, d) => sum + (d.amount || 0), 0),
+    [incomeDrafts],
+  );
+
   const handleSubmit = async () => {
     setIsSaving(true);
     try {
-      const result = await saveMonthlyEntriesForMonth(
-        month,
-        drafts.map((d) => ({
-          accountId: d.accountId,
-          endingBalance: d.endingBalance,
-          cashIn: d.cashIn,
-          cashOut: d.cashOut,
-          income: d.income,
-          // Only send an explicit expenditure when the user has overridden the default.
-          ...(d.expenditureEdited ? { expenditure: d.expenditure } : {}),
-        })),
-      );
-      if (result.success) {
+      const [entriesResult, incomeResult] = await Promise.all([
+        saveMonthlyEntriesForMonth(
+          month,
+          drafts.map((d) => ({
+            accountId: d.accountId,
+            endingBalance: d.endingBalance,
+          })),
+        ),
+        saveIncomeStreams(
+          month,
+          incomeDrafts.map((d) => ({
+            name: d.name,
+            amount: d.amount,
+            currency: d.currency,
+          })),
+        ),
+      ]);
+
+      if (entriesResult.success && incomeResult.success) {
         toast({
           title: "Saved",
-          description: `Updated ${result.savedCount} entr${result.savedCount === 1 ? "y" : "ies"} for ${formatMonthLabel(month)}.`,
+          description: `Updated ${entriesResult.savedCount} account${entriesResult.savedCount === 1 ? "" : "s"} for ${formatMonthLabel(month)}.`,
         });
         onSaved?.();
         onOpenChange(false);
@@ -261,8 +265,9 @@ export function MonthlyEntryDialog({
           variant: "destructive",
           title: "Save failed",
           description:
-            result.errors[0]?.message ??
-            "Some entries could not be saved. Check the console for details.",
+            entriesResult.errors[0]?.message ??
+            incomeResult.error ??
+            "Some data could not be saved. Check the console for details.",
         });
       }
     } catch (err) {
@@ -280,10 +285,10 @@ export function MonthlyEntryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Monthly Account Values</DialogTitle>
+          <DialogTitle>Monthly Update</DialogTitle>
           <DialogDescription>
-            Review the ending balance and cash flow recorded for each account
-            this month. Edit any value and save to reconcile.
+            Enter each account&rsquo;s value at the end of the month, plus any
+            income you earned. That&rsquo;s all it takes to track your net worth.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -306,248 +311,161 @@ export function MonthlyEntryDialog({
 
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading entries…</p>
-          ) : accounts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No accessible accounts.
-            </p>
           ) : (
-            <div className="space-y-4">
-              {accounts.map((account) => {
-                const draft = drafts.find((d) => d.accountId === account.id);
-                const { contributionsLabel, withdrawalsLabel } = getFieldLabels(
-                  account.type,
-                );
-                const showIncome = shouldShowIncome(account.type);
-                const accountWarnings =
-                  warningsByAccount.get(account.id) ?? [];
-                const isHighlighted = highlightSet.has(account.id);
-
-                return (
-                  <div
-                    key={account.id}
-                    ref={(el) => {
-                      rowRefs.current.set(account.id, el);
-                    }}
-                    className={cn(
-                      "border rounded-lg p-4 space-y-3 transition-shadow",
-                      isHighlighted &&
-                        "ring-2 ring-amber-400/70 border-amber-400/50",
-                    )}
-                  >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-medium">{account.name}</h4>
-                        <span className="text-xs text-muted-foreground">
-                          {account.type}
-                          {account.owner ? ` · ${account.owner}` : ""} ·{" "}
-                          {account.currency || "GBP"}{" "}
-                          {getCurrencySymbol(account.currency || "GBP")}
-                        </span>
-                      </div>
-                      {draft && (
-                        <span className="text-xs text-muted-foreground">
-                          Ending{" "}
-                          {formatCurrencyAmount(
-                            draft.endingBalance,
-                            account.currency || "GBP",
-                          )}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-sm">Ending Balance</Label>
-                          {(() => {
-                            const explanation = getFieldExplanation(
-                              account.type,
-                              "endingBalance",
-                            );
-                            return explanation ? (
-                              <InfoButton
-                                title={explanation.title}
-                                description={explanation.description}
-                              />
-                            ) : null;
-                          })()}
-                        </div>
-                        <Input
-                          type="number"
-                          value={draft?.endingBalance || ""}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              account.id,
-                              "endingBalance",
-                              e.target.value,
-                            )
-                          }
-                          onFocus={(e) => e.currentTarget.select()}
-                          placeholder="0"
-                        />
-                      </div>
-                      {showIncome && (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Label className="text-sm">Income</Label>
-                            {(() => {
-                              const explanation = getFieldExplanation(
-                                account.type,
-                                "income",
-                              );
-                              return explanation ? (
-                                <InfoButton
-                                  title={explanation.title}
-                                  description={explanation.description}
-                                />
-                              ) : null;
-                            })()}
-                          </div>
-                          <Input
-                            type="number"
-                            value={draft?.income || ""}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                account.id,
-                                "income",
-                                e.target.value,
-                              )
-                            }
-                            onFocus={(e) => e.currentTarget.select()}
-                            placeholder="0"
-                          />
-                        </div>
-                      )}
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-sm">{contributionsLabel}</Label>
-                          {(() => {
-                            const explanation = getFieldExplanation(
-                              account.type,
-                              "cashIn",
-                            );
-                            return explanation ? (
-                              <InfoButton
-                                title={explanation.title}
-                                description={explanation.description}
-                              />
-                            ) : null;
-                          })()}
-                        </div>
-                        <Input
-                          type="number"
-                          value={draft?.cashIn || ""}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              account.id,
-                              "cashIn",
-                              e.target.value,
-                            )
-                          }
-                          onFocus={(e) => e.currentTarget.select()}
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1">
-                          <Label className="text-sm">{withdrawalsLabel}</Label>
-                          {(() => {
-                            const explanation = getFieldExplanation(
-                              account.type,
-                              "cashOut",
-                            );
-                            return explanation ? (
-                              <InfoButton
-                                title={explanation.title}
-                                description={explanation.description}
-                              />
-                            ) : null;
-                          })()}
-                        </div>
-                        <Input
-                          type="number"
-                          value={draft?.cashOut || ""}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              account.id,
-                              "cashOut",
-                              e.target.value,
-                            )
-                          }
-                          onFocus={(e) => e.currentTarget.select()}
-                          placeholder="0"
-                        />
-                      </div>
-                      {draft && isExpenditureField(account.type) && (
-                        <div className="space-y-1 sm:col-span-2">
-                          <div className="flex items-center gap-1">
-                            <Label className="text-sm">Expenditure</Label>
-                            {(() => {
-                              const explanation = getFieldExplanation(
-                                account.type,
-                                "expenditure",
-                              );
-                              return explanation ? (
-                                <InfoButton
-                                  title={explanation.title}
-                                  description={explanation.description}
-                                />
-                              ) : null;
-                            })()}
-                            {draft.expenditureEdited ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleResetExpenditure(account.id)
-                                }
-                                className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
-                              >
-                                Reset to {withdrawalsLabel.toLowerCase()}
-                              </button>
-                            ) : (
-                              <span className="ml-auto text-[10px] text-muted-foreground">
-                                Auto — tracks {withdrawalsLabel.toLowerCase()}
-                              </span>
-                            )}
-                          </div>
-                          <Input
-                            type="number"
-                            value={draft.expenditure || ""}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                account.id,
-                                "expenditure",
-                                e.target.value,
-                              )
-                            }
-                            onFocus={(e) => e.currentTarget.select()}
-                            placeholder="0"
-                          />
-                          {draft.expenditureEdited &&
-                            draft.cashOut > draft.expenditure && (
-                              <p className="text-[11px] text-muted-foreground">
-                                Transfer amount: {" "}
-                                {formatCurrencyAmount(
-                                  draft.cashOut - draft.expenditure,
-                                  account.currency || "GBP",
-                                )}{" "}
-                                (excluded from savings rate).
-                              </p>
-                            )}
-                        </div>
-                      )}
-                    </div>
-                    {accountWarnings.length > 0 && (
-                      <WarningList
-                        warnings={accountWarnings}
-                        showAccount={false}
-                        showMonth={false}
-                      />
-                    )}
+            <>
+              {/* Income streams */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Income this month</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Add each income stream (salary, freelance, rental, …).
+                    </p>
                   </div>
-                );
-              })}
-            </div>
+                  {incomeTotal > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      Total{" "}
+                      {formatCurrencyAmount(
+                        incomeTotal,
+                        incomeDrafts[0]?.currency ?? "GBP",
+                      )}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  {incomeDrafts.map((d, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        className="flex-1"
+                        placeholder="Source (e.g. Salary)"
+                        value={d.name}
+                        onChange={(e) =>
+                          updateIncome(i, { name: e.target.value })
+                        }
+                      />
+                      <Input
+                        className="w-28"
+                        type="number"
+                        placeholder="0"
+                        value={d.amount || ""}
+                        onChange={(e) =>
+                          updateIncome(i, {
+                            amount: Number.isFinite(
+                              Number.parseFloat(e.target.value),
+                            )
+                              ? Number.parseFloat(e.target.value)
+                              : 0,
+                          })
+                        }
+                        onFocus={(e) => e.currentTarget.select()}
+                      />
+                      <Select
+                        value={d.currency}
+                        onValueChange={(v) =>
+                          updateIncome(i, { currency: v as Currency })
+                        }
+                      >
+                        <SelectTrigger className="w-[72px]">
+                          <SelectValue>
+                            {getCurrencySymbol(d.currency)}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {supportedCurrencies.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {getCurrencySymbol(c)} {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeIncomeLine(i)}
+                        aria-label="Remove income stream"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addIncomeLine}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add income
+                </Button>
+              </div>
+
+              {/* Account balances */}
+              {accounts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No accessible accounts.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <h4 className="font-medium">Account values</h4>
+                  {accounts.map((account) => {
+                    const draft = drafts.find(
+                      (d) => d.accountId === account.id,
+                    );
+                    const accountWarnings =
+                      warningsByAccount.get(account.id) ?? [];
+                    const isHighlighted = highlightSet.has(account.id);
+
+                    return (
+                      <div
+                        key={account.id}
+                        ref={(el) => {
+                          rowRefs.current.set(account.id, el);
+                        }}
+                        className={cn(
+                          "border rounded-lg p-4 space-y-3 transition-shadow",
+                          isHighlighted &&
+                            "ring-2 ring-amber-400/70 border-amber-400/50",
+                        )}
+                      >
+                        <div className="flex justify-between items-center gap-3">
+                          <div>
+                            <h4 className="font-medium">{account.name}</h4>
+                            <span className="text-xs text-muted-foreground">
+                              {account.type}
+                              {account.owner ? ` · ${account.owner}` : ""} ·{" "}
+                              {account.currency || "GBP"}{" "}
+                              {getCurrencySymbol(account.currency || "GBP")}
+                            </span>
+                          </div>
+                          <div className="w-40">
+                            <Label className="text-xs text-muted-foreground">
+                              Ending Balance
+                            </Label>
+                            <Input
+                              type="number"
+                              value={draft?.endingBalance || ""}
+                              onChange={(e) =>
+                                handleBalanceChange(account.id, e.target.value)
+                              }
+                              onFocus={(e) => e.currentTarget.select()}
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                        {accountWarnings.length > 0 && (
+                          <WarningList
+                            warnings={accountWarnings}
+                            showAccount={false}
+                            showMonth={false}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </div>
         <DialogFooter>
@@ -559,7 +477,7 @@ export function MonthlyEntryDialog({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSaving || isLoading}>
-            {isSaving ? "Saving…" : "Save Entries"}
+            {isSaving ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -18,7 +18,6 @@ import { Plus } from "lucide-react";
 import { addMonthlyEntry, getCurrentValue } from "@/lib/actions";
 import { toast } from "@/components/ui/use-toast";
 import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
-import { shouldShowIncome, getFieldLabels, computeExpenditure } from "@/lib/account-helpers";
 import { getFieldExplanation } from "@/lib/field-explanations";
 import { InfoButton } from "@/components/ui/info-button";
 import {
@@ -37,20 +36,10 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState("");
   const [endingBalance, setEndingBalance] = useState("");
-  const [cashIn, setCashIn] = useState("");
-  const [cashOut, setCashOut] = useState("");
-  const [income, setIncome] = useState("");
-  const [expenditure, setExpenditure] = useState("");
-  const [expenditureEdited, setExpenditureEdited] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentValue, setCurrentValue] = useState(0);
   const [healthContext, setHealthContext] =
     useState<DataHealthMonthContext | null>(null);
-
-  const { contributionsLabel, withdrawalsLabel } = getFieldLabels(account.type);
-  const showIncome = shouldShowIncome(account.type);
-  const showExpenditure =
-    account.type === "Current" || account.type === "Credit_Card";
 
   useEffect(() => {
     async function fetchCurrentValue() {
@@ -76,18 +65,16 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
 
   const liveWarnings = useMemo(() => {
     if (!healthContext || !month) return [];
-    const cashInN = Number.parseFloat(cashIn) || 0;
-    const cashOutN = Number.parseFloat(cashOut) || 0;
     const endingN = Number.parseFloat(endingBalance) || 0;
-    const incomeN = showIncome ? Number.parseFloat(income) || 0 : 0;
 
+    // Balance-only entry: cash-flow fields are 0.
     const draftEntry = {
       accountId: account.id,
       month,
       endingBalance: endingN,
-      cashIn: cashInN,
-      cashOut: cashOutN,
-      income: incomeN,
+      cashIn: 0,
+      cashOut: 0,
+      income: 0,
     };
 
     const others = healthContext.monthEntriesByAccount
@@ -100,16 +87,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
       previousEntries: healthContext.previousEntries,
       fxRate: healthContext.fxRate,
     }).filter((w) => w.accountId === account.id);
-  }, [
-    healthContext,
-    month,
-    cashIn,
-    cashOut,
-    endingBalance,
-    income,
-    showIncome,
-    account.id,
-  ]);
+  }, [healthContext, month, endingBalance, account.id]);
 
   const handleSubmit = async () => {
     if (!month) {
@@ -124,25 +102,9 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
     setIsSubmitting(true);
 
     try {
-      const cashOutValue = Number.parseFloat(cashOut) || 0;
-      const cashInValue = Number.parseFloat(cashIn) || 0;
-      const incomeValue = showIncome ? Number.parseFloat(income) || 0 : 0;
-      const expenditureOverride =
-        showExpenditure && expenditureEdited
-          ? Number.parseFloat(expenditure) || 0
-          : undefined;
-      const expenditureStored =
-        expenditureOverride ??
-        computeExpenditure(account.type, cashOutValue);
-
+      const endingValue = Number.parseFloat(endingBalance) || 0;
       const result = await addMonthlyEntry(account.id, month, {
-        endingBalance: Number.parseFloat(endingBalance) || 0,
-        cashIn: cashInValue,
-        cashOut: cashOutValue,
-        income: incomeValue,
-        expenditure: expenditureOverride,
-        internalTransfersOut: 0,
-        debtPayments: 0,
+        endingBalance: endingValue,
       });
 
       if (result.success) {
@@ -150,14 +112,14 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
           accountId: account.id,
           monthKey: month,
           month,
-          endingBalance: Number.parseFloat(endingBalance) || 0,
-          cashIn: cashInValue,
-          cashOut: cashOutValue,
-          income: incomeValue,
-          expenditure: expenditureStored,
+          endingBalance: endingValue,
+          cashIn: 0,
+          cashOut: 0,
+          income: 0,
+          expenditure: 0,
           internalTransfersOut: 0,
           debtPayments: 0,
-          cashFlow: cashInValue - cashOutValue,
+          cashFlow: 0,
           accountGrowth: 0,
         };
 
@@ -166,11 +128,6 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         // Reset form and close dialog
         setMonth("");
         setEndingBalance("");
-        setCashIn("");
-        setCashOut("");
-        setIncome("");
-        setExpenditure("");
-        setExpenditureEdited(false);
         setOpen(false);
 
         toast({
@@ -213,7 +170,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
         <DialogHeader>
           <DialogTitle>Add Month for {account.name}</DialogTitle>
           <DialogDescription>
-            Enter the month-end balance and any cash movements for this account.
+            Enter the account&rsquo;s value at the end of the month.
             <br />
             <span className="text-sm text-muted-foreground">
               Current balance:{" "}
@@ -221,7 +178,7 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
             </span>
             <br />
             <span className="text-xs text-muted-foreground font-medium">
-              All values should be in {account.currency || "GBP"}{" "}
+              Value should be in {account.currency || "GBP"}{" "}
               {getCurrencySymbol(account.currency || "GBP")}
             </span>
           </DialogDescription>
@@ -262,145 +219,6 @@ export function AddMonthDialog({ account, onAddMonth }: AddMonthDialogProps) {
               placeholder="0"
             />
           </div>
-          {showIncome && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <Label htmlFor="income">Income</Label>
-                {(() => {
-                  const explanation = getFieldExplanation(
-                    account.type,
-                    "income"
-                  );
-                  return explanation ? (
-                    <InfoButton
-                      title={explanation.title}
-                      description={explanation.description}
-                    />
-                  ) : null;
-                })()}
-              </div>
-              <Input
-                id="income"
-                type="number"
-                value={income}
-                onChange={(e) => setIncome(e.target.value)}
-                onFocus={(e) => e.currentTarget.select()}
-                placeholder="0"
-              />
-            </div>
-          )}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <Label htmlFor="cash-in">{contributionsLabel}</Label>
-              {(() => {
-                const explanation = getFieldExplanation(account.type, "cashIn");
-                return explanation ? (
-                  <InfoButton
-                    title={explanation.title}
-                    description={explanation.description}
-                  />
-                ) : null;
-              })()}
-            </div>
-            <Input
-              id="cash-in"
-              type="number"
-              value={cashIn}
-              onChange={(e) => setCashIn(e.target.value)}
-              onFocus={(e) => e.currentTarget.select()}
-              placeholder="0"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <Label htmlFor="cash-out">{withdrawalsLabel}</Label>
-              {(() => {
-                const explanation = getFieldExplanation(
-                  account.type,
-                  "cashOut"
-                );
-                return explanation ? (
-                  <InfoButton
-                    title={explanation.title}
-                    description={explanation.description}
-                  />
-                ) : null;
-              })()}
-            </div>
-            <Input
-              id="cash-out"
-              type="number"
-              value={cashOut}
-              onChange={(e) => {
-                const next = e.target.value;
-                setCashOut(next);
-                if (showExpenditure && !expenditureEdited) {
-                  setExpenditure(next);
-                }
-              }}
-              onFocus={(e) => e.currentTarget.select()}
-              placeholder="0"
-            />
-          </div>
-          {showExpenditure && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <Label htmlFor="expenditure">Expenditure</Label>
-                {(() => {
-                  const explanation = getFieldExplanation(
-                    account.type,
-                    "expenditure",
-                  );
-                  return explanation ? (
-                    <InfoButton
-                      title={explanation.title}
-                      description={explanation.description}
-                    />
-                  ) : null;
-                })()}
-                {expenditureEdited ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExpenditure(cashOut);
-                      setExpenditureEdited(false);
-                    }}
-                    className="ml-auto text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
-                  >
-                    Reset to {withdrawalsLabel.toLowerCase()}
-                  </button>
-                ) : (
-                  <span className="ml-auto text-[10px] text-muted-foreground">
-                    Auto — tracks {withdrawalsLabel.toLowerCase()}
-                  </span>
-                )}
-              </div>
-              <Input
-                id="expenditure"
-                type="number"
-                value={expenditureEdited ? expenditure : cashOut}
-                onChange={(e) => {
-                  setExpenditure(e.target.value);
-                  setExpenditureEdited(true);
-                }}
-                onFocus={(e) => e.currentTarget.select()}
-                placeholder="0"
-              />
-              {expenditureEdited &&
-                (Number.parseFloat(cashOut) || 0) >
-                  (Number.parseFloat(expenditure) || 0) && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Transfer amount: {" "}
-                    {formatCurrencyAmount(
-                      (Number.parseFloat(cashOut) || 0) -
-                        (Number.parseFloat(expenditure) || 0),
-                      account.currency || "GBP",
-                    )}{" "}
-                    (excluded from savings rate).
-                  </p>
-                )}
-            </div>
-          )}
         </div>
         {liveWarnings.length > 0 && (
           <div className="pb-3">

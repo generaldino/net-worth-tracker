@@ -12,6 +12,7 @@
     "db:fix-migrations": "tsx scripts/fix-migration-tracking.ts",
     "db:remove-migration": "tsx scripts/remove-migration-tracking.ts",
     "backfill:fx-rates": "tsx scripts/backfill-fx-rates.ts",
+    "backfill:income-streams": "tsx scripts/backfill-income-streams.ts",
     "smoke:llm": "tsx scripts/smoke-test-llm.ts",
     "test:llm-tools": "tsx scripts/test-llm-tools.ts",
     "tsx": "tsx"

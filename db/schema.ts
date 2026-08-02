@@ -96,6 +96,29 @@ export const monthlyEntries = pgTable(
   })
 );
 
+export const incomeStreams = pgTable(
+  "income_streams",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    month: text("month").notNull(), // Format: "YYYY-MM"
+    name: text("name").notNull(), // e.g. "Salary", "Freelance", "Rental"
+    amount: numeric("amount").notNull().default("0"),
+    currency: currencyEnum("currency").notNull().default("GBP"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("income_streams_user_id_idx").on(table.userId),
+    userMonthIdx: index("income_streams_user_id_month_idx").on(
+      table.userId,
+      table.month
+    ),
+  })
+);
+
 export const exchangeRates = pgTable("exchange_rates", {
   id: uuid("id").defaultRandom().primaryKey(),
   date: text("date").notNull().unique(), // Format: "YYYY-MM-DD" (last day of month)
@@ -199,6 +222,8 @@ export type Account = typeof financialAccounts.$inferSelect;
 export type NewAccount = typeof financialAccounts.$inferInsert;
 export type MonthlyEntry = typeof monthlyEntries.$inferSelect;
 export type NewMonthlyEntry = typeof monthlyEntries.$inferInsert;
+export type IncomeStream = typeof incomeStreams.$inferSelect;
+export type NewIncomeStream = typeof incomeStreams.$inferInsert;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type NewExchangeRate = typeof exchangeRates.$inferInsert;
 export type ProjectionScenario = typeof projectionScenarios.$inferSelect;
