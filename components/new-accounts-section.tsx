@@ -16,6 +16,7 @@ import {
   Info,
   ArrowUp,
   ArrowDown,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +94,7 @@ import { toast } from "@/components/ui/use-toast";
 import { EditAccountDialog } from "@/components/edit-account-dialog";
 import { StaleAccountsBanner } from "@/components/stale-accounts-banner";
 import { StaleAccountsWizard } from "@/components/stale-accounts-wizard";
+import { IncomeDialog } from "@/components/income-dialog";
 import { shouldShowIncome, getFieldLabels } from "@/lib/account-helpers";
 import { createAccount } from "@/lib/actions";
 
@@ -229,6 +231,7 @@ export function NewAccountsSection({
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showAddEntryDialog, setShowAddEntryDialog] = React.useState(false);
   const [showEditEntryDialog, setShowEditEntryDialog] = React.useState(false);
+  const [showIncomeDialog, setShowIncomeDialog] = React.useState(false);
   const [showDeleteEntryDialog, setShowDeleteEntryDialog] =
     React.useState(false);
   const [selectedAccount, setSelectedAccount] = React.useState<Account | null>(
@@ -555,6 +558,19 @@ export function NewAccountsSection({
             <span className="hidden sm:inline">Export CSV</span>
           </Button>
 
+          {/* Income Button */}
+          {!isDemo && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowIncomeDialog(true)}
+              className="h-8 gap-1.5 bg-transparent"
+            >
+              <Wallet className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Income</span>
+            </Button>
+          )}
+
           {/* Add Account Button */}
           {!isDemo && (
             <Button
@@ -813,6 +829,13 @@ export function NewAccountsSection({
         account={selectedAccount}
         open={showEditAccountDialog}
         onOpenChange={setShowEditAccountDialog}
+      />
+
+      {/* Income Dialog */}
+      <IncomeDialog
+        open={showIncomeDialog}
+        onOpenChange={setShowIncomeDialog}
+        onSaved={() => router.refresh()}
       />
 
       {/* Add Account Dialog */}

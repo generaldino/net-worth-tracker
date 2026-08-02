@@ -12,30 +12,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { type Account, type AccountType } from "@/lib/types";
-import { supportedCurrencies } from "@/lib/types";
 import {
   getMonthDataHealthContext,
   getMonthEditorData,
   saveMonthlyEntriesForMonth,
   type DataHealthMonthContext,
 } from "@/app/actions/data-health";
-import { saveIncomeStreams } from "@/app/actions/income";
+import {
+  saveIncomeStreams,
+  type IncomeStreamDraft,
+} from "@/app/actions/income";
+import { IncomeStreamsEditor } from "@/components/income-streams-editor";
 import { computeLiveWarnings, type CheckAccount } from "@/lib/data-health";
 import { WarningList } from "@/components/data-health/warning-list";
 import { WarningSummary } from "@/components/data-health/warning-summary";
-import { getCurrencySymbol, formatCurrencyAmount } from "@/lib/fx-rates";
+import { getCurrencySymbol } from "@/lib/fx-rates";
 import type { Currency } from "@/lib/fx-rates";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2 } from "lucide-react";
 
 interface MonthlyEntryDialogProps {
   open: boolean;
@@ -52,11 +47,6 @@ type DraftEntry = {
   endingBalance: number;
 };
 
-type IncomeDraft = {
-  name: string;
-  amount: number;
-  currency: Currency;
-};
 
 export function MonthlyEntryDialog({
   open,
@@ -68,7 +58,7 @@ export function MonthlyEntryDialog({
   const [month, setMonth] = useState(selectedMonth);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [drafts, setDrafts] = useState<DraftEntry[]>([]);
-  const [incomeDrafts, setIncomeDrafts] = useState<IncomeDraft[]>([]);
+  const [incomeDrafts, setIncomeDrafts] = useState<IncomeStreamDraft[]>([]);
   const [healthContext, setHealthContext] =
     useState<DataHealthMonthContext | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -207,31 +197,6 @@ export function MonthlyEntryDialog({
     );
   };
 
-  const updateIncome = (
-    index: number,
-    patch: Partial<IncomeDraft>,
-  ) => {
-    setIncomeDrafts((prev) =>
-      prev.map((d, i) => (i === index ? { ...d, ...patch } : d)),
-    );
-  };
-
-  const addIncomeLine = () => {
-    setIncomeDrafts((prev) => [
-      ...prev,
-      { name: "", amount: 0, currency: "GBP" },
-    ]);
-  };
-
-  const removeIncomeLine = (index: number) => {
-    setIncomeDrafts((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const incomeTotal = useMemo(
-    () => incomeDrafts.reduce((sum, d) => sum + (d.amount || 0), 0),
-    [incomeDrafts],
-  );
-
   const handleSubmit = async () => {
     setIsSaving(true);
     try {
@@ -315,89 +280,16 @@ export function MonthlyEntryDialog({
             <>
               {/* Income streams */}
               <div className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Income this month</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Add each income stream (salary, freelance, rental, …).
-                    </p>
-                  </div>
-                  {incomeTotal > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      Total{" "}
-                      {formatCurrencyAmount(
-                        incomeTotal,
-                        incomeDrafts[0]?.currency ?? "GBP",
-                      )}
-                    </span>
-                  )}
+                <div>
+                  <h4 className="font-medium">Income this month</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Add each income stream (salary, freelance, rental, …).
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  {incomeDrafts.map((d, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Input
-                        className="flex-1"
-                        placeholder="Source (e.g. Salary)"
-                        value={d.name}
-                        onChange={(e) =>
-                          updateIncome(i, { name: e.target.value })
-                        }
-                      />
-                      <Input
-                        className="w-28"
-                        type="number"
-                        placeholder="0"
-                        value={d.amount || ""}
-                        onChange={(e) =>
-                          updateIncome(i, {
-                            amount: Number.isFinite(
-                              Number.parseFloat(e.target.value),
-                            )
-                              ? Number.parseFloat(e.target.value)
-                              : 0,
-                          })
-                        }
-                        onFocus={(e) => e.currentTarget.select()}
-                      />
-                      <Select
-                        value={d.currency}
-                        onValueChange={(v) =>
-                          updateIncome(i, { currency: v as Currency })
-                        }
-                      >
-                        <SelectTrigger className="w-[72px]">
-                          <SelectValue>
-                            {getCurrencySymbol(d.currency)}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {supportedCurrencies.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              {getCurrencySymbol(c)} {c}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeIncomeLine(i)}
-                        aria-label="Remove income stream"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addIncomeLine}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add income
-                </Button>
+                <IncomeStreamsEditor
+                  streams={incomeDrafts}
+                  onChange={setIncomeDrafts}
+                />
               </div>
 
               {/* Account balances */}

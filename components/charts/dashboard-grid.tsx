@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import { Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { IncomeDialog } from "@/components/income-dialog";
 import { filterChartDataByPeriod } from "./chart-shared";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useChartCurrencyConverter } from "@/lib/chart-currency-converter";
@@ -42,10 +46,12 @@ const IncomeSpendingChart = dynamic(
 // shared context and the period from URL state — both of which are also
 // read by the navbar KPIs so a single `period` URL param drives everything.
 export function DashboardGrid() {
+  const router = useRouter();
   const rawData = useChartData();
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
   const [period] = useUrlState<TimePeriod>("period", "1Y");
+  const [showIncomeDialog, setShowIncomeDialog] = useState(false);
 
   const chartData = useMemo(() => {
     if (!rawData) return null;
@@ -64,12 +70,31 @@ export function DashboardGrid() {
   ) as Currency;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="lg:col-span-2">
-        <ChartErrorBoundary name="Net Worth">
-          <NetWorthChart data={chartData} chartCurrency={chartCurrency} />
-        </ChartErrorBoundary>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5"
+          onClick={() => setShowIncomeDialog(true)}
+        >
+          <Wallet className="h-3.5 w-3.5" />
+          Income
+        </Button>
       </div>
+
+      <IncomeDialog
+        open={showIncomeDialog}
+        onOpenChange={setShowIncomeDialog}
+        onSaved={() => router.refresh()}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="lg:col-span-2">
+          <ChartErrorBoundary name="Net Worth">
+            <NetWorthChart data={chartData} chartCurrency={chartCurrency} />
+          </ChartErrorBoundary>
+        </div>
       <div className="lg:col-span-2">
         <ChartErrorBoundary name="Income & Spending">
           <IncomeSpendingChart
@@ -102,10 +127,11 @@ export function DashboardGrid() {
           />
         </ChartErrorBoundary>
       </div>
-      <div className="lg:col-span-2">
-        <ChartErrorBoundary name="Runway & Financial Independence">
-          <RunwayFICard />
-        </ChartErrorBoundary>
+        <div className="lg:col-span-2">
+          <ChartErrorBoundary name="Runway & Financial Independence">
+            <RunwayFICard />
+          </ChartErrorBoundary>
+        </div>
       </div>
     </div>
   );
