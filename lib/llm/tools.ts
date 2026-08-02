@@ -89,19 +89,25 @@ async function computeMonthlyMetrics(
     );
 
   // Income comes from user-entered income streams (decoupled from accounts).
-  const streamRows = await db
-    .select({
-      name: incomeStreams.name,
-      amount: incomeStreams.amount,
-      currency: incomeStreams.currency,
-    })
-    .from(incomeStreams)
-    .where(
-      and(
-        inArray(incomeStreams.userId, accessibleUserIds),
-        eq(incomeStreams.month, month),
-      ),
-    );
+  let streamRows: Array<{ name: string; amount: string; currency: Currency }> =
+    [];
+  try {
+    streamRows = await db
+      .select({
+        name: incomeStreams.name,
+        amount: incomeStreams.amount,
+        currency: incomeStreams.currency,
+      })
+      .from(incomeStreams)
+      .where(
+        and(
+          inArray(incomeStreams.userId, accessibleUserIds),
+          eq(incomeStreams.month, month),
+        ),
+      );
+  } catch (err) {
+    console.error("Income streams unavailable, treating as none:", err);
+  }
 
   if (rows.length === 0 && streamRows.length === 0) {
     return { month, error: `No entries found for ${month}` };

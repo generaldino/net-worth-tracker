@@ -357,15 +357,28 @@ export async function getFinancialMetrics() {
     );
 
     // Income now comes from user-entered income streams (decoupled from
-    // accounts), summed per currency per month.
-    const incomeStreamRows = await db
-      .select({
-        month: incomeStreams.month,
-        amount: incomeStreams.amount,
-        currency: incomeStreams.currency,
-      })
-      .from(incomeStreams)
-      .where(inArray(incomeStreams.userId, accessibleUserIds));
+    // accounts), summed per currency per month. Guarded so income being
+    // unavailable (e.g. the migration not yet applied) never breaks metrics.
+    let incomeStreamRows: Array<{
+      month: string;
+      amount: string;
+      currency: Currency;
+    }> = [];
+    try {
+      incomeStreamRows = await db
+        .select({
+          month: incomeStreams.month,
+          amount: incomeStreams.amount,
+          currency: incomeStreams.currency,
+        })
+        .from(incomeStreams)
+        .where(inArray(incomeStreams.userId, accessibleUserIds));
+    } catch (err) {
+      console.error(
+        "Income streams unavailable for financial metrics, treating as none:",
+        err,
+      );
+    }
 
     // Income per month per currency, reused for the YTD / all-time comparisons.
     const incomeByMonthCurrency = new Map<string, Map<Currency, number>>();
@@ -1390,15 +1403,30 @@ export async function getChartData(
 
     // Income streams are decoupled from accounts (household-level), so they are
     // loaded for all accessible users and not narrowed by the account filters.
-    const incomeStreamRows = await db
-      .select({
-        month: incomeStreams.month,
-        name: incomeStreams.name,
-        amount: incomeStreams.amount,
-        currency: incomeStreams.currency,
-      })
-      .from(incomeStreams)
-      .where(inArray(incomeStreams.userId, accessibleUserIds));
+    // Guarded so that income being unavailable (e.g. the migration not yet
+    // applied) never breaks net worth or the rest of the chart.
+    let incomeStreamRows: Array<{
+      month: string;
+      name: string;
+      amount: string;
+      currency: Currency;
+    }> = [];
+    try {
+      incomeStreamRows = await db
+        .select({
+          month: incomeStreams.month,
+          name: incomeStreams.name,
+          amount: incomeStreams.amount,
+          currency: incomeStreams.currency,
+        })
+        .from(incomeStreams)
+        .where(inArray(incomeStreams.userId, accessibleUserIds));
+    } catch (err) {
+      console.error(
+        "Income streams unavailable for chart data, treating as none:",
+        err,
+      );
+    }
 
     const incomeStreamsByMonth = new Map<
       string,
