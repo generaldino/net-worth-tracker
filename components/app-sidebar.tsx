@@ -17,8 +17,8 @@ import {
   ChevronUp,
   FlaskConical,
   Wallet,
-  ShieldAlert,
   Coins,
+  Receipt,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,9 +62,9 @@ const navItems = [
     icon: Wallet,
   },
   {
-    title: "Data Health",
-    url: "/data-health",
-    icon: ShieldAlert,
+    title: "Budget",
+    url: "/budget",
+    icon: Receipt,
   },
   {
     title: "FX Rate",

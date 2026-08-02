@@ -20,6 +20,7 @@ import {
 } from "@/lib/fx-rates-server";
 import type { StaleAccountsData, StaleAccountEntry } from "@/lib/types";
 import { getCategoryFromType } from "@/lib/account-helpers";
+import { getMonthlyExpenseTotals } from "@/lib/expenses-server";
 
 export async function calculateNetWorth() {
   try {
@@ -357,15 +358,28 @@ export async function getFinancialMetrics() {
     );
 
     // Income now comes from user-entered income streams (decoupled from
-    // accounts), summed per currency per month.
-    const incomeStreamRows = await db
-      .select({
-        month: incomeStreams.month,
-        amount: incomeStreams.amount,
-        currency: incomeStreams.currency,
-      })
-      .from(incomeStreams)
-      .where(inArray(incomeStreams.userId, accessibleUserIds));
+    // accounts), summed per currency per month. Guarded so income being
+    // unavailable (e.g. the migration not yet applied) never breaks metrics.
+    let incomeStreamRows: Array<{
+      month: string;
+      amount: string;
+      currency: Currency;
+    }> = [];
+    try {
+      incomeStreamRows = await db
+        .select({
+          month: incomeStreams.month,
+          amount: incomeStreams.amount,
+          currency: incomeStreams.currency,
+        })
+        .from(incomeStreams)
+        .where(inArray(incomeStreams.userId, accessibleUserIds));
+    } catch (err) {
+      console.error(
+        "Income streams unavailable for financial metrics, treating as none:",
+        err,
+      );
+    }
 
     // Income per month per currency, reused for the YTD / all-time comparisons.
     const incomeByMonthCurrency = new Map<string, Map<Currency, number>>();
@@ -391,25 +405,58 @@ export async function getFinancialMetrics() {
       incomeByMonthCurrency.set(row.month, monthMap);
     });
 
-    // Expenditure still derives from Current/Credit_Card monthly entries
-    // (historical data preserved; new balance-only entries record 0 until the
-    // Budget module lands).
+    // Expenditure comes from the budget module's expenses. Months with no
+    // expense rows fall back to the legacy per-account `expenditure` column so
+    // history keeps working before/during the backfill.
+    const expenseTotalsByMonth = await getMonthlyExpenseTotals(
+      accessibleUserIds,
+    );
+
+    // Per-month legacy expenditure, used only where expenses have no rows.
+    const legacyExpenditureByMonth = new Map<string, Map<Currency, number>>();
     entries.forEach((entry) => {
+      if (
+        entry.accountType !== "Current" &&
+        entry.accountType !== "Credit_Card"
+      ) {
+        return;
+      }
       const currency = (entry.accountCurrency || "GBP") as Currency;
       const expenditure = Number(entry.expenditure || 0);
-      const isYTDMonth = entry.month.startsWith(currentYear);
+      const monthMap =
+        legacyExpenditureByMonth.get(entry.month) ?? new Map<Currency, number>();
+      monthMap.set(currency, (monthMap.get(currency) || 0) + expenditure);
+      legacyExpenditureByMonth.set(entry.month, monthMap);
+    });
 
-      if (
-        entry.accountType === "Current" ||
-        entry.accountType === "Credit_Card"
-      ) {
-        if (isYTDMonth) {
-          const current = expenditureByCurrencyYTD.get(currency) || 0;
-          expenditureByCurrencyYTD.set(currency, current + expenditure);
-        }
-        const current = expenditureByCurrencyAllTime.get(currency) || 0;
-        expenditureByCurrencyAllTime.set(currency, current + expenditure);
+    /** Spend for a month: expenses if any exist, else the legacy column. */
+    const expenditureForMonth = (month: string): Map<Currency, number> => {
+      const fromExpenses = expenseTotalsByMonth.get(month);
+      if (fromExpenses && fromExpenses.length > 0) {
+        return new Map(fromExpenses.map((t) => [t.currency, t.amount]));
       }
+      return legacyExpenditureByMonth.get(month) ?? new Map();
+    };
+
+    const allMonths = new Set<string>([
+      ...legacyExpenditureByMonth.keys(),
+      ...expenseTotalsByMonth.keys(),
+    ]);
+
+    allMonths.forEach((month) => {
+      const isYTDMonth = month.startsWith(currentYear);
+      expenditureForMonth(month).forEach((amount, currency) => {
+        if (isYTDMonth) {
+          expenditureByCurrencyYTD.set(
+            currency,
+            (expenditureByCurrencyYTD.get(currency) || 0) + amount,
+          );
+        }
+        expenditureByCurrencyAllTime.set(
+          currency,
+          (expenditureByCurrencyAllTime.get(currency) || 0) + amount,
+        );
+      });
     });
 
     // Convert maps to arrays
@@ -515,22 +562,7 @@ export async function getFinancialMetrics() {
       const ytdStartMonth = `${currentYear}-01`;
       const januaryIncomeByCurrency =
         incomeByMonthCurrency.get(ytdStartMonth) ?? new Map<Currency, number>();
-      const januaryExpenditureByCurrency = new Map<Currency, number>();
-
-      entries.forEach((entry) => {
-        if (entry.month === ytdStartMonth) {
-          const currency = (entry.accountCurrency || "GBP") as Currency;
-          const expenditure = Number(entry.expenditure || 0);
-
-          if (
-            entry.accountType === "Current" ||
-            entry.accountType === "Credit_Card"
-          ) {
-            const current = januaryExpenditureByCurrency.get(currency) || 0;
-            januaryExpenditureByCurrency.set(currency, current + expenditure);
-          }
-        }
-      });
+      const januaryExpenditureByCurrency = expenditureForMonth(ytdStartMonth);
 
       const januaryIncome = Array.from(januaryIncomeByCurrency.values()).reduce(
         (sum, val) => sum + val,
@@ -606,25 +638,7 @@ export async function getFinancialMetrics() {
       const firstMonth = allEntriesOrdered[0].month;
       const firstMonthIncomeByCurrency =
         incomeByMonthCurrency.get(firstMonth) ?? new Map<Currency, number>();
-      const firstMonthExpenditureByCurrency = new Map<Currency, number>();
-
-      allEntriesOrdered.forEach((entry) => {
-        if (entry.month === firstMonth) {
-          const currency = (entry.accountCurrency || "GBP") as Currency;
-          const expenditure = Number(entry.expenditure || 0);
-
-          if (
-            entry.accountType === "Current" ||
-            entry.accountType === "Credit_Card"
-          ) {
-            const current = firstMonthExpenditureByCurrency.get(currency) || 0;
-            firstMonthExpenditureByCurrency.set(
-              currency,
-              current + expenditure,
-            );
-          }
-        }
-      });
+      const firstMonthExpenditureByCurrency = expenditureForMonth(firstMonth);
 
       const firstMonthIncome = Array.from(
         firstMonthIncomeByCurrency.values(),
@@ -1390,15 +1404,30 @@ export async function getChartData(
 
     // Income streams are decoupled from accounts (household-level), so they are
     // loaded for all accessible users and not narrowed by the account filters.
-    const incomeStreamRows = await db
-      .select({
-        month: incomeStreams.month,
-        name: incomeStreams.name,
-        amount: incomeStreams.amount,
-        currency: incomeStreams.currency,
-      })
-      .from(incomeStreams)
-      .where(inArray(incomeStreams.userId, accessibleUserIds));
+    // Guarded so that income being unavailable (e.g. the migration not yet
+    // applied) never breaks net worth or the rest of the chart.
+    let incomeStreamRows: Array<{
+      month: string;
+      name: string;
+      amount: string;
+      currency: Currency;
+    }> = [];
+    try {
+      incomeStreamRows = await db
+        .select({
+          month: incomeStreams.month,
+          name: incomeStreams.name,
+          amount: incomeStreams.amount,
+          currency: incomeStreams.currency,
+        })
+        .from(incomeStreams)
+        .where(inArray(incomeStreams.userId, accessibleUserIds));
+    } catch (err) {
+      console.error(
+        "Income streams unavailable for chart data, treating as none:",
+        err,
+      );
+    }
 
     const incomeStreamsByMonth = new Map<
       string,
@@ -1413,6 +1442,13 @@ export async function getChartData(
       });
       incomeStreamsByMonth.set(r.month, arr);
     }
+
+    // Spend from the budget module. Like income streams these are
+    // household-level, so they are not narrowed by the account filters. Months
+    // with no expense rows fall back to the legacy per-account expenditure.
+    const expenseTotalsByMonth = await getMonthlyExpenseTotals(
+      accessibleUserIds,
+    );
 
     // Transform the data into the required format
     const monthlyData: Record<
@@ -1740,6 +1776,7 @@ export async function getChartData(
       let capitalGains = 0;
       let totalWorkIncome = 0;
       let totalExpenditure = 0;
+      let legacyExpenditure = 0;
 
       // Per-account breakdowns (with currency info - amounts stored in original currency)
       const savingsAccounts: Array<{
@@ -1774,22 +1811,14 @@ export async function getChartData(
 
         const accountCurrency = (account.currency || "GBP") as Currency;
 
-        // Add expenditure from Current accounts (convert to GBP). Income no
-        // longer comes from accounts — see income streams below.
-        if (account.type === "Current") {
-          const expenditure = Number(entry.expenditure || 0);
-          totalExpenditure += convertToGBPForMonth(
-            expenditure,
-            accountCurrency,
-            month,
-          );
-        }
-
-        // Add Credit Card expenditure to total expenditure (new charges = spending)
-        if (account.type === "Credit_Card") {
-          const expenditure = Number(entry.expenditure || 0);
-          totalExpenditure += convertToGBPForMonth(
-            expenditure,
+        // Legacy per-account expenditure, used only when this month has no
+        // rows in the budget module (see the fallback after this loop).
+        if (
+          account.type === "Current" ||
+          account.type === "Credit_Card"
+        ) {
+          legacyExpenditure += convertToGBPForMonth(
+            Number(entry.expenditure || 0),
             accountCurrency,
             month,
           );
@@ -1835,6 +1864,22 @@ export async function getChartData(
           });
         }
       });
+
+      // Spend comes from the budget module when this month has expense rows;
+      // otherwise fall back to the legacy per-account expenditure so historic
+      // months keep rendering before the backfill runs.
+      const monthExpenses = expenseTotalsByMonth.get(month);
+      if (monthExpenses && monthExpenses.length > 0) {
+        for (const total of monthExpenses) {
+          totalExpenditure += convertToGBPForMonth(
+            total.amount,
+            total.currency,
+            month,
+          );
+        }
+      } else {
+        totalExpenditure = legacyExpenditure;
+      }
 
       // Income comes from user-entered income streams for the month.
       const monthIncomeStreams = incomeStreamsByMonth.get(month) ?? [];
