@@ -18,6 +18,7 @@ import {
   FlaskConical,
   Wallet,
   Coins,
+  Receipt,
 } from "lucide-react";
 import {
   Sidebar,
@@ -59,6 +60,11 @@ const navItems = [
     title: "Accounts",
     url: "/accounts",
     icon: Wallet,
+  },
+  {
+    title: "Budget",
+    url: "/budget",
+    icon: Receipt,
   },
   {
     title: "FX Rate",
