@@ -11,6 +11,7 @@ export interface Account {
   isISA: boolean;
   owner: string;
   category?: string;
+  currency?: string;
 }
 
 export interface SourceData {
