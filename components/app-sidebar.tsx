@@ -17,7 +17,6 @@ import {
   ChevronUp,
   FlaskConical,
   Wallet,
-  ShieldAlert,
   Coins,
 } from "lucide-react";
 import {
@@ -60,11 +59,6 @@ const navItems = [
     title: "Accounts",
     url: "/accounts",
     icon: Wallet,
-  },
-  {
-    title: "Data Health",
-    url: "/data-health",
-    icon: ShieldAlert,
   },
   {
     title: "FX Rate",
