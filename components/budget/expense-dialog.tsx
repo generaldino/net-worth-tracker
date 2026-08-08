@@ -95,11 +95,16 @@ export function ExpenseDialog({
   }, [open, expense, defaultMonth]);
 
   const amountNum = Number.parseFloat(amount);
+  // New expenses must name their account — statement coverage depends on
+  // attribution. Existing rows (pre-rule or import-era) stay editable as-is.
+  const accountOk =
+    isEdit || accounts.length === 0 || accountId !== NO_ACCOUNT;
   const canSave =
     date.length > 0 &&
     Number.isFinite(amountNum) &&
     amountNum !== 0 &&
     description.trim().length > 0 &&
+    accountOk &&
     !isSaving;
 
   const handleSave = async () => {
@@ -215,13 +220,17 @@ export function ExpenseDialog({
 
           {accounts.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="expense-account">Account (optional)</Label>
+              <Label htmlFor="expense-account">
+                Account{isEdit ? "" : " — which card or account paid?"}
+              </Label>
               <Select value={accountId} onValueChange={setAccountId}>
                 <SelectTrigger id="expense-account">
-                  <SelectValue placeholder="None" />
+                  <SelectValue placeholder="Select account" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_ACCOUNT}>None</SelectItem>
+                  {isEdit && (
+                    <SelectItem value={NO_ACCOUNT}>None</SelectItem>
+                  )}
                   {accounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.name}

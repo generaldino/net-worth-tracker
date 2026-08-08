@@ -227,6 +227,36 @@ export const expenses = pgTable(
   })
 );
 
+/**
+ * "No activity" confirmations for statement coverage. A spending account
+ * (Current / Credit_Card) counts as covered for a month when it has expense
+ * rows for that month OR one of these rows — the user's explicit "this
+ * account genuinely had nothing this month".
+ */
+export const statementCoverageOverrides = pgTable(
+  "statement_coverage_overrides",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => financialAccounts.id, { onDelete: "cascade" }),
+    month: text("month").notNull(), // Format: "YYYY-MM"
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    accountMonthUnique: uniqueIndex(
+      "statement_coverage_overrides_account_month_unique",
+    ).on(table.accountId, table.month),
+    userMonthIdx: index("statement_coverage_overrides_user_month_idx").on(
+      table.userId,
+      table.month,
+    ),
+  }),
+);
+
 export const categoryRules = pgTable(
   "category_rules",
   {
@@ -365,6 +395,8 @@ export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type NewExchangeRate = typeof exchangeRates.$inferInsert;
 export type ProjectionScenario = typeof projectionScenarios.$inferSelect;
 export type NewProjectionScenario = typeof projectionScenarios.$inferInsert;
+export type StatementCoverageOverride =
+  typeof statementCoverageOverrides.$inferSelect;
 export type DashboardShare = typeof dashboardShares.$inferSelect;
 export type NewDashboardShare = typeof dashboardShares.$inferInsert;
 export type DashboardInvitation = typeof dashboardInvitations.$inferSelect;

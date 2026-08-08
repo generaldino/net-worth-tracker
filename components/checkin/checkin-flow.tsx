@@ -23,6 +23,7 @@ import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { IncomeStreamsEditor } from "@/components/income-streams-editor";
 import { ReviewPanel } from "@/components/budget/review-panel";
+import { StatementCoverageStrip } from "@/components/budget/statement-coverage";
 import { WarningList } from "@/components/data-health/warning-list";
 import { computeLiveWarnings, type CheckAccount } from "@/lib/data-health";
 import {
@@ -251,9 +252,9 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
             <dl className="space-y-2.5 text-sm">
               {!summary.spendTracked && (
                 <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-                  No spending recorded for this month yet — import a statement
-                  or add expenses on the Budget page and the saved-vs-growth
-                  split will complete itself.
+                  {summary.spendCoverage
+                    ? `Spending covers ${summary.spendCoverage.covered} of ${summary.spendCoverage.total} accounts so far — import the missing statements (or mark them no-activity) and the saved-vs-growth split will complete itself.`
+                    : "No spending recorded for this month yet — import a statement or add expenses on the Budget page and the saved-vs-growth split will complete itself."}
                 </p>
               )}
               {summary.spendTracked && (
@@ -481,6 +482,18 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
             })}
           </div>
         </section>
+
+        {/* Statement coverage — is the month's spending all in? */}
+        {data.coverage.totalCount > 0 && (
+          <section className="rounded-xl border bg-card p-4 sm:p-5">
+            <StatementCoverageStrip
+              coverage={data.coverage}
+              onImport={(accountId) =>
+                router.push(`/budget?month=${data.month}&import=${accountId}`)
+              }
+            />
+          </section>
+        )}
 
         {/* Budget stragglers */}
         {data.uncategorised.length > 0 && data.categories.length > 0 && (

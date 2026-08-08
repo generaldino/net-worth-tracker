@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
+  Crosshair,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -54,6 +55,8 @@ import { cn } from "@/lib/utils";
 import { colorVariantsBackground } from "@/lib/color-variants";
 import { formatCurrencyAmount } from "@/lib/fx-rates";
 import { CategoriesManager } from "@/components/budget/categories-manager";
+import { StatementCoverageStrip } from "@/components/budget/statement-coverage";
+import { TargetsDialog } from "@/components/budget/targets-dialog";
 import { ExpenseDialog } from "@/components/budget/expense-dialog";
 import { ImportDialog } from "@/components/budget/import-dialog";
 import { ReviewPanel } from "@/components/budget/review-panel";
@@ -67,6 +70,7 @@ import {
 import { deleteExpense, type ExpenseRow } from "@/app/actions/expenses";
 import type { CategoryRow } from "@/app/actions/expense-categories";
 import type { BudgetPageData } from "@/app/actions/budget";
+import type { StatementCoverage } from "@/app/actions/statements";
 
 const HistoryChart = dynamic(
   () => import("@/components/budget/history-chart").then((m) => m.HistoryChart),
@@ -94,6 +98,9 @@ interface BudgetViewProps {
   topMerchants: BudgetPageData["topMerchants"];
   categorySparklines: Record<string, number[]>;
   sparklineMonths: string[];
+  coverage: StatementCoverage;
+  /** Auto-open the import dialog preselected to this account (deep link). */
+  autoImportAccountId?: string | null;
 }
 
 const UNCATEGORISED = "__uncategorised__";
@@ -133,10 +140,14 @@ export function BudgetView({
   topMerchants,
   categorySparklines,
   sparklineMonths,
+  coverage,
+  autoImportAccountId,
 }: BudgetViewProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [importAccountId, setImportAccountId] = useState<string | null>(null);
+  const [targetsOpen, setTargetsOpen] = useState(false);
   const [editRow, setEditRow] = useState<ExpenseRow | null>(null);
   const [deleteRow, setDeleteRow] = useState<ExpenseRow | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -149,6 +160,20 @@ export function BudgetView({
     () => new Map(categories.map((c) => [c.id, c])),
     [categories],
   );
+
+  // Deep link from the check-in's coverage chips: open the import dialog
+  // preselected to the account whose statement is missing.
+  useEffect(() => {
+    if (autoImportAccountId) {
+      setImportAccountId(autoImportAccountId);
+      setImportOpen(true);
+    }
+  }, [autoImportAccountId]);
+
+  const openImportFor = (accountId: string | null) => {
+    setImportAccountId(accountId);
+    setImportOpen(true);
+  };
 
   // Spend excludes categories flagged "not spending" (card payments/transfers).
   const monthSpend = useMemo(
@@ -307,9 +332,13 @@ export function BudgetView({
                 <Plus className="mr-2 size-4" />
                 Add expense
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setImportOpen(true)}>
+              <DropdownMenuItem onClick={() => openImportFor(null)}>
                 <Upload className="mr-2 size-4" />
                 Import CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTargetsOpen(true)}>
+                <Crosshair className="mr-2 size-4" />
+                Set targets…
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem
@@ -347,27 +376,39 @@ export function BudgetView({
                 </span>
               )}
             </p>
-            {pace && (
-              <Badge
-                variant="secondary"
-                className={cn(
-                  "mt-1",
-                  pace.over
-                    ? "bg-red-500/10 text-red-600 dark:text-red-400"
+            <div className="mt-1 flex flex-wrap gap-1">
+              {pace && (
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    pace.over
+                      ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                      : pace.onTrack
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                  )}
+                >
+                  {pace.over
+                    ? "over budget"
                     : pace.onTrack
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
-                )}
-              >
-                {pace.over
-                  ? "over budget"
-                  : pace.onTrack
-                    ? "on track"
-                    : "running hot"}
-                {" · "}
-                {pace.daysLeft}d left
-              </Badge>
-            )}
+                      ? "on track"
+                      : "running hot"}
+                  {" · "}
+                  {pace.daysLeft}d left
+                </Badge>
+              )}
+              {!coverage.complete && (
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                  title="Spend is understated until every statement is in"
+                >
+                  {coverage.totalCount - coverage.coveredCount} statement
+                  {coverage.totalCount - coverage.coveredCount === 1 ? "" : "s"}{" "}
+                  missing
+                </Badge>
+              )}
+            </div>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Income</p>
@@ -391,6 +432,27 @@ export function BudgetView({
             </p>
           </div>
         </div>
+
+        <div className="mt-3 border-t pt-3">
+          <StatementCoverageStrip
+            coverage={coverage}
+            onImport={(accountId) => openImportFor(accountId)}
+          />
+        </div>
+
+        {plannedTotal === 0 && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            No targets set —{" "}
+            <button
+              type="button"
+              onClick={() => setTargetsOpen(true)}
+              className="font-medium text-foreground underline-offset-2 hover:underline"
+            >
+              set your targets
+            </button>{" "}
+            to see over/under per category.
+          </p>
+        )}
 
         {insight && (
           <p className="mt-3 border-t pt-3 text-sm">
@@ -440,7 +502,7 @@ export function BudgetView({
             Import a card statement or add one by hand.
           </p>
           <div className="mt-4 flex items-center justify-center gap-2">
-            <Button onClick={() => setImportOpen(true)} size="sm" variant="outline">
+            <Button onClick={() => openImportFor(null)} size="sm" variant="outline">
               <Upload className="size-4" />
               Import CSV
             </Button>
@@ -622,9 +684,22 @@ export function BudgetView({
 
       <ImportDialog
         open={importOpen}
-        onOpenChange={setImportOpen}
+        onOpenChange={(open) => {
+          setImportOpen(open);
+          if (!open) setImportAccountId(null);
+        }}
         accounts={accounts}
+        defaultAccountId={importAccountId}
         onImported={() => router.refresh()}
+      />
+
+      <TargetsDialog
+        open={targetsOpen}
+        onOpenChange={setTargetsOpen}
+        categories={categories}
+        averages={categoryAverages}
+        incomeTotalGbp={incomeTotalGbp}
+        onSaved={() => router.refresh()}
       />
 
       <AlertDialog

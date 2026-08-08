@@ -13,6 +13,10 @@ import { getUserId } from "@/lib/auth-helpers";
 import { getExchangeRates } from "@/lib/fx-rates-server";
 import { getMonthlyExpenseTotals } from "@/lib/expenses-server";
 import { getCategories, type CategoryRow } from "@/app/actions/expense-categories";
+import {
+  getStatementCoverage,
+  type StatementCoverage,
+} from "@/app/actions/statements";
 import type { ExpenseRow } from "@/app/actions/expenses";
 import type { AccountType } from "@/lib/types";
 import type { Currency } from "@/lib/fx-rates";
@@ -132,6 +136,8 @@ export interface CheckinData {
   /** Uncategorised expenses for the month, for the tidy-up step. */
   uncategorised: ExpenseRow[];
   categories: CategoryRow[];
+  /** Which spending accounts have their statement in for the month. */
+  coverage: StatementCoverage;
 }
 
 export async function getCheckinData(month: string): Promise<CheckinData> {
@@ -274,6 +280,8 @@ export async function getCheckinData(month: string): Promise<CheckinData> {
     console.error("Expenses unavailable for check-in:", err);
   }
 
+  const coverage = await getStatementCoverage(month);
+
   return {
     month,
     defaultMonth,
@@ -282,6 +290,7 @@ export async function getCheckinData(month: string): Promise<CheckinData> {
     incomeCarried,
     uncategorised,
     categories,
+    coverage,
   };
 }
 
@@ -305,6 +314,8 @@ export interface CheckinSummary {
   plannedSpendGbp: number | null;
   /** False when the month has no expense rows — spend is unknown, not zero. */
   spendTracked: boolean;
+  /** Statement coverage for the month; null when there are no spending accounts. */
+  spendCoverage: { covered: number; total: number } | null;
   assetsTotal: number;
   liabilitiesTotal: number;
 }
@@ -397,7 +408,14 @@ export async function getCheckinSummary(month: string): Promise<CheckinSummary> 
   // spend, not zero — the reveal says so instead of faking a savings rate.
   let spend = 0;
   const expenseTotals = (await getMonthlyExpenseTotals([userId])).get(month);
-  const spendTracked = !!expenseTotals && expenseTotals.length > 0;
+  // Coverage-aware: the month's spend is trustworthy when every spending
+  // account has its statement in (or a no-activity confirmation), not
+  // merely when some rows exist.
+  const coverage = await getStatementCoverage(month);
+  const spendTracked =
+    coverage.totalCount > 0
+      ? coverage.complete
+      : !!expenseTotals && expenseTotals.length > 0;
   if (expenseTotals) {
     for (const t of expenseTotals) {
       spend += toGbp(t.amount, t.currency, monthRates);
@@ -440,6 +458,10 @@ export async function getCheckinSummary(month: string): Promise<CheckinSummary> 
     savingsRate: spendTracked && income > 0 ? (saved / income) * 100 : null,
     plannedSpendGbp,
     spendTracked,
+    spendCoverage:
+      coverage.totalCount > 0
+        ? { covered: coverage.coveredCount, total: coverage.totalCount }
+        : null,
     assetsTotal: current?.assets ?? 0,
     liabilitiesTotal: current?.liabilities ?? 0,
   };
