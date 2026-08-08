@@ -68,21 +68,50 @@ function toRow(row: typeof expenseCategories.$inferSelect): CategoryRow {
 }
 
 /**
- * Lists the user's active categories, seeding the starter set the first time.
- * Pass includeArchived to also return soft-deleted ones.
+ * Reads all of a user's category rows, tolerating a database that hasn't run
+ * the monthly_target / is_fixed migration yet — pages keep rendering and
+ * targets simply read as unset until the columns exist.
  */
-export async function getCategories(
-  includeArchived = false,
-): Promise<CategoryRow[]> {
-  const userId = await getUserId();
+async function loadCategoryRows(userId: string): Promise<CategoryRow[]> {
+  try {
+    const rows = await db
+      .select()
+      .from(expenseCategories)
+      .where(eq(expenseCategories.userId, userId))
+      .orderBy(asc(expenseCategories.displayOrder), asc(expenseCategories.name));
+    return rows.map(toRow);
+  } catch (err) {
+    console.error(
+      "Categories: falling back to pre-migration columns (run the 0003 migration):",
+      err,
+    );
+    const rows = await db
+      .select({
+        id: expenseCategories.id,
+        name: expenseCategories.name,
+        color: expenseCategories.color,
+        excludeFromSpend: expenseCategories.excludeFromSpend,
+        displayOrder: expenseCategories.displayOrder,
+        archivedAt: expenseCategories.archivedAt,
+      })
+      .from(expenseCategories)
+      .where(eq(expenseCategories.userId, userId))
+      .orderBy(asc(expenseCategories.displayOrder), asc(expenseCategories.name));
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      color: r.color,
+      excludeFromSpend: r.excludeFromSpend,
+      monthlyTarget: null,
+      isFixed: false,
+      displayOrder: r.displayOrder,
+      archivedAt: r.archivedAt ? r.archivedAt.toISOString() : null,
+    }));
+  }
+}
 
-  const rows = await db
-    .select()
-    .from(expenseCategories)
-    .where(eq(expenseCategories.userId, userId))
-    .orderBy(asc(expenseCategories.displayOrder), asc(expenseCategories.name));
-
-  if (rows.length === 0) {
+async function seedStarterCategories(userId: string): Promise<void> {
+  try {
     await db.insert(expenseCategories).values(
       STARTER_CATEGORIES.map((c, i) => ({
         userId,
@@ -93,17 +122,38 @@ export async function getCategories(
         displayOrder: i,
       })),
     );
-    const seeded = await db
-      .select()
-      .from(expenseCategories)
-      .where(eq(expenseCategories.userId, userId))
-      .orderBy(asc(expenseCategories.displayOrder), asc(expenseCategories.name));
-    return seeded.map(toRow);
+  } catch {
+    // Pre-migration database: seed without the new column.
+    await db.insert(expenseCategories).values(
+      STARTER_CATEGORIES.map((c, i) => ({
+        userId,
+        name: c.name,
+        color: c.color,
+        excludeFromSpend: c.excludeFromSpend,
+        displayOrder: i,
+      })),
+    );
+  }
+}
+
+/**
+ * Lists the user's active categories, seeding the starter set the first time.
+ * Pass includeArchived to also return soft-deleted ones.
+ */
+export async function getCategories(
+  includeArchived = false,
+): Promise<CategoryRow[]> {
+  const userId = await getUserId();
+
+  let rows = await loadCategoryRows(userId);
+
+  if (rows.length === 0) {
+    await seedStarterCategories(userId);
+    rows = await loadCategoryRows(userId);
+    return rows;
   }
 
-  return rows
-    .filter((r) => includeArchived || r.archivedAt === null)
-    .map(toRow);
+  return rows.filter((r) => includeArchived || r.archivedAt === null);
 }
 
 function validate(input: CategoryInput): string | null {
