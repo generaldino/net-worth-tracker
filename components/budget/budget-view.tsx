@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Loader2,
   Pencil,
@@ -45,8 +46,23 @@ import { CategoriesManager } from "@/components/budget/categories-manager";
 import { ExpenseDialog } from "@/components/budget/expense-dialog";
 import { ImportDialog } from "@/components/budget/import-dialog";
 import { ReviewPanel } from "@/components/budget/review-panel";
+import {
+  CategoryBars,
+  type CategoryTotalRow,
+} from "@/components/budget/category-bars";
 import { deleteExpense, type ExpenseRow } from "@/app/actions/expenses";
 import type { CategoryRow } from "@/app/actions/expense-categories";
+import type { BudgetHistoryPoint, BudgetPageData } from "@/app/actions/budget";
+
+const HistoryChart = dynamic(
+  () => import("@/components/budget/history-chart").then((m) => m.HistoryChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[240px] w-full animate-pulse rounded-lg bg-muted/30" />
+    ),
+  },
+);
 
 interface BudgetViewProps {
   month: string;
@@ -54,14 +70,12 @@ interface BudgetViewProps {
   expenses: ExpenseRow[];
   categories: CategoryRow[];
   accounts: Array<{ id: string; name: string; type: string }>;
-  categoryTotals: Array<{
-    categoryId: string | null;
-    name: string;
-    color: string;
-    excludeFromSpend: boolean;
-    total: number;
-  }>;
+  categoryTotals: CategoryTotalRow[];
   uncategorisedCount: number;
+  incomeTotalGbp: number;
+  categoryAverages: Record<string, number>;
+  history: BudgetHistoryPoint[];
+  runway: BudgetPageData["runway"];
 }
 
 const ALL_CATEGORIES = "__all__";
@@ -73,6 +87,10 @@ function formatMonthLabel(month: string): string {
     month: "long",
     year: "numeric",
   });
+}
+
+function currentMonthKey(): string {
+  return new Date().toISOString().slice(0, 7);
 }
 
 function swatch(color: string) {
@@ -90,6 +108,10 @@ export function BudgetView({
   accounts,
   categoryTotals,
   uncategorisedCount,
+  incomeTotalGbp,
+  categoryAverages,
+  history,
+  runway,
 }: BudgetViewProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -120,6 +142,37 @@ export function BudgetView({
         .reduce((sum, t) => sum + t.total, 0),
     [categoryTotals],
   );
+
+  // The plan: sum of category targets (active, spending categories only).
+  const plannedTotal = useMemo(
+    () =>
+      categories
+        .filter((c) => !c.excludeFromSpend && c.monthlyTarget !== null)
+        .reduce((sum, c) => sum + (c.monthlyTarget ?? 0), 0),
+    [categories],
+  );
+
+  const kept = incomeTotalGbp - monthSpend;
+  const savingsRate =
+    incomeTotalGbp > 0 ? Math.round((kept / incomeTotalGbp) * 100) : null;
+
+  // Pacing, only meaningful for the month we're inside.
+  const pace = useMemo(() => {
+    if (month !== currentMonthKey() || plannedTotal <= 0) return null;
+    const now = new Date();
+    const daysInMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+    ).getDate();
+    const daysLeft = daysInMonth - now.getDate();
+    const expected = plannedTotal * (now.getDate() / daysInMonth);
+    return {
+      daysLeft,
+      onTrack: monthSpend <= expected * 1.05,
+      over: monthSpend > plannedTotal,
+    };
+  }, [month, plannedTotal, monthSpend]);
 
   const changeMonth = (next: string) => {
     router.push(`/budget?month=${next}`);
@@ -173,86 +226,133 @@ export function BudgetView({
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground max-w-2xl">
-          Track what you spend and where it goes. Import a card statement or add
-          expenses by hand, then categorise them.
-        </p>
       </header>
 
-      {/* Month + totals */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={month} onValueChange={changeMonth}>
-          <SelectTrigger className="h-9 w-[190px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {months.map((m) => (
-              <SelectItem key={m} value={m}>
-                {formatMonthLabel(m)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Month + the plan-vs-actual summary */}
+      <div className="space-y-3 rounded-xl border bg-card p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Select value={month} onValueChange={changeMonth}>
+            <SelectTrigger className="h-9 w-[190px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {months.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {formatMonthLabel(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold tabular-nums">
-            {formatCurrencyAmount(monthSpend, "GBP")}
-          </span>
-          <span className="text-xs text-muted-foreground">spent</span>
+          {uncategorisedCount > 0 && (
+            <Button
+              variant={categoryFilter === UNCATEGORISED ? "default" : "outline"}
+              size="sm"
+              className="h-8"
+              onClick={() =>
+                setCategoryFilter((prev) =>
+                  prev === UNCATEGORISED ? ALL_CATEGORIES : UNCATEGORISED,
+                )
+              }
+            >
+              {uncategorisedCount} uncategorised
+            </Button>
+          )}
         </div>
 
-        {uncategorisedCount > 0 && (
-          <Button
-            variant={categoryFilter === UNCATEGORISED ? "default" : "outline"}
-            size="sm"
-            className="h-8"
-            onClick={() =>
-              setCategoryFilter((prev) =>
-                prev === UNCATEGORISED ? ALL_CATEGORIES : UNCATEGORISED,
-              )
-            }
-          >
-            {uncategorisedCount} uncategorised
-          </Button>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-3xl font-bold tabular-nums">
+            {formatCurrencyAmount(monthSpend, "GBP")}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            spent
+            {plannedTotal > 0 && (
+              <>
+                {" "}
+                of{" "}
+                <span className="font-medium text-foreground">
+                  {formatCurrencyAmount(plannedTotal, "GBP")}
+                </span>{" "}
+                planned
+              </>
+            )}
+          </span>
+          {pace && (
+            <Badge
+              variant="secondary"
+              className={cn(
+                "ml-1",
+                pace.over
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  : pace.onTrack
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+              )}
+            >
+              {pace.over
+                ? "over budget"
+                : pace.onTrack
+                  ? "on track"
+                  : "running hot"}
+              {" · "}
+              {pace.daysLeft} day{pace.daysLeft === 1 ? "" : "s"} left
+            </Badge>
+          )}
+        </div>
+
+        {(incomeTotalGbp > 0 || monthSpend > 0) && (
+          <p className="text-sm text-muted-foreground">
+            Income{" "}
+            <span className="font-medium text-foreground tabular-nums">
+              {formatCurrencyAmount(incomeTotalGbp, "GBP")}
+            </span>
+            {" · "}kept{" "}
+            <span
+              className={cn(
+                "font-medium tabular-nums",
+                kept >= 0
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-red-600 dark:text-red-400",
+              )}
+            >
+              {formatCurrencyAmount(kept, "GBP")}
+            </span>
+            {savingsRate !== null && <> ({savingsRate}% of income)</>}
+            {" — "}that&apos;s what grows your net worth.
+          </p>
+        )}
+
+        {runway && (
+          <p className="text-xs text-muted-foreground">
+            Your cash &amp; investments (
+            {formatCurrencyAmount(runway.liquidGbp, "GBP")}) cover about{" "}
+            <span className="font-medium text-foreground">
+              {runway.months >= 24
+                ? `${(runway.months / 12).toFixed(1)} years`
+                : `${Math.round(runway.months)} months`}
+            </span>{" "}
+            at your recent spend (
+            {formatCurrencyAmount(runway.avgSpendGbp, "GBP")}/month, trailing
+            3-month average; excludes pensions and property).
+          </p>
         )}
       </div>
 
       {/* Uncategorised review — merchant-grouped bulk categorisation */}
       <ReviewPanel expenses={expenses} categories={categories} />
 
-      {/* Category totals */}
-      {categoryTotals.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {categoryTotals.map((t) => (
-            <button
-              key={t.categoryId ?? UNCATEGORISED}
-              type="button"
-              onClick={() =>
-                setCategoryFilter(t.categoryId ?? UNCATEGORISED)
-              }
-              className={cn(
-                "flex items-center gap-2 rounded-lg border px-3 py-2 text-left transition hover:bg-muted/50",
-                (categoryFilter === (t.categoryId ?? UNCATEGORISED)) &&
-                  "ring-2 ring-ring",
-              )}
-            >
-              <span className={cn("size-2.5 rounded-full", swatch(t.color))} />
-              <span className="text-sm">{t.name}</span>
-              <span className="text-sm font-medium tabular-nums">
-                {formatCurrencyAmount(t.total, "GBP")}
-              </span>
-              {t.excludeFromSpend && (
-                <Badge
-                  variant="secondary"
-                  className="h-4 px-1.5 text-[10px] font-normal"
-                >
-                  excl.
-                </Badge>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Plan vs actual, per category */}
+      <CategoryBars
+        categories={categories}
+        totals={categoryTotals}
+        averages={categoryAverages}
+        activeFilter={
+          categoryFilter === ALL_CATEGORIES || categoryFilter === UNCATEGORISED
+            ? null
+            : categoryFilter
+        }
+        onFilter={(id) => setCategoryFilter(id ?? ALL_CATEGORIES)}
+      />
 
       {/* Expenses */}
       <section className="space-y-3">
@@ -397,6 +497,8 @@ export function BudgetView({
           </div>
         )}
       </section>
+
+      <HistoryChart history={history} />
 
       <CategoriesManager categories={categories} />
 

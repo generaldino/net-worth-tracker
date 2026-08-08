@@ -109,6 +109,19 @@ export function CategoriesManager({ categories }: CategoriesManagerProps) {
                   className={cn("size-2.5 rounded-full", swatch(cat.color))}
                 />
                 <span className="font-medium">{cat.name}</span>
+                {cat.monthlyTarget !== null && (
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    £{cat.monthlyTarget.toLocaleString("en-GB")}/mo
+                  </span>
+                )}
+                {cat.isFixed && (
+                  <Badge
+                    variant="outline"
+                    className="h-4 px-1.5 text-[10px] font-normal"
+                  >
+                    fixed
+                  </Badge>
+                )}
                 {cat.excludeFromSpend && (
                   <Badge
                     variant="secondary"

@@ -46,6 +46,8 @@ export function CategoryDialog({
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>("blue");
   const [excludeFromSpend, setExcludeFromSpend] = useState(false);
+  const [target, setTarget] = useState("");
+  const [isFixed, setIsFixed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -54,10 +56,16 @@ export function CategoryDialog({
       setName(category.name);
       setColor(category.color);
       setExcludeFromSpend(category.excludeFromSpend);
+      setTarget(
+        category.monthlyTarget !== null ? String(category.monthlyTarget) : "",
+      );
+      setIsFixed(category.isFixed);
     } else {
       setName("");
       setColor("blue");
       setExcludeFromSpend(false);
+      setTarget("");
+      setIsFixed(false);
     }
   }, [open, category]);
 
@@ -65,7 +73,15 @@ export function CategoryDialog({
 
   const handleSave = async () => {
     setIsSaving(true);
-    const input = { name, color, excludeFromSpend };
+    const parsedTarget = Number.parseFloat(target);
+    const input = {
+      name,
+      color,
+      excludeFromSpend,
+      monthlyTarget:
+        Number.isFinite(parsedTarget) && parsedTarget > 0 ? parsedTarget : null,
+      isFixed,
+    };
     const result = isEdit
       ? await updateCategory(category.id, input)
       : await createCategory(input);
@@ -129,6 +145,39 @@ export function CategoryDialog({
               ))}
             </div>
           </div>
+
+          {!excludeFromSpend && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="category-target">Monthly target (£)</Label>
+                <Input
+                  id="category-target"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="1"
+                  value={target}
+                  onChange={(e) => setTarget(e.target.value)}
+                  placeholder="No target"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category-fixed" className="block">
+                  Fixed cost
+                </Label>
+                <div className="flex h-9 items-center gap-2">
+                  <Switch
+                    id="category-fixed"
+                    checked={isFixed}
+                    onCheckedChange={setIsFixed}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    rent, utilities…
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
             <div className="space-y-0.5">

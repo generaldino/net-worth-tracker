@@ -141,6 +141,10 @@ export const expenseCategories = pgTable(
     color: text("color").notNull().default("blue"), // key from lib/color-variants
     /** Card payments / transfers are not spending — excluded from spend totals. */
     excludeFromSpend: boolean("exclude_from_spend").notNull().default(false),
+    /** Monthly spending target in GBP; NULL = no target set. */
+    monthlyTarget: numeric("monthly_target"),
+    /** Fixed costs (rent, utilities) group separately from variable spending. */
+    isFixed: boolean("is_fixed").notNull().default(false),
     displayOrder: integer("display_order").notNull().default(0),
     /** Soft delete, so historic expenses keep their label. */
     archivedAt: timestamp("archived_at"),

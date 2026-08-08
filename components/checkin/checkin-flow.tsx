@@ -277,6 +277,27 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
                   </dd>
                 </div>
               )}
+              {summary.plannedSpendGbp !== null && (
+                <div className="flex items-baseline justify-between gap-3">
+                  <dt>
+                    Spending vs plan
+                    <span className="block text-xs text-muted-foreground">
+                      budget for the month
+                    </span>
+                  </dt>
+                  <dd
+                    className={cn(
+                      "font-semibold tabular-nums",
+                      summary.spend <= summary.plannedSpendGbp
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-red-600 dark:text-red-400",
+                    )}
+                  >
+                    {mask(formatCurrencyAmount(summary.spend, "GBP"))} of{" "}
+                    {mask(formatCurrencyAmount(summary.plannedSpendGbp, "GBP"))}
+                  </dd>
+                </div>
+              )}
               {summary.savingsRate !== null && (
                 <div className="flex items-baseline justify-between gap-3 border-t pt-2.5">
                   <dt>Savings rate</dt>

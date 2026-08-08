@@ -30,10 +30,15 @@ export function IncomeStreamsEditor({
   streams,
   onChange,
 }: IncomeStreamsEditorProps) {
-  const total = useMemo(
-    () => streams.reduce((sum, d) => sum + (d.amount || 0), 0),
-    [streams],
-  );
+  // One total per currency — £3,000 + €500 is not "£3,500".
+  const totalsByCurrency = useMemo(() => {
+    const map = new Map<Currency, number>();
+    for (const d of streams) {
+      if (!d.amount) continue;
+      map.set(d.currency, (map.get(d.currency) ?? 0) + d.amount);
+    }
+    return Array.from(map.entries());
+  }, [streams]);
 
   const update = (index: number, patch: Partial<IncomeStreamDraft>) => {
     onChange(streams.map((d, i) => (i === index ? { ...d, ...patch } : d)));
@@ -103,10 +108,14 @@ export function IncomeStreamsEditor({
         <Button type="button" variant="outline" size="sm" onClick={addLine}>
           <Plus className="h-4 w-4 mr-1" /> Add income
         </Button>
-        {total > 0 && (
+        {totalsByCurrency.length > 0 && (
           <span className="text-xs text-muted-foreground">
             Total{" "}
-            {formatCurrencyAmount(total, streams[0]?.currency ?? "GBP")}
+            {totalsByCurrency
+              .map(([currency, amount]) =>
+                formatCurrencyAmount(amount, currency),
+              )
+              .join(" + ")}
           </span>
         )}
       </div>

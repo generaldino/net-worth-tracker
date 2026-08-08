@@ -7,6 +7,7 @@ import {
   monthlyEntries,
   incomeStreams,
   expenses,
+  expenseCategories,
 } from "@/db/schema";
 import { getUserId } from "@/lib/auth-helpers";
 import { getExchangeRates } from "@/lib/fx-rates-server";
@@ -300,6 +301,8 @@ export interface CheckinSummary {
   /** delta − saved: market moves, interest, revaluations. Null on first month. */
   growth: number | null;
   savingsRate: number | null;
+  /** Sum of category targets (GBP); null when no targets are set. */
+  plannedSpendGbp: number | null;
   assetsTotal: number;
   liabilitiesTotal: number;
 }
@@ -425,6 +428,25 @@ export async function getCheckinSummary(month: string): Promise<CheckinSummary> 
     }
   }
 
+  // The plan, if targets are set: lets the reveal say "vs £X planned".
+  let plannedSpendGbp: number | null = null;
+  try {
+    const targetRows = await db
+      .select({
+        monthlyTarget: expenseCategories.monthlyTarget,
+        excludeFromSpend: expenseCategories.excludeFromSpend,
+        archivedAt: expenseCategories.archivedAt,
+      })
+      .from(expenseCategories)
+      .where(eq(expenseCategories.userId, userId));
+    const total = targetRows
+      .filter((r) => !r.excludeFromSpend && r.archivedAt === null)
+      .reduce((sum, r) => sum + (r.monthlyTarget ? Number(r.monthlyTarget) : 0), 0);
+    plannedSpendGbp = total > 0 ? total : null;
+  } catch {
+    // Column may not exist until the migration runs — the reveal just omits the plan.
+  }
+
   const netWorth = current?.netWorth ?? 0;
   const prevNetWorth = previous?.netWorth ?? null;
   const delta = prevNetWorth === null ? null : netWorth - prevNetWorth;
@@ -440,6 +462,7 @@ export async function getCheckinSummary(month: string): Promise<CheckinSummary> 
     saved,
     growth: delta === null ? null : delta - saved,
     savingsRate: income > 0 ? (saved / income) * 100 : null,
+    plannedSpendGbp,
     assetsTotal: current?.assets ?? 0,
     liabilitiesTotal: current?.liabilities ?? 0,
   };

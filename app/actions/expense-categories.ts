@@ -11,6 +11,10 @@ export interface CategoryRow {
   name: string;
   color: string;
   excludeFromSpend: boolean;
+  /** Monthly spending target in GBP; null = no target set. */
+  monthlyTarget: number | null;
+  /** Fixed costs (rent, utilities…) group separately from variable spending. */
+  isFixed: boolean;
   displayOrder: number;
   archivedAt: string | null;
 }
@@ -19,6 +23,8 @@ export interface CategoryInput {
   name: string;
   color: string;
   excludeFromSpend: boolean;
+  monthlyTarget?: number | null;
+  isFixed?: boolean;
 }
 
 export interface CategoryMutationResult {
@@ -35,12 +41,12 @@ const STARTER_CATEGORIES: Array<CategoryInput> = [
   { name: "Groceries", color: "green", excludeFromSpend: false },
   { name: "Dining", color: "orange", excludeFromSpend: false },
   { name: "Transport", color: "blue", excludeFromSpend: false },
-  { name: "Housing", color: "amber", excludeFromSpend: false },
-  { name: "Utilities", color: "teal", excludeFromSpend: false },
+  { name: "Housing", color: "amber", excludeFromSpend: false, isFixed: true },
+  { name: "Utilities", color: "teal", excludeFromSpend: false, isFixed: true },
   { name: "Shopping", color: "pink", excludeFromSpend: false },
   { name: "Health", color: "rose", excludeFromSpend: false },
   { name: "Travel", color: "cyan", excludeFromSpend: false },
-  { name: "Subscriptions", color: "purple", excludeFromSpend: false },
+  { name: "Subscriptions", color: "purple", excludeFromSpend: false, isFixed: true },
   { name: "Other", color: "indigo", excludeFromSpend: false },
   { name: "Payments & Transfers", color: "lime", excludeFromSpend: true },
 ];
@@ -51,6 +57,11 @@ function toRow(row: typeof expenseCategories.$inferSelect): CategoryRow {
     name: row.name,
     color: row.color,
     excludeFromSpend: row.excludeFromSpend,
+    monthlyTarget:
+      row.monthlyTarget !== null && row.monthlyTarget !== undefined
+        ? Number(row.monthlyTarget)
+        : null,
+    isFixed: row.isFixed ?? false,
     displayOrder: row.displayOrder,
     archivedAt: row.archivedAt ? row.archivedAt.toISOString() : null,
   };
@@ -78,6 +89,7 @@ export async function getCategories(
         name: c.name,
         color: c.color,
         excludeFromSpend: c.excludeFromSpend,
+        isFixed: c.isFixed ?? false,
         displayOrder: i,
       })),
     );
@@ -101,7 +113,22 @@ function validate(input: CategoryInput): string | null {
   if (input.name.trim().length > 60) {
     return "Name must be 60 characters or fewer.";
   }
+  if (
+    input.monthlyTarget !== null &&
+    input.monthlyTarget !== undefined &&
+    (!Number.isFinite(input.monthlyTarget) || input.monthlyTarget < 0)
+  ) {
+    return "Target must be a positive amount.";
+  }
   return null;
+}
+
+function targetToDb(input: CategoryInput): string | null {
+  return input.monthlyTarget !== null &&
+    input.monthlyTarget !== undefined &&
+    input.monthlyTarget > 0
+    ? String(input.monthlyTarget)
+    : null;
 }
 
 async function isDuplicateName(
@@ -145,6 +172,8 @@ export async function createCategory(
       name: input.name.trim(),
       color: input.color,
       excludeFromSpend: input.excludeFromSpend,
+      monthlyTarget: targetToDb(input),
+      isFixed: input.isFixed ?? false,
       displayOrder: existing.length,
     });
   } catch (err) {
@@ -178,6 +207,8 @@ export async function updateCategory(
         name: input.name.trim(),
         color: input.color,
         excludeFromSpend: input.excludeFromSpend,
+        monthlyTarget: targetToDb(input),
+        isFixed: input.isFixed ?? false,
         updatedAt: new Date(),
       })
       .where(
