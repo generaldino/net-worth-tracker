@@ -335,6 +335,63 @@ export async function restoreCategory(
   return { success: true };
 }
 
+export interface CategoryTargetInput {
+  id: string;
+  /** GBP per month; null clears the target. */
+  monthlyTarget: number | null;
+}
+
+/**
+ * Batch-set monthly targets — the "set your budget" screen saves every
+ * category in one call. Only the target changes; names, colours and flags
+ * are untouched.
+ */
+export async function saveCategoryTargets(
+  inputs: CategoryTargetInput[],
+): Promise<CategoryMutationResult> {
+  const userId = await getUserId();
+
+  for (const input of inputs) {
+    if (
+      input.monthlyTarget !== null &&
+      (!Number.isFinite(input.monthlyTarget) || input.monthlyTarget < 0)
+    ) {
+      return { success: false, error: "Targets must be positive amounts." };
+    }
+  }
+
+  try {
+    for (const input of inputs) {
+      await db
+        .update(expenseCategories)
+        .set({
+          monthlyTarget:
+            input.monthlyTarget !== null && input.monthlyTarget > 0
+              ? String(input.monthlyTarget)
+              : null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(expenseCategories.id, input.id),
+            eq(expenseCategories.userId, userId),
+          ),
+        );
+    }
+  } catch (err) {
+    return {
+      success: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to save targets — has the targets migration run?",
+    };
+  }
+
+  revalidatePaths();
+  return { success: true };
+}
+
 function revalidatePaths() {
   revalidatePath("/");
   revalidatePath("/budget");

@@ -35,6 +35,8 @@ interface ImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   accounts: Array<{ id: string; name: string; type: string }>;
+  /** Preselect this account (e.g. launched from a missing-statement chip). */
+  defaultAccountId?: string | null;
   onImported: () => void;
 }
 
@@ -47,6 +49,7 @@ export function ImportDialog({
   open,
   onOpenChange,
   accounts,
+  defaultAccountId,
   onImported,
 }: ImportDialogProps) {
   const [step, setStep] = useState<Step>("file");
@@ -67,8 +70,12 @@ export function ImportDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) return;
+    if (open) {
+      if (defaultAccountId) setAccountId(defaultAccountId);
+      return;
+    }
     // Reset on close so the next import starts clean.
+    setAccountId(NO_ACCOUNT);
     setStep("file");
     setFilename("");
     setHeaders([]);
@@ -82,7 +89,7 @@ export function ImportDialog({
       dateFormat: "DMY",
       spendSign: "positive",
     });
-  }, [open]);
+  }, [open, defaultAccountId]);
 
   const guessColumn = (candidates: string[], available: string[]) => {
     for (const candidate of candidates) {
@@ -226,7 +233,6 @@ export function ImportDialog({
                   <SelectValue placeholder="Select a card or account" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_ACCOUNT}>Not linked</SelectItem>
                   {accounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.name}
@@ -235,8 +241,9 @@ export function ImportDialog({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Linking to an account sets the currency and keeps duplicate
-                detection scoped to that card.
+                Every statement belongs to an account — that sets the
+                currency, scopes duplicate detection, and marks the
+                account&apos;s statement as in for the month.
               </p>
             </div>
 
@@ -247,11 +254,17 @@ export function ImportDialog({
                 ref={fileInputRef}
                 type="file"
                 accept=".csv,text/csv"
+                disabled={accountId === NO_ACCOUNT}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleFile(file);
                 }}
               />
+              {accountId === NO_ACCOUNT && (
+                <p className="text-xs text-muted-foreground">
+                  Pick the account first.
+                </p>
+              )}
             </div>
           </div>
         )}

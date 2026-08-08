@@ -7,6 +7,7 @@ import {
   getUncategorisedCount,
 } from "@/app/actions/expenses";
 import { getBudgetPageData } from "@/app/actions/budget";
+import { getStatementCoverage } from "@/app/actions/statements";
 import { getAccounts } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ function currentMonth(): string {
 export default async function BudgetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; import?: string }>;
 }) {
   const params = await searchParams;
 
@@ -39,13 +40,20 @@ export default async function BudgetPage({
     new Set([month, currentMonth(), ...months]),
   ).sort((a, b) => b.localeCompare(a));
 
-  const [expenses, categoryTotals, uncategorisedCount, budgetData] =
+  const [expenses, categoryTotals, uncategorisedCount, budgetData, coverage] =
     await Promise.all([
       getExpenses({ month }),
       getCategoryTotals(month),
       getUncategorisedCount(month),
       getBudgetPageData(month),
+      getStatementCoverage(month),
     ]);
+
+  // Deep link from the check-in: only honour ids that are real accounts.
+  const autoImportAccountId =
+    params.import && accounts.some((a) => a.id === params.import)
+      ? params.import
+      : null;
 
   return (
     <div className="min-h-[calc(100svh-56px)] bg-background overflow-x-hidden max-w-full">
@@ -70,6 +78,8 @@ export default async function BudgetPage({
           topMerchants={budgetData.topMerchants}
           categorySparklines={budgetData.categorySparklines}
           sparklineMonths={budgetData.sparklineMonths}
+          coverage={coverage}
+          autoImportAccountId={autoImportAccountId}
         />
       </div>
     </div>
