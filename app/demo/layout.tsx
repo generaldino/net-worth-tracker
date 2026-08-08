@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { ExchangeRatesProvider } from "@/contexts/exchange-rates-context";
 import { DisplayCurrencyProvider } from "@/contexts/display-currency-context";
 import { MaskingProviderWrapper } from "@/components/masking-provider-wrapper";
-import { DemoProvider } from "@/contexts/demo-context";
 import { getUserPreferences } from "@/lib/preferences";
 import { getInitialExchangeRates } from "@/lib/actions";
 
@@ -26,7 +25,7 @@ export default async function DemoLayout({
       <MaskingProviderWrapper initialMasked={isMasked}>
         <ExchangeRatesProvider initialRates={initialExchangeRates}>
           <DisplayCurrencyProvider initialCurrency={displayCurrency}>
-            <DemoProvider initialDemoMode={true}>{children}</DemoProvider>
+            {children}
           </DisplayCurrencyProvider>
         </ExchangeRatesProvider>
       </MaskingProviderWrapper>

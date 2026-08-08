@@ -15,7 +15,6 @@ import { getUserId } from "@/lib/auth-helpers";
 import type { Currency } from "@/lib/fx-rates";
 import {
   convertCurrency as convertCurrencyServer,
-  fetchAndSaveExchangeRatesForMonth,
   getExchangeRates,
 } from "@/lib/fx-rates-server";
 import type { StaleAccountsData, StaleAccountEntry } from "@/lib/types";
@@ -1188,17 +1187,6 @@ export async function addMonthlyEntry(
     };
 
     await db.insert(monthlyEntries).values(newEntry);
-
-    // Automatically fetch and save FX rates for this month if they don't exist
-    try {
-      await fetchAndSaveExchangeRatesForMonth(month);
-    } catch (error) {
-      // Log error but don't fail the monthly entry creation
-      console.error(
-        `Failed to fetch FX rates for month ${month} (non-blocking):`,
-        error,
-      );
-    }
 
     // Revalidate the page to show the new data
     revalidatePath("/");
@@ -2424,123 +2412,6 @@ export async function exportToCSV(): Promise<string> {
   } catch (error) {
     console.error("Error exporting to CSV:", error);
     throw new Error("Failed to export data to CSV");
-  }
-}
-
-/**
- * Server action to fetch exchange rates for multiple months at once
- * Also includes the latest rate if requested
- * @param months - Array of months in "YYYY-MM" format
- * @returns Array of exchange rates for the last day of each month, plus latest if needed
- */
-export async function fetchExchangeRatesForMonths(months: string[]): Promise<
-  Array<{
-    date: string;
-    gbpRate: string;
-    eurRate: string;
-    usdRate: string;
-    aedRate: string;
-  }>
-> {
-  "use server";
-
-  try {
-    const { exchangeRates } = await import("@/db/schema");
-    const { inArray, desc } = await import("drizzle-orm");
-
-    const results: Array<{
-      date: string;
-      gbpRate: string;
-      eurRate: string;
-      usdRate: string;
-      aedRate: string;
-    }> = [];
-
-    if (months.length > 0) {
-      // Convert months to last day of month dates (use UTC to avoid timezone shifts)
-      const dates = months.map((month) => {
-        const [year, monthNum] = month.split("-").map(Number);
-        const lastDay = new Date(Date.UTC(year, monthNum, 0));
-        return lastDay.toISOString().split("T")[0];
-      });
-
-      // Fetch rates matching exact last-day dates
-      const rates = await db
-        .select()
-        .from(exchangeRates)
-        .where(inArray(exchangeRates.date, dates));
-
-      results.push(
-        ...rates.map((rate) => ({
-          date: rate.date,
-          gbpRate: rate.gbpRate,
-          eurRate: rate.eurRate,
-          usdRate: rate.usdRate,
-          aedRate: rate.aedRate,
-        })),
-      );
-
-      // Fallback: if some months had no exact match, find rates by month prefix
-      // This handles cases where rates are stored with trading-day dates instead of calendar last day
-      if (results.length < months.length) {
-        const foundDates = new Set(results.map((r) => r.date));
-        const missingMonths = months.filter((month) => {
-          const [year, monthNum] = month.split("-").map(Number);
-          const lastDay = new Date(Date.UTC(year, monthNum, 0));
-          const dateStr = lastDay.toISOString().split("T")[0];
-          return !foundDates.has(dateStr);
-        });
-
-        if (missingMonths.length > 0) {
-          const { like } = await import("drizzle-orm");
-          for (const month of missingMonths) {
-            const monthRates = await db
-              .select()
-              .from(exchangeRates)
-              .where(like(exchangeRates.date, `${month}%`))
-              .orderBy(desc(exchangeRates.date))
-              .limit(1);
-
-            if (monthRates.length > 0) {
-              const rate = monthRates[0];
-              results.push({
-                date: rate.date,
-                gbpRate: rate.gbpRate,
-                eurRate: rate.eurRate,
-                usdRate: rate.usdRate,
-                aedRate: rate.aedRate,
-              });
-            }
-          }
-        }
-      }
-    }
-
-    // Always include the latest rate for current value conversions
-    const latestRate = await db
-      .select()
-      .from(exchangeRates)
-      .orderBy(desc(exchangeRates.date))
-      .limit(1);
-
-    if (latestRate.length > 0) {
-      const latest = latestRate[0];
-      // Only add if not already in results
-      if (!results.find((r) => r.date === latest.date)) {
-        results.push({
-          date: latest.date,
-          gbpRate: latest.gbpRate,
-          eurRate: latest.eurRate,
-          usdRate: latest.usdRate,
-          aedRate: latest.aedRate,
-        });
-      }
-    }
-
-    return results;
-  } catch (error) {
-    console.error("Error fetching exchange rates:", error);
-    return [];
   }
 }
 

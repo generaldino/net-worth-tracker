@@ -1,16 +1,7 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useMemo,
-  useState,
-  useCallback,
-  useRef,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useMemo, useState, useCallback, ReactNode } from "react";
 import type { Currency } from "@/lib/fx-rates";
-import { fetchExchangeRatesForMonths } from "@/lib/actions";
 
 export interface ExchangeRate {
   date: string; // Format: "YYYY-MM-DD" (last day of month)
@@ -22,9 +13,6 @@ export interface ExchangeRate {
 
 interface ExchangeRatesContextType {
   rates: Record<string, ExchangeRate>; // Key: "YYYY-MM-DD", Value: ExchangeRate
-  isLoading: boolean;
-  error: string | null;
-  fetchRates: (months: string[]) => Promise<void>; // months in "YYYY-MM" format
   getRate: (month: string, currency: Currency) => number | null; // month in "YYYY-MM" format
 }
 
@@ -34,7 +22,8 @@ const ExchangeRatesContext = createContext<
 
 interface ExchangeRatesProviderProps {
   children: ReactNode;
-  // Accept pre-fetched rates from server (SSR-friendly)
+  // Every stored rate, pre-fetched on the server. Rates are manual-entry
+  // only, so the stored set is the complete set — no lazy loading needed.
   initialRates?: Record<string, ExchangeRate>;
 }
 
@@ -42,58 +31,7 @@ export function ExchangeRatesProvider({
   children,
   initialRates = {},
 }: ExchangeRatesProviderProps) {
-  // Initialize with server-provided rates (no useEffect needed for initial load!)
-  const [rates, setRates] = useState<Record<string, ExchangeRate>>(initialRates);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Use a ref to track rates so fetchRates doesn't need to depend on rates
-  const ratesRef = useRef(rates);
-  ratesRef.current = rates;
-
-  const fetchRates = useCallback(async (months: string[]) => {
-    if (months.length === 0) return;
-
-    // Check which months we already have using the ref
-    const missingMonths = months.filter((month) => {
-      const lastDay = getLastDayOfMonth(month);
-      return !ratesRef.current[lastDay];
-    });
-
-    if (missingMonths.length === 0) {
-      // All rates already loaded
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const fetchedRates = await fetchExchangeRatesForMonths(missingMonths);
-
-      // Convert to our format and merge with existing rates
-      setRates((prevRates) => {
-        const newRates: Record<string, ExchangeRate> = { ...prevRates };
-        fetchedRates.forEach((rate) => {
-          newRates[rate.date] = {
-            date: rate.date,
-            gbpRate: Number(rate.gbpRate),
-            eurRate: Number(rate.eurRate),
-            usdRate: Number(rate.usdRate),
-            aedRate: Number(rate.aedRate),
-          };
-        });
-        return newRates;
-      });
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch exchange rates"
-      );
-      console.error("Error fetching exchange rates:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []); // Empty deps - function is stable now
+  const [rates] = useState<Record<string, ExchangeRate>>(initialRates);
 
   const getRate = useCallback((month: string, currency: Currency): number | null => {
     // Handle "latest" by using the most recent rate
@@ -139,10 +77,7 @@ export function ExchangeRatesProvider({
     }
   }, [rates]);
 
-  const value = useMemo(
-    () => ({ rates, isLoading, error, fetchRates, getRate }),
-    [rates, isLoading, error, fetchRates, getRate]
-  );
+  const value = useMemo(() => ({ rates, getRate }), [rates, getRate]);
 
   return (
     <ExchangeRatesContext.Provider value={value}>

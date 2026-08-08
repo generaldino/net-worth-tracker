@@ -2,7 +2,6 @@ import type React from "react";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { DashboardProviders } from "@/components/dashboard-providers";
-import { DashboardContent } from "@/components/dashboard-content";
 
 export default async function BudgetLayout({
   children,
@@ -13,9 +12,5 @@ export default async function BudgetLayout({
   if (!session) {
     redirect("/");
   }
-  return (
-    <DashboardProviders session={session}>
-      <DashboardContent>{children}</DashboardContent>
-    </DashboardProviders>
-  );
+  return <DashboardProviders session={session}>{children}</DashboardProviders>;
 }

@@ -19,7 +19,6 @@ import {
   type FxRatesByMonth,
 } from "@/lib/data-health";
 import type { Account, MonthlyEntry } from "@/lib/types";
-import { fetchAndSaveExchangeRatesForMonth } from "@/lib/fx-rates-server";
 import { revalidatePath } from "next/cache";
 
 export interface DataHealthContext {
@@ -307,14 +306,7 @@ export async function saveMonthlyEntriesForMonth(
     }
   }
 
-  try {
-    await fetchAndSaveExchangeRatesForMonth(month);
-  } catch {
-    // non-blocking
-  }
-
   revalidatePath("/");
-  revalidatePath("/data-health");
   revalidatePath("/accounts");
 
   return {
