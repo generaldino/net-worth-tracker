@@ -15,6 +15,8 @@ import type { BudgetHistoryPoint } from "@/app/actions/budget";
 
 interface HistoryChartProps {
   history: BudgetHistoryPoint[];
+  /** First month with expense rows — bars before it show income only. */
+  spendTrackedSince?: string | null;
 }
 
 function shortLabel(month: string): string {
@@ -29,7 +31,7 @@ function shortLabel(month: string): string {
  * chart machinery lives on the home screen; this answers one question:
  * is the gap between the bars (your savings) holding up?
  */
-export function HistoryChart({ history }: HistoryChartProps) {
+export function HistoryChart({ history, spendTrackedSince }: HistoryChartProps) {
   const points = history.map((h) => ({
     month: shortLabel(h.month),
     Income: Math.round(h.incomeGbp),
@@ -73,6 +75,10 @@ export function HistoryChart({ history }: HistoryChartProps) {
         </div>
         <p className="mt-1 text-center text-[11px] text-muted-foreground">
           The gap between the bars is what you kept. Figures in GBP.
+          {spendTrackedSince && spendTrackedSince > history[0]?.month && (
+            <> Spending tracked since {shortLabel(spendTrackedSince)}{" "}
+            {spendTrackedSince.slice(0, 4)} — earlier months show income only.</>
+          )}
         </p>
       </div>
     </section>

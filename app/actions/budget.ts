@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gte, inArray, lt, lte } from "drizzle-orm";
+import { and, eq, gte, lt, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   expenses,
@@ -9,6 +9,7 @@ import {
   incomeStreams,
   monthlyEntries,
 } from "@/db/schema";
+import { sql } from "drizzle-orm";
 import { getUserId } from "@/lib/auth-helpers";
 import { getExchangeRates } from "@/lib/fx-rates-server";
 import { isLiquidType } from "@/lib/account-helpers";
@@ -18,6 +19,12 @@ export interface BudgetHistoryPoint {
   month: string;
   incomeGbp: number;
   spendGbp: number;
+}
+
+export interface MerchantTotal {
+  merchant: string;
+  totalGbp: number;
+  count: number;
 }
 
 export interface BudgetPageData {
@@ -33,6 +40,17 @@ export interface BudgetPageData {
     avgSpendGbp: number;
     months: number;
   } | null;
+  /** First month with any expense rows, ever — the start of trustworthy spend data. */
+  spendTrackedSince: string | null;
+  /** Top merchants for the selected month (spend categories only), GBP. */
+  topMerchants: MerchantTotal[];
+  /**
+   * Per-category monthly spend for the 6 months ending at the selected month
+   * (oldest → newest, GBP), keyed by category id or "__uncategorised__".
+   */
+  categorySparklines: Record<string, number[]>;
+  /** Month keys matching each sparkline position, oldest → newest. */
+  sparklineMonths: string[];
 }
 
 function monthKeyOffset(month: string, offset: number): string {
@@ -76,6 +94,8 @@ export async function getBudgetPageData(month: string): Promise<BudgetPageData> 
         amount: expenses.amount,
         currency: expenses.currency,
         categoryId: expenses.categoryId,
+        merchant: expenses.merchant,
+        description: expenses.description,
       })
       .from(expenses)
       .where(
@@ -125,7 +145,6 @@ export async function getBudgetPageData(month: string): Promise<BudgetPageData> 
 
   const spendByMonth = new Map<string, number>();
   const categorySpendPriorMonths = new Map<string, number>();
-  const monthsWithSpend = new Set<string>();
   for (const r of expenseRows) {
     if (r.categoryId && excludedIds.has(r.categoryId)) continue;
     const value = toGbp(
@@ -134,7 +153,6 @@ export async function getBudgetPageData(month: string): Promise<BudgetPageData> 
       rateFor(r.month),
     );
     spendByMonth.set(r.month, (spendByMonth.get(r.month) ?? 0) + value);
-    monthsWithSpend.add(r.month);
 
     // Category averages: the three months before the selected one.
     if (r.month >= avgStart && r.month < month) {
@@ -143,45 +161,6 @@ export async function getBudgetPageData(month: string): Promise<BudgetPageData> 
         key,
         (categorySpendPriorMonths.get(key) ?? 0) + value,
       );
-    }
-  }
-
-  // Legacy fallback for months with no expense rows: per-account expenditure.
-  const legacyMonths: string[] = [];
-  for (let i = 0; i < 12; i++) {
-    const m = monthKeyOffset(month, -i);
-    if (!monthsWithSpend.has(m)) legacyMonths.push(m);
-  }
-  if (legacyMonths.length > 0) {
-    const legacyRows = await db
-      .select({
-        month: monthlyEntries.month,
-        expenditure: monthlyEntries.expenditure,
-        type: financialAccounts.type,
-        currency: financialAccounts.currency,
-      })
-      .from(monthlyEntries)
-      .innerJoin(
-        financialAccounts,
-        eq(monthlyEntries.accountId, financialAccounts.id),
-      )
-      .where(
-        and(
-          eq(financialAccounts.userId, userId),
-          inArray(monthlyEntries.month, legacyMonths),
-        ),
-      );
-    for (const row of legacyRows) {
-      if (row.type !== "Current" && row.type !== "Credit_Card") continue;
-      const { rates } = ratesByMonth.has(row.month)
-        ? { rates: rateFor(row.month) }
-        : await getExchangeRates(row.month);
-      const value = toGbp(
-        Number(row.expenditure || 0),
-        (row.currency ?? "GBP") as Currency,
-        rates,
-      );
-      spendByMonth.set(row.month, (spendByMonth.get(row.month) ?? 0) + value);
     }
   }
 
@@ -274,10 +253,71 @@ export async function getBudgetPageData(month: string): Promise<BudgetPageData> 
     console.error("Runway unavailable:", err);
   }
 
+  // Top merchants for the selected month, spend categories only.
+  const merchantTotals = new Map<string, MerchantTotal>();
+  for (const r of expenseRows) {
+    if (r.month !== month) continue;
+    if (r.categoryId && excludedIds.has(r.categoryId)) continue;
+    const label = (r.merchant || r.description || "Unknown").trim();
+    const key = label.toLowerCase();
+    const value = toGbp(
+      Number(r.amount || 0),
+      (r.currency ?? "GBP") as Currency,
+      rateFor(r.month),
+    );
+    const existing = merchantTotals.get(key);
+    if (existing) {
+      existing.totalGbp += value;
+      existing.count += 1;
+    } else {
+      merchantTotals.set(key, { merchant: label, totalGbp: value, count: 1 });
+    }
+  }
+  const topMerchants = Array.from(merchantTotals.values())
+    .filter((m) => m.totalGbp > 0)
+    .sort((a, b) => b.totalGbp - a.totalGbp)
+    .slice(0, 5);
+
+  // Six-month sparkline per category (oldest → newest), from the same rows.
+  const sparklineMonths: string[] = [];
+  for (let i = 5; i >= 0; i--) sparklineMonths.push(monthKeyOffset(month, -i));
+  const sparkIndex = new Map(sparklineMonths.map((m, i) => [m, i]));
+  const categorySparklines: Record<string, number[]> = {};
+  for (const r of expenseRows) {
+    const idx = sparkIndex.get(r.month);
+    if (idx === undefined) continue;
+    if (r.categoryId && excludedIds.has(r.categoryId)) continue;
+    const key = r.categoryId ?? "__uncategorised__";
+    if (!categorySparklines[key]) {
+      categorySparklines[key] = new Array(6).fill(0);
+    }
+    categorySparklines[key][idx] += toGbp(
+      Number(r.amount || 0),
+      (r.currency ?? "GBP") as Currency,
+      rateFor(r.month),
+    );
+  }
+
+  // The start of trustworthy spend data: the first expense row ever.
+  let spendTrackedSince: string | null = null;
+  try {
+    const first = await db
+      .select({ month: sql<string>`min(${expenses.month})` })
+      .from(expenses)
+      .where(eq(expenses.userId, userId));
+    spendTrackedSince = first[0]?.month ?? null;
+  } catch (err) {
+    console.error("First-expense month unavailable:", err);
+  }
+
   return {
     incomeTotalGbp: incomeByMonth.get(month) ?? 0,
     categoryAverages,
     history,
     runway,
+    spendTrackedSince,
+    topMerchants,
+    categorySparklines,
+    sparklineMonths,
   };
 }

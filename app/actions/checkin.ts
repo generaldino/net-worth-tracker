@@ -303,6 +303,8 @@ export interface CheckinSummary {
   savingsRate: number | null;
   /** Sum of category targets (GBP); null when no targets are set. */
   plannedSpendGbp: number | null;
+  /** False when the month has no expense rows — spend is unknown, not zero. */
+  spendTracked: boolean;
   assetsTotal: number;
   liabilitiesTotal: number;
 }
@@ -391,40 +393,14 @@ export async function getCheckinSummary(month: string): Promise<CheckinSummary> 
     console.error("Income unavailable for check-in summary:", err);
   }
 
-  // Spend: budget module first, legacy per-account expenditure as fallback —
-  // the same rule the charts use.
+  // Spend: budget module only. A month with no expense rows has UNKNOWN
+  // spend, not zero — the reveal says so instead of faking a savings rate.
   let spend = 0;
   const expenseTotals = (await getMonthlyExpenseTotals([userId])).get(month);
-  if (expenseTotals && expenseTotals.length > 0) {
+  const spendTracked = !!expenseTotals && expenseTotals.length > 0;
+  if (expenseTotals) {
     for (const t of expenseTotals) {
       spend += toGbp(t.amount, t.currency, monthRates);
-    }
-  } else {
-    const legacyRows = await db
-      .select({
-        expenditure: monthlyEntries.expenditure,
-        type: financialAccounts.type,
-        currency: financialAccounts.currency,
-      })
-      .from(monthlyEntries)
-      .innerJoin(
-        financialAccounts,
-        eq(monthlyEntries.accountId, financialAccounts.id),
-      )
-      .where(
-        and(
-          eq(financialAccounts.userId, userId),
-          eq(monthlyEntries.month, month),
-        ),
-      );
-    for (const row of legacyRows) {
-      if (row.type === "Current" || row.type === "Credit_Card") {
-        spend += toGbp(
-          Number(row.expenditure || 0),
-          (row.currency ?? "GBP") as Currency,
-          monthRates,
-        );
-      }
     }
   }
 
@@ -461,8 +437,9 @@ export async function getCheckinSummary(month: string): Promise<CheckinSummary> 
     spend,
     saved,
     growth: delta === null ? null : delta - saved,
-    savingsRate: income > 0 ? (saved / income) * 100 : null,
+    savingsRate: spendTracked && income > 0 ? (saved / income) * 100 : null,
     plannedSpendGbp,
+    spendTracked,
     assetsTotal: current?.assets ?? 0,
     liabilitiesTotal: current?.liabilities ?? 0,
   };
