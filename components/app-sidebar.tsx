@@ -9,7 +9,6 @@ import { signOutAction } from "@/app/actions/auth";
 import {
   Home,
   Users,
-  BookOpen,
   LogOut,
   Monitor,
   Sun,
@@ -75,11 +74,6 @@ const navItems = [
     title: "Share Dashboard",
     url: "/sharing",
     icon: Users,
-  },
-  {
-    title: "Documentation",
-    url: "/documentation",
-    icon: BookOpen,
   },
 ];
 

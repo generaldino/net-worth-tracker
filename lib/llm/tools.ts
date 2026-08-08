@@ -6,7 +6,6 @@ import {
   financialAccounts as accountsTable,
   monthlyEntries,
   incomeStreams,
-  projectionScenarios,
 } from "@/db/schema";
 import { getAccessibleUserIds } from "@/app/actions/sharing";
 import {
@@ -1291,50 +1290,6 @@ export function buildTools(ctx: AssistantContext) {
           staleAccountCount: accounts.length,
           missingMonthCount: stale.missingMonthCount,
           accounts: accounts.slice(0, 20),
-        };
-      },
-    }),
-
-    list_projection_scenarios: tool({
-      description:
-        "Lists the user's saved projection scenarios (hypothetical future-planning models they've created in the UI). " +
-        "Returns name, target savings rate, assumed monthly income, time horizon, and growth assumptions. " +
-        "Use for 'what projection scenarios do I have'. " +
-        "Note: this app does not currently generate forecasts — it only reports what scenarios exist. " +
-        "Do NOT use this to answer 'when will I hit £X' type questions.",
-      inputSchema: z.object({}),
-      execute: async () => {
-        const accessibleUserIds = await getAccessibleUserIds();
-        if (accessibleUserIds.length === 0) {
-          return { scenarios: [] };
-        }
-
-        const scenarios = await db
-          .select()
-          .from(projectionScenarios)
-          .where(inArray(projectionScenarios.userId, accessibleUserIds));
-
-        if (scenarios.length === 0) {
-          return {
-            scenarios: [],
-            message:
-              "No projection scenarios have been created yet. The user can create them in the projection UI.",
-          };
-        }
-
-        return {
-          scenarios: scenarios.map((s) => ({
-            id: s.id,
-            name: s.name,
-            monthlyIncome: formatMoney(
-              Number(s.monthlyIncome),
-              displayCurrency,
-            ),
-            savingsRatePercent: Number(s.savingsRate),
-            timePeriodMonths: s.timePeriodMonths,
-            growthRates: s.growthRates,
-            savingsAllocation: s.savingsAllocation,
-          })),
         };
       },
     }),

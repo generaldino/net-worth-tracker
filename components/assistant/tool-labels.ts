@@ -70,8 +70,32 @@ export function humanizeToolCall(
       return "Pulling that account's history…";
     }
 
+    case "get_net_worth_breakdown":
+      return "Breaking your net worth down by account…";
+
+    case "get_account_rankings":
+      return "Ranking your accounts…";
+
+    case "get_metrics_window": {
+      const months = Number(i.months);
+      if (Number.isFinite(months) && months > 0) {
+        return `Summarising the last ${months} months…`;
+      }
+      return "Summarising that period…";
+    }
+
+    case "find_milestone":
+      return "Searching your history for that milestone…";
+
+    case "get_liquidity_snapshot":
+      return "Working out what you could access…";
+
+    case "get_stale_accounts":
+      return "Checking which accounts need an update…";
+
     default:
-      // Unknown tool — fall back to the raw name in code style.
-      return `Running ${toolName}…`;
+      // Unknown tool — fall back to a generic label rather than leaking
+      // internal tool names into the UI.
+      return "Looking that up…";
   }
 }
