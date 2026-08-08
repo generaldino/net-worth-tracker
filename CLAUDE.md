@@ -29,15 +29,12 @@ I'm building a modern web app and want it built using server actions, as much po
 
 ### Why
 
-Web app with the goal of allowing people to track their net worth and increase it. The philosophy is you can't improve what you don't measure. So this app is meant to provide you an easy way to track your networth regardless of the asset or liability. Some features include:
+Web app with the goal of allowing people to track their net worth and increase it. The philosophy is you can't improve what you don't measure. The product deliberately does exactly two jobs, fed by one monthly ritual:
 
-- Track multiple accounts across different asset types
-- Monitor your net worth progression with visual charts
-- Analyze your income, expenditure and savings rate
-- Project future wealth based on different scenarios
-- Share your dashboard with trusted individuals
-- Export your data for external analysis
-- Track debt levels
+1. **Know your net worth** — every asset and liability, one balance per account per month, with the change decomposed into "what you saved" vs "what markets did".
+2. **Keep a monthly budget** — income, categorised spending vs per-category targets, savings rate, reviewed monthly.
+
+The **monthly check-in** (`/checkin`) is the spine: all balances prefilled from last month + income + uncategorised spending stragglers, ending on a reveal of what the month did to your net worth. Navigation is two tabs (Net Worth, Budget) plus the check-in button; accounts admin, sharing, FX rates (manual entry only — there is no rate auto-fetch), display currency and theme live in the avatar menu. Anything that doesn't serve the two jobs stays out of the product.
 
 ### How
 

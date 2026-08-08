@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -77,7 +77,9 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
   const router = useRouter();
   const { isMasked } = useMasking();
 
-  const [balances, setBalances] = useState<Record<string, number>>({});
+  // Drafts are strings so partial input ("-", "1.") doesn't fight the field;
+  // parsed once on save and for the live checks.
+  const [balances, setBalances] = useState<Record<string, string>>({});
   const [incomeDrafts, setIncomeDrafts] = useState<IncomeStreamDraft[]>(
     data.incomeStreams,
   );
@@ -88,15 +90,24 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
 
   // Prefill: the saved value for this month, else the last known balance.
   useEffect(() => {
-    const initial: Record<string, number> = {};
+    const initial: Record<string, string> = {};
     for (const account of data.accounts) {
-      initial[account.id] =
-        account.existingBalance ?? account.lastBalance ?? 0;
+      initial[account.id] = String(
+        account.existingBalance ?? account.lastBalance ?? 0,
+      );
     }
     setBalances(initial);
     setIncomeDrafts(data.incomeStreams);
     setSummary(null);
   }, [data]);
+
+  const parsedBalance = useCallback(
+    (accountId: string): number => {
+      const num = Number.parseFloat(balances[accountId] ?? "");
+      return Number.isFinite(num) ? num : 0;
+    },
+    [balances],
+  );
 
   // Same live sanity checks the old month editor ran.
   useEffect(() => {
@@ -129,7 +140,7 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
       entries: data.accounts.map((a) => ({
         accountId: a.id,
         month: data.month,
-        endingBalance: balances[a.id] ?? 0,
+        endingBalance: parsedBalance(a.id),
         cashIn: 0,
         cashOut: 0,
         income: 0,
@@ -145,7 +156,7 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
       map.set(w.accountId, arr);
     }
     return map;
-  }, [balances, data.accounts, data.month, checkAccounts, healthContext]);
+  }, [parsedBalance, data.accounts, data.month, checkAccounts, healthContext]);
 
   const changeMonth = (next: string) => {
     router.push(`/checkin?month=${next}`);
@@ -159,7 +170,7 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
           data.month,
           data.accounts.map((a) => ({
             accountId: a.id,
-            endingBalance: balances[a.id] ?? 0,
+            endingBalance: parsedBalance(a.id),
           })),
         ),
         saveIncomeStreams(
@@ -401,7 +412,7 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
           </div>
           <div className="space-y-2.5">
             {data.accounts.map((account) => {
-              const value = balances[account.id] ?? 0;
+              const value = parsedBalance(account.id);
               const unchanged =
                 account.lastBalance !== null &&
                 value === account.lastBalance &&
@@ -427,14 +438,14 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
                       <Input
                         type="number"
                         inputMode="decimal"
-                        value={Number.isFinite(value) ? value : 0}
-                        onChange={(e) => {
-                          const num = Number.parseFloat(e.target.value);
+                        step="any"
+                        value={balances[account.id] ?? ""}
+                        onChange={(e) =>
                           setBalances((prev) => ({
                             ...prev,
-                            [account.id]: Number.isFinite(num) ? num : 0,
-                          }));
-                        }}
+                            [account.id]: e.target.value,
+                          }))
+                        }
                         onFocus={(e) => e.currentTarget.select()}
                         className="h-9 text-right tabular-nums"
                       />
