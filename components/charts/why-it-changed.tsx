@@ -13,6 +13,8 @@ interface WhyItChangedProps {
   data: ChartData;
   chartCurrency: Currency;
   periodLabel: string;
+  /** True when accounts/types are hidden by the visibility filter. */
+  isFiltered?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export function WhyItChanged({
   data,
   chartCurrency,
   periodLabel,
+  isFiltered = false,
 }: WhyItChangedProps) {
   const { isMasked } = useMasking();
 
@@ -124,6 +127,14 @@ export function WhyItChanged({
             <TrendingUp className="size-3.5" />
             You kept {isMasked ? "••" : Math.round(stats.savingsRate)}% of what
             you earned — that&apos;s the part you control.
+          </p>
+        )}
+
+        {isFiltered && (
+          <p className="text-[11px] text-muted-foreground">
+            Some accounts are hidden: the net worth change excludes them, while
+            income and spending still cover everything — so their growth moves
+            out of the &quot;markets &amp; growth&quot; line.
           </p>
         )}
       </div>

@@ -170,6 +170,79 @@ export function filterChartDataByPeriod(
   };
 }
 
+/**
+ * Hide account types and/or individual accounts from the chart dataset,
+ * entirely client-side — the full per-account balances already ship in
+ * netWorthData, so toggling is instant.
+ *
+ * netWorthData is re-totalled from the visible balances, and the per-type
+ * stacks are rebuilt from scratch (the server's accountTypeData carries no
+ * account ids, so it can't be filtered directly). sourceData is left alone:
+ * income and spending are household-level, not per-account.
+ */
+export function filterChartDataByVisibility(
+  data: ChartData,
+  hiddenTypes: ReadonlySet<string>,
+  hiddenAccountIds: ReadonlySet<string>,
+): ChartData {
+  if (hiddenTypes.size === 0 && hiddenAccountIds.size === 0) return data;
+
+  const visibleAccounts = data.accounts.filter(
+    (a) => !hiddenTypes.has(a.type) && !hiddenAccountIds.has(a.id),
+  );
+  const visibleIds = new Set(visibleAccounts.map((a) => a.id));
+  const typeById = new Map(data.accounts.map((a) => [a.id, a.type]));
+
+  const netWorthData = data.netWorthData.map((item) => {
+    if (!item.accountBalances) return item;
+    const accountBalances = item.accountBalances.filter((b) =>
+      visibleIds.has(b.accountId),
+    );
+    return {
+      ...item,
+      accountBalances,
+      netWorth: accountBalances.reduce(
+        (sum, b) => sum + (b.isLiability ? -b.balance : b.balance),
+        0,
+      ),
+    };
+  });
+
+  const accountTypeData: ChartData["accountTypeData"] = netWorthData.map(
+    (item) => {
+      const point: ChartData["accountTypeData"][number] = {
+        month: item.month,
+        monthKey: item.monthKey,
+      };
+      const byType = new Map<
+        string,
+        Array<{ currency: string; balance: number; isLiability: boolean }>
+      >();
+      for (const b of item.accountBalances ?? []) {
+        const type = typeById.get(b.accountId);
+        if (!type) continue;
+        const arr = byType.get(type) ?? [];
+        arr.push({
+          currency: b.currency,
+          balance: b.balance,
+          isLiability: b.isLiability,
+        });
+        byType.set(type, arr);
+      }
+      for (const [type, balances] of byType) {
+        point[type] = balances.reduce(
+          (sum, b) => sum + (b.isLiability ? -b.balance : b.balance),
+          0,
+        );
+        point[`${type}_currencies`] = JSON.stringify(balances);
+      }
+      return point;
+    },
+  );
+
+  return { ...data, accounts: visibleAccounts, netWorthData, accountTypeData };
+}
+
 // Convert a hex color and an opacity (0-1) into an rgba string so we can use
 // solid colors inside a single-color fill gradient for Recharts.
 export function hexWithAlpha(hex: string, alpha: number): string {

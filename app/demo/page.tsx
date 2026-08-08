@@ -11,17 +11,13 @@ import { DemoAccountsSection } from "@/components/demo/demo-accounts-section";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
 import { CurrencySelector } from "@/components/currency-selector";
 import { FinancialMetricsNavbar } from "@/components/sample-navbar";
-import { PeriodSelector } from "@/components/charts/period-selector";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { ChartDataProvider } from "@/contexts/chart-data-context";
-import { useUrlState } from "@/hooks/use-url-state";
 import { getDemoChartData } from "@/lib/demo-data";
-import type { TimePeriod } from "@/lib/types";
 
 export default function DemoPage() {
   const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
   const chartData = useMemo(() => getDemoChartData(), []);
-  const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
 
   return (
     <ChartDataProvider data={chartData}>
@@ -60,9 +56,6 @@ export default function DemoPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-auto">
-                <div className="hidden md:block">
-                  <PeriodSelector value={period} onChange={setPeriod} />
-                </div>
                 <CurrencySelector
                   value={displayCurrency}
                   onValueChange={setDisplayCurrency}
@@ -73,9 +66,6 @@ export default function DemoPage() {
             {/* Mobile/tablet financial metrics display */}
             <div className="lg:hidden pb-3 border-t pt-3 mt-2 space-y-3">
               <FinancialMetricsNavbar />
-              <div className="flex justify-center md:hidden">
-                <PeriodSelector value={period} onChange={setPeriod} />
-              </div>
             </div>
           </div>
         </nav>
