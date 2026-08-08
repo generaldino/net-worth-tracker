@@ -1,133 +1,115 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { CheckCircle2, ClipboardPen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { MaskToggleButton } from "@/components/mask-toggle-button";
-import { CurrencySelector } from "@/components/currency-selector";
 import { AssistantTriggerButton } from "@/components/assistant/assistant-trigger-button";
-import { useDisplayCurrency } from "@/contexts/display-currency-context";
-import { useChartData } from "@/contexts/chart-data-context";
-import { FinancialMetricsNavbar } from "@/components/sample-navbar";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { PeriodSelector } from "@/components/charts/period-selector";
-import {
-  DashboardAccountFilters,
-  DashboardFilterChips,
-} from "@/components/charts/dashboard-account-filters";
-import { ChartDataFilterSync } from "@/components/charts/chart-data-filter-sync";
-import { useUrlState } from "@/hooks/use-url-state";
-import type { TimePeriod } from "@/lib/types";
+import { UserMenu } from "@/components/user-menu";
+import { cn } from "@/lib/utils";
+import type { CheckinStatus } from "@/app/actions/checkin";
 
-export function Navbar() {
-  const { displayCurrency, setDisplayCurrency } = useDisplayCurrency();
-  const chartData = useChartData();
-  const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
-  const [isVisible, setIsVisible] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  const [filtersPending, setFiltersPending] = useState(false);
+interface NavbarProps {
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  checkin: CheckinStatus | null;
+}
+
+const tabs = [
+  { title: "Net Worth", href: "/" },
+  { title: "Budget", href: "/budget" },
+];
+
+/**
+ * The app's only navigation: two tabs (the two jobs), the check-in button
+ * (the ritual), and an avatar menu for everything else.
+ */
+export function Navbar({ name, email, avatarUrl, checkin }: NavbarProps) {
   const pathname = usePathname();
-  // Scroll bookkeeping lives in refs so scroll events don't re-subscribe the
-  // listener on every tick.
-  const lastScrollYRef = useRef(0);
-  const tickingRef = useRef(false);
+  const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isMobile) {
-      setIsVisible(true);
-      return;
-    }
+  const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
+  const iconSrc = isDark ? "/icon-dark.svg" : "/icon-light.svg";
 
-    const update = () => {
-      const currentScrollY = window.scrollY;
-      const last = lastScrollYRef.current;
-      if (currentScrollY < 10) {
-        setIsVisible(true);
-      } else if (currentScrollY > last && currentScrollY > 100) {
-        setIsVisible(false);
-      } else if (currentScrollY < last) {
-        setIsVisible(true);
-      }
-      lastScrollYRef.current = currentScrollY;
-      tickingRef.current = false;
-    };
-
-    const onScroll = () => {
-      if (!tickingRef.current) {
-        tickingRef.current = true;
-        requestAnimationFrame(update);
-      }
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [isMobile]);
-
-  const hasChartData = !!chartData && chartData.sourceData.length > 0;
-  // The accounts page renders the same filter control in its own toolbar —
-  // both read the same URL state, so showing it twice would just be a
-  // duplicate of itself.
-  const showFilters = hasChartData && pathname !== "/accounts";
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <nav
-      className={`sticky top-0 z-40 w-full max-w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-all duration-300 ${
-        isMobile && !isVisible ? "-translate-y-full" : "translate-y-0"
-      }`}
-    >
-      <div className="w-full max-w-full px-4 sm:px-6 overflow-hidden">
-        <div className="flex items-center justify-between gap-2 sm:gap-4 py-3 min-h-[56px] w-full">
-          <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-            <SidebarTrigger className="-ml-1" />
-            {hasChartData && (
-              <div className="hidden lg:flex items-center gap-3 min-w-0 flex-1">
-                <div className="border-l h-8 ml-2" />
-                <FinancialMetricsNavbar />
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0 ml-auto">
-            {hasChartData && (
-              <ChartDataFilterSync onPendingChange={setFiltersPending} />
-            )}
-            {hasChartData && (
-              <div className="hidden md:flex items-center gap-2">
-                <PeriodSelector value={period} onChange={setPeriod} />
-                {showFilters && (
-                  <DashboardAccountFilters isPending={filtersPending} />
-                )}
-              </div>
-            )}
-            <CurrencySelector
-              value={displayCurrency}
-              onValueChange={setDisplayCurrency}
-            />
-            <MaskToggleButton />
-            <AssistantTriggerButton />
-          </div>
-        </div>
-        {/* Active filters stay visible once the popover closes. */}
-        {showFilters && (
-          <DashboardFilterChips className="pb-3 -mt-1" />
-        )}
-        {/* Mobile/tablet display */}
-        {hasChartData && (
-          <div className="lg:hidden pb-3 border-t pt-3 mt-2 space-y-3">
-            <FinancialMetricsNavbar />
-            <div className="flex justify-center gap-2 md:hidden">
-              <PeriodSelector value={period} onChange={setPeriod} />
-              {showFilters && (
-                <DashboardAccountFilters isPending={filtersPending} />
+    <nav className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-14 w-full items-center gap-1 px-3 sm:gap-2 sm:px-6">
+        <Link
+          href="/"
+          className="mr-1 flex shrink-0 items-center gap-2 sm:mr-3"
+          aria-label="Wealth Tracker home"
+        >
+          <Image
+            src={iconSrc}
+            alt=""
+            width={28}
+            height={28}
+            className="size-7 object-contain"
+            priority
+          />
+          <span className="hidden font-semibold md:inline">Wealth Tracker</span>
+        </Link>
+
+        <div className="flex items-center gap-1">
+          {tabs.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              className={cn(
+                "rounded-md px-3 py-1.5 text-sm transition-colors",
+                isActive(tab.href)
+                  ? "bg-muted font-semibold text-foreground"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
-            </div>
-          </div>
-        )}
+            >
+              {tab.title}
+            </Link>
+          ))}
+        </div>
+
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          {checkin &&
+            (checkin.done ? (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-muted-foreground"
+              >
+                <Link href="/checkin" title={`${checkin.monthLabel} is done — open the check-in`}>
+                  <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="hidden sm:inline">{checkin.monthLabel}</span>
+                  <span className="sm:hidden">✓</span>
+                </Link>
+              </Button>
+            ) : (
+              <Button asChild size="sm" className="h-8 gap-1.5">
+                <Link href="/checkin">
+                  <ClipboardPen className="size-3.5" />
+                  <span className="hidden sm:inline">
+                    Check in · {checkin.monthLabel}
+                  </span>
+                  <span className="sm:hidden">Check in</span>
+                </Link>
+              </Button>
+            ))}
+          <MaskToggleButton />
+          <AssistantTriggerButton />
+          <UserMenu name={name} email={email} avatarUrl={avatarUrl} />
+        </div>
       </div>
     </nav>
   );

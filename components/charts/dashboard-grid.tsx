@@ -1,11 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
-import { Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { IncomeDialog } from "@/components/income-dialog";
 import { filterChartDataByPeriod } from "./chart-shared";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useChartCurrencyConverter } from "@/lib/chart-currency-converter";
@@ -14,54 +10,104 @@ import type { Currency } from "@/lib/fx-rates";
 import type { TimePeriod } from "@/lib/types";
 import { useUrlState } from "@/hooks/use-url-state";
 import { ChartErrorBoundary } from "./chart-error-boundary";
-import { RunwayFICard } from "./runway-fi-card";
+import { WhyItChanged } from "./why-it-changed";
+import { MixBars } from "./mix-bars";
+import { cn } from "@/lib/utils";
+import type { NetWorthDelta } from "./net-worth-chart";
 
-// Recharts + d3 is ~200KB gzipped. Lazy-load each chart so it's fetched
-// only when the dashboard actually renders, keeping the landing page and
-// initial TTI lean.
+// Recharts + d3 is ~200KB gzipped. Lazy-load the chart so it's fetched
+// only when the dashboard actually renders.
 const ChartSkeleton = () => (
   <div className="h-[240px] sm:h-[280px] w-full rounded-lg bg-muted/30 animate-pulse" />
 );
 
 const NetWorthChart = dynamic(
   () => import("./net-worth-chart").then((m) => m.NetWorthChart),
-  { ssr: false, loading: ChartSkeleton }
-);
-const NetWorthChangesChart = dynamic(
-  () =>
-    import("./net-worth-changes-chart").then((m) => m.NetWorthChangesChart),
-  { ssr: false, loading: ChartSkeleton }
-);
-const AssetAllocationChart = dynamic(
-  () =>
-    import("./asset-allocation-chart").then((m) => m.AssetAllocationChart),
-  { ssr: false, loading: ChartSkeleton }
-);
-const IncomeSpendingChart = dynamic(
-  () => import("./income-spending-chart").then((m) => m.IncomeSpendingChart),
-  { ssr: false, loading: ChartSkeleton }
+  { ssr: false, loading: ChartSkeleton },
 );
 
-// Composes the 4 charts into a single grid. Reads chart data from the
-// shared context and the period from URL state — both of which are also
-// read by the navbar KPIs so a single `period` URL param drives everything.
+const PERIOD_OPTIONS: Array<{ value: TimePeriod; label: string }> = [
+  { value: "1Y", label: "1Y" },
+  { value: "all", label: "All" },
+];
+
+function periodLabel(period: TimePeriod): string {
+  switch (period) {
+    case "1Y":
+      return "last 12 months";
+    case "all":
+      return "all time";
+    case "YTD":
+      return "this year";
+    case "6M":
+      return "last 6 months";
+    case "3M":
+      return "last 3 months";
+    case "1M":
+      return "last month";
+    default:
+      return "";
+  }
+}
+
+/**
+ * The home screen: one number, one trend, the mix, and why it changed.
+ * Everything reads the shared chart dataset; a single `period` URL param
+ * drives all of it.
+ */
 export function DashboardGrid() {
-  const router = useRouter();
   const rawData = useChartData();
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
-  const [period] = useUrlState<TimePeriod>("period", "1Y");
-  const [showIncomeDialog, setShowIncomeDialog] = useState(false);
+  const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
 
-  const chartData = useMemo(() => {
+  const convertedAll = useMemo(() => {
     if (!rawData) return null;
     const currency = getChartCurrency();
-    const converted = convertChartData(
+    return convertChartData(
       rawData,
-      currency === "BASE" ? "GBP" : (currency as Currency)
+      currency === "BASE" ? "GBP" : (currency as Currency),
     );
-    return filterChartDataByPeriod(converted, period);
-  }, [rawData, getChartCurrency, convertChartData, period]);
+  }, [rawData, getChartCurrency, convertChartData]);
+
+  const chartData = useMemo(() => {
+    if (!convertedAll) return null;
+    return filterChartDataByPeriod(convertedAll, period);
+  }, [convertedAll, period]);
+
+  // Deltas always compare against the full history, not the filtered window.
+  const deltas = useMemo<NetWorthDelta[]>(() => {
+    if (!convertedAll) return [];
+    const points = convertedAll.netWorthData;
+    if (points.length < 2) return [];
+    const latest = points[points.length - 1];
+    const result: NetWorthDelta[] = [];
+
+    const prev = points[points.length - 2];
+    result.push({
+      label: "vs last month",
+      abs: latest.netWorth - prev.netWorth,
+      pct:
+        prev.netWorth !== 0
+          ? ((latest.netWorth - prev.netWorth) / Math.abs(prev.netWorth)) * 100
+          : null,
+    });
+
+    if (points.length >= 13) {
+      const yearAgo = points[points.length - 13];
+      result.push({
+        label: "vs a year ago",
+        abs: latest.netWorth - yearAgo.netWorth,
+        pct:
+          yearAgo.netWorth !== 0
+            ? ((latest.netWorth - yearAgo.netWorth) /
+                Math.abs(yearAgo.netWorth)) *
+              100
+            : null,
+      });
+    }
+    return result;
+  }, [convertedAll]);
 
   if (!chartData) return null;
 
@@ -72,66 +118,49 @@ export function DashboardGrid() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8 gap-1.5"
-          onClick={() => setShowIncomeDialog(true)}
+        <div
+          className="inline-flex items-center rounded-lg border p-0.5"
+          role="group"
+          aria-label="Time period"
         >
-          <Wallet className="h-3.5 w-3.5" />
-          Income
-        </Button>
+          {PERIOD_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setPeriod(option.value)}
+              aria-pressed={period === option.value}
+              className={cn(
+                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                period === option.value
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <IncomeDialog
-        open={showIncomeDialog}
-        onOpenChange={setShowIncomeDialog}
-        onSaved={() => router.refresh()}
-      />
+      <ChartErrorBoundary name="Net Worth">
+        <NetWorthChart
+          data={chartData}
+          chartCurrency={chartCurrency}
+          deltas={deltas}
+        />
+      </ChartErrorBoundary>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="lg:col-span-2">
-          <ChartErrorBoundary name="Net Worth">
-            <NetWorthChart data={chartData} chartCurrency={chartCurrency} />
-          </ChartErrorBoundary>
-        </div>
-      <div className="lg:col-span-2">
-        <ChartErrorBoundary name="Income & Spending">
-          <IncomeSpendingChart
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <ChartErrorBoundary name="Why it changed">
+          <WhyItChanged
             data={chartData}
             chartCurrency={chartCurrency}
+            periodLabel={periodLabel(period)}
           />
         </ChartErrorBoundary>
-      </div>
-      <ChartErrorBoundary name="Net Worth Changes (Monthly)">
-        <NetWorthChangesChart
-          data={chartData}
-          chartCurrency={chartCurrency}
-          viewType="monthly"
-          title="Net Worth Changes (Monthly)"
-        />
-      </ChartErrorBoundary>
-      <ChartErrorBoundary name="Net Worth Changes (Cumulative)">
-        <NetWorthChangesChart
-          data={chartData}
-          chartCurrency={chartCurrency}
-          viewType="cumulative"
-          title="Net Worth Changes (Cumulative)"
-        />
-      </ChartErrorBoundary>
-      <div className="lg:col-span-2">
-        <ChartErrorBoundary name="Asset Allocation">
-          <AssetAllocationChart
-            data={chartData}
-            chartCurrency={chartCurrency}
-          />
+        <ChartErrorBoundary name="Your mix">
+          <MixBars data={chartData} chartCurrency={chartCurrency} />
         </ChartErrorBoundary>
-      </div>
-        <div className="lg:col-span-2">
-          <ChartErrorBoundary name="Runway & Financial Independence">
-            <RunwayFICard />
-          </ChartErrorBoundary>
-        </div>
       </div>
     </div>
   );

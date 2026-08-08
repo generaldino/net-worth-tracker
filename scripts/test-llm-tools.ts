@@ -180,13 +180,6 @@ async function main() {
   );
   console.log(JSON.stringify(staleRes, null, 2));
 
-  banner("list_projection_scenarios");
-  const projRes = await tools.list_projection_scenarios.execute!(
-    {},
-    { toolCallId: "test-14", messages: [] },
-  );
-  console.log(JSON.stringify(projRes, null, 2));
-
   console.log("\n✅ All tools executed without throwing.");
   process.exit(0);
 }

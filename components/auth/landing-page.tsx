@@ -38,19 +38,19 @@ export function LandingPage() {
                 className="mb-6 text-xs font-medium px-3 py-1"
               >
                 <Sparkles className="w-3 h-3 mr-1.5 inline" />
-                {"Just 10 minutes per month"}
+                {"One 5-minute check-in a month"}
               </Badge>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-6 text-balance">
-                {"Your complete financial picture."}{" "}
+                {"Know your worth."}{" "}
                 <span className="text-emerald-600 dark:text-emerald-400">
-                  {"In one place."}
+                  {"Keep your budget."}
                 </span>
               </h1>
 
               <p className="text-lg sm:text-xl text-muted-foreground mb-8 leading-relaxed text-pretty">
                 {
-                  "Track your net worth across all accounts with beautiful visualizations. Just update your balances once a month—we do the rest."
+                  "Two numbers matter: your net worth and your savings rate. A five-minute monthly check-in keeps both honest — type your balances and income, we work out the rest. No bank connections, ever."
                 }
               </p>
 
@@ -204,7 +204,7 @@ export function LandingPage() {
                       <p className="text-xs text-muted-foreground">
                         {"Time to update"}
                       </p>
-                      <p className="text-sm font-semibold">{"10 min/month"}</p>
+                      <p className="text-sm font-semibold">{"5 min/month"}</p>
                     </div>
                   </div>
                 </div>
@@ -216,9 +216,9 @@ export function LandingPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">
-                        {"Accounts"}
+                        {"July check-in"}
                       </p>
-                      <p className="text-sm font-semibold">{"12 connected"}</p>
+                      <p className="text-sm font-semibold">{"Done in 4:52"}</p>
                     </div>
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export function LandingPage() {
             </h2>
             <p className="text-lg text-muted-foreground text-pretty">
               {
-                "No bank connections. No data sharing. Just manual entry once a month. We calculate everything for you."
+                "No bank connections. No data sharing. One short ritual a month, and two screens that stay honest all year."
               }
             </p>
           </div>
@@ -250,30 +250,30 @@ export function LandingPage() {
               {
                 step: "1",
                 icon: Database,
-                title: "Add Your Accounts",
+                title: "Add your accounts",
                 description:
-                  "Create accounts for your bank balances, investments, crypto, and loans.",
+                  "Once. Bank accounts, savings, investments, pension, property, cards and loans — one line each.",
               },
               {
                 step: "2",
                 icon: Calculator,
-                title: "Enter Monthly Data",
+                title: "Check in monthly",
                 description:
-                  "Just 3-4 numbers per account: Ending Balance, Contributions, Withdrawals, and Income (current accounts).",
+                  "One number per account — the month-end balance, prefilled from last month — plus your income. Five minutes.",
               },
               {
                 step: "3",
                 icon: Zap,
-                title: "We Calculate Everything",
+                title: "Categorise spending",
                 description:
-                  "Automatically compute net worth, savings rate, capital gains, and cash flow.",
+                  "Import a card statement; merchant rules file most of it automatically. Set a target per category if you want a plan.",
               },
               {
                 step: "4",
                 icon: LineChart,
-                title: "Visualize & Analyze",
+                title: "See the story",
                 description:
-                  "Track trends with beautiful charts. See exactly where your wealth is growing.",
+                  "Net worth and why it changed — what you saved vs what markets did — and spending vs your plan.",
               },
             ].map((item, i) => {
               const Icon = item.icon;
@@ -311,28 +311,28 @@ export function LandingPage() {
             <div className="grid sm:grid-cols-2 gap-6">
               {[
                 {
-                  field: "Ending Balance",
+                  field: "Balances",
                   description:
-                    "Your account balance at the end of each month. The foundation of net worth tracking.",
+                    "One number per account at month end. That alone is enough to track net worth.",
                   icon: "💰",
-                },
-                {
-                  field: "Contributions",
-                  description:
-                    "Money you moved into the account: deposits, transfers in, investment contributions, loan payments.",
-                  icon: "📥",
-                },
-                {
-                  field: "Withdrawals",
-                  description:
-                    "Money you moved out of the account: withdrawals, purchases, transfers out.",
-                  icon: "📤",
                 },
                 {
                   field: "Income",
                   description:
-                    "Salary or wages received (current accounts only). Used to calculate your savings rate.",
+                    "A line per source — salary, freelance, rental. Carried forward each month so it's usually one glance.",
                   icon: "💵",
+                },
+                {
+                  field: "Spending",
+                  description:
+                    "Imported from card statements or added by hand, filed into categories automatically by rules you teach once.",
+                  icon: "🧾",
+                },
+                {
+                  field: "Targets",
+                  description:
+                    "An optional monthly number per category. That's what turns spending history into a budget you review.",
+                  icon: "🎯",
                 },
               ].map((item, i) => (
                 <div key={i} className="flex gap-4">
@@ -352,7 +352,7 @@ export function LandingPage() {
                   {"We automatically calculate: "}
                 </span>
                 {
-                  "Cash Flow, Account Growth (capital gains, interest, appreciation), Savings Rate, Expenditure, Net Worth changes, and more."
+                  "Net worth, assets vs debts, your mix (cash / invested / property / debt), savings rate, spending vs plan, and how much of each month's change came from saving vs markets."
                 }
               </p>
             </div>
@@ -383,12 +383,12 @@ export function LandingPage() {
               <div className="flex items-center gap-2 mb-4">
                 <PieChart className="w-5 h-5 text-emerald-600" />
                 <h3 className="text-lg font-semibold">
-                  {"Net Worth Breakdown"}
+                  {"Net worth, month by month"}
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
                 {
-                  "Track all your assets by type with a beautiful stacked area chart. See how your portfolio allocation changes over time."
+                  "The headline number, with assets stacked above the line and debts below — one chart that answers \"am I growing?\""
                 }
               </p>
               <div className="relative aspect-[16/10] bg-background rounded-lg overflow-hidden border border-border/50">
@@ -401,12 +401,12 @@ export function LandingPage() {
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-emerald-600" />
                 <h3 className="text-lg font-semibold">
-                  {"Assets vs Liabilities"}
+                  {"Assets vs debts"}
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
                 {
-                  "Understand your financial health by comparing what you own against what you owe. Watch your net worth grow."
+                  "What you own against what you owe, kept visibly separate — so paying down debt shows up as the win it is."
                 }
               </p>
               <div className="relative aspect-[16/10] bg-background rounded-lg overflow-hidden border border-border/50">
@@ -419,12 +419,12 @@ export function LandingPage() {
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-emerald-600" />
                 <h3 className="text-lg font-semibold">
-                  {"Savings Rate Analysis"}
+                  {"Income, spending & savings rate"}
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
                 {
-                  "Track your income, spending, and savings rate month by month. Identify patterns and optimize your financial habits."
+                  "The budget side: what came in, what went out, and the share you kept — the one number you can act on monthly."
                 }
               </p>
               <div className="relative aspect-[16/10] bg-background rounded-lg overflow-hidden border border-border/50">
@@ -437,12 +437,12 @@ export function LandingPage() {
               <div className="flex items-center gap-2 mb-4">
                 <LineChart className="w-5 h-5 text-emerald-600" />
                 <h3 className="text-lg font-semibold">
-                  {"Wealth Growth Sources"}
+                  {"Why it changed"}
                 </h3>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
                 {
-                  "See exactly where your wealth is coming from: active savings, investment gains, or interest earned. Optimize your strategy."
+                  "Every month's move split into what you saved and what markets did — so you always know which one to credit."
                 }
               </p>
               <div className="relative aspect-[16/10] bg-background rounded-lg overflow-hidden border border-border/50">
@@ -457,11 +457,11 @@ export function LandingPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-balance">
-            {"Everything you need to track your wealth"}
+            {"Everything you need — and nothing else"}
           </h2>
           <p className="text-lg text-muted-foreground text-pretty">
             {
-              "Powerful features designed to give you complete visibility and control over your finances."
+              "Two screens and a monthly ritual. The rest of the app stays out of your way."
             }
           </p>
         </div>
@@ -469,40 +469,40 @@ export function LandingPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             {
-              icon: TrendingUp,
-              title: "Real-time tracking",
+              icon: Clock,
+              title: "A five-minute ritual",
               description:
-                "Monitor your net worth with live updates across all your accounts and investments.",
+                "Balances prefilled from last month, income carried forward — the check-in ends with what your net worth did and why.",
+            },
+            {
+              icon: TrendingUp,
+              title: "Net worth, explained",
+              description:
+                "Not just the number: every month split into what you saved and what markets did, plus your cash / invested / property / debt mix.",
             },
             {
               icon: BarChart3,
-              title: "Rich dashboards",
+              title: "A budget you review",
               description:
-                "Visualize your wealth with intuitive charts: net worth trends, income & spending, and asset allocation.",
+                "Targets per category, plan vs actual, fixed and variable kept apart — and an on-track answer any day of the month.",
             },
             {
               icon: Shield,
               title: "Privacy first",
               description:
-                "No bank connections. Your data stays with you. We never sell or share your information.",
+                "No bank connections, manual by design. Your data stays with you, with one-tap masking for public places.",
             },
             {
               icon: Sparkles,
-              title: "Multi-currency support",
+              title: "Multi-currency",
               description:
-                "Track assets in GBP, USD, EUR, or AED with automatic historical exchange rates.",
-            },
-            {
-              icon: CheckCircle2,
-              title: "10+ account types",
-              description:
-                "Track current, savings, stocks, crypto, pensions, loans, credit cards, and more.",
+                "Track accounts in GBP, USD, EUR, or AED — balances convert at each month's rate.",
             },
             {
               icon: ArrowRight,
               title: "Export & sharing",
               description:
-                "Export to CSV or share your dashboard with financial advisors and partners.",
+                "Your data is yours: export to CSV anytime, or share a read-only dashboard with a partner or adviser.",
             },
           ].map((feature, i) => {
             const Icon = feature.icon;
@@ -529,11 +529,11 @@ export function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-balance">
-              {"Start tracking your net worth today"}
+              {"You can\u2019t improve what you don\u2019t measure"}
             </h2>
             <p className="text-lg text-muted-foreground mb-10 text-pretty">
               {
-                "Join thousands of users who have taken control of their financial future. Sign up in seconds—no credit card required."
+                "Add your accounts once, then five minutes a month keeps your net worth and your budget honest. Sign in with Google — free, no card, no bank connections."
               }
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -542,7 +542,7 @@ export function LandingPage() {
             <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>{"10 min/month"}</span>
+                <span>{"5 min/month"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4" />

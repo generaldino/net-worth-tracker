@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Coins, Plus, Pencil, Trash2, RefreshCw, Loader2 } from "lucide-react";
+import { Coins, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -24,11 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/components/ui/use-toast";
 import { FxRateDialog } from "./fx-rate-dialog";
-import {
-  deleteExchangeRate,
-  refreshExchangeRate,
-  type FxRateRow,
-} from "@/app/actions/fx-rates";
+import { deleteExchangeRate, type FxRateRow } from "@/app/actions/fx-rates";
 
 interface FxRatesViewProps {
   rows: FxRateRow[];
@@ -52,28 +48,6 @@ export function FxRatesView({ rows }: FxRatesViewProps) {
   const openEdit = (row: FxRateRow) => {
     setEditRow(row);
     setDialogOpen(true);
-  };
-
-  const handleRefresh = async (row: FxRateRow) => {
-    setPendingId(row.id);
-    try {
-      const result = await refreshExchangeRate(row.month);
-      if (result.success) {
-        toast({
-          title: "Rates refreshed",
-          description: `Re-fetched rates for ${formatMonthLabel(row.month)} from the provider.`,
-        });
-        router.refresh();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Refresh failed",
-          description: result.error ?? "Could not refresh the rate.",
-        });
-      }
-    } finally {
-      setPendingId(null);
-    }
   };
 
   const handleDelete = async () => {
@@ -115,10 +89,11 @@ export function FxRatesView({ rows }: FxRatesViewProps) {
           </Button>
         </div>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Monthly exchange rates used to convert account balances into your
-          display currency. Rates are stored relative to GBP (1 GBP = X). Rates
-          are normally fetched automatically at month-end — use this page to fix
-          or fill in a month when the auto-update didn&apos;t work.
+          Monthly exchange rates used to convert balances between currencies,
+          entered manually and stored relative to GBP (1 GBP = X). Add a rate
+          for each month you track; months without a rate fall back to the
+          nearest available one. If everything you track is in one currency,
+          you never need this page.
         </p>
       </header>
 
@@ -169,21 +144,6 @@ export function FxRatesView({ rows }: FxRatesViewProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-8"
-                          title="Re-fetch from provider"
-                          disabled={busy}
-                          onClick={() => handleRefresh(row)}
-                        >
-                          {busy ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="size-4" />
-                          )}
-                          <span className="sr-only">Refresh</span>
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

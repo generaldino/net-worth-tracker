@@ -1,34 +1,24 @@
-import {
-  getAccounts,
-  getCurrentValue,
-  getAccountHistory,
-  getStaleAccounts,
-} from "@/lib/actions";
-import { NewAccountsSection } from "./new-accounts-section";
+import { getAccounts, getCurrentValue, getAccountHistory } from "@/lib/actions";
+import { AccountsAdmin } from "./accounts-admin";
 
 export async function NewAccountsSectionWrapper() {
   const accounts = await getAccounts(true); // Include closed accounts
 
-  // Fetch all account data and stale accounts in parallel
-  const [accountData, staleAccountsData] = await Promise.all([
-    Promise.all(
-      accounts.map(async (account) => {
-        const [currentValue, history] = await Promise.all([
-          getCurrentValue(account.id),
-          getAccountHistory(account.id),
-        ]);
+  const accountData = await Promise.all(
+    accounts.map(async (account) => {
+      const [currentValue, history] = await Promise.all([
+        getCurrentValue(account.id),
+        getAccountHistory(account.id),
+      ]);
 
-        return {
-          accountId: account.id,
-          currentValue,
-          history,
-        };
-      })
-    ),
-    getStaleAccounts(),
-  ]);
+      return {
+        accountId: account.id,
+        currentValue,
+        history,
+      };
+    })
+  );
 
-  // Transform the data into the format expected by NewAccountsSection
   const currentValues = Object.fromEntries(
     accountData.map(({ accountId, currentValue }) => [accountId, currentValue])
   );
@@ -38,12 +28,10 @@ export async function NewAccountsSectionWrapper() {
   );
 
   return (
-    <NewAccountsSection
+    <AccountsAdmin
       accounts={accounts}
       accountHistories={accountHistories}
       currentValues={currentValues}
-      staleAccountsData={staleAccountsData}
     />
   );
 }
-

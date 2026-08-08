@@ -4,7 +4,6 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { exchangeRates } from "@/db/schema";
 import { getUserId } from "@/lib/auth-helpers";
-import { refreshExchangeRatesForMonth } from "@/lib/fx-rates-server";
 import { revalidatePath } from "next/cache";
 
 export interface FxRateRow {
@@ -204,35 +203,8 @@ export async function deleteExchangeRate(
   return { success: true };
 }
 
-/**
- * Re-fetches rates for a month from the FX API and overwrites the stored value.
- * Used when the automatic update produced a wrong/missing value.
- */
-export async function refreshExchangeRate(
-  month: string,
-): Promise<FxRateMutationResult> {
-  await getUserId();
-
-  if (!isValidMonth(month)) {
-    return { success: false, error: "Invalid month. Expected YYYY-MM." };
-  }
-
-  const ok = await refreshExchangeRatesForMonth(month);
-  if (!ok) {
-    return {
-      success: false,
-      error:
-        "Could not fetch rates from the provider for this month. Enter them manually instead.",
-    };
-  }
-
-  revalidatePaths();
-  return { success: true };
-}
-
 function revalidatePaths() {
   revalidatePath("/");
   revalidatePath("/fx-rates");
-  revalidatePath("/data-health");
   revalidatePath("/accounts");
 }

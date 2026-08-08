@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { NewAccountsSection } from "@/components/new-accounts-section";
+import { AccountsAdmin } from "@/components/accounts-admin";
 import {
   demoAccounts,
   getDemoAccountHistories,
@@ -13,7 +13,7 @@ export function DemoAccountsSection() {
   const currentValues = useMemo(() => getDemoCurrentValues(), []);
 
   return (
-    <NewAccountsSection
+    <AccountsAdmin
       accounts={demoAccounts}
       accountHistories={accountHistories}
       currentValues={currentValues}
@@ -21,4 +21,3 @@ export function DemoAccountsSection() {
     />
   );
 }
-

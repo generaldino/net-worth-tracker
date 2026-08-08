@@ -4,6 +4,7 @@ import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { expenses, expenseCategories } from "@/db/schema";
 import { getUserId } from "@/lib/auth-helpers";
+import { getExchangeRates } from "@/lib/fx-rates-server";
 import type { Currency } from "@/lib/fx-rates";
 import { revalidatePath } from "next/cache";
 
@@ -272,6 +273,7 @@ export async function getCategoryTotals(month: string): Promise<
       .select({
         categoryId: expenses.categoryId,
         amount: expenses.amount,
+        currency: expenses.currency,
         name: expenseCategories.name,
         color: expenseCategories.color,
         excludeFromSpend: expenseCategories.excludeFromSpend,
@@ -282,6 +284,15 @@ export async function getCategoryTotals(month: string): Promise<
         eq(expenses.categoryId, expenseCategories.id),
       )
       .where(and(eq(expenses.userId, userId), eq(expenses.month, month)));
+
+    // Totals are reported in GBP: non-GBP rows convert at the month's rate,
+    // so a €50 expense no longer counts as £50.
+    const { rates } = await getExchangeRates(month);
+    const toGbp = (amount: number, currency: string) => {
+      if (currency === "GBP") return amount;
+      const rate = rates[currency as keyof typeof rates];
+      return rate && rate !== 0 ? amount / rate : amount;
+    };
 
     const byCategory = new Map<
       string,
@@ -297,7 +308,7 @@ export async function getCategoryTotals(month: string): Promise<
     for (const row of rows) {
       const key = row.categoryId ?? "__uncategorised__";
       const existing = byCategory.get(key);
-      const amount = Number(row.amount || 0);
+      const amount = toGbp(Number(row.amount || 0), row.currency ?? "GBP");
       if (existing) {
         existing.total += amount;
       } else {

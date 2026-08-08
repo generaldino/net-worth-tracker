@@ -107,7 +107,6 @@ Do NOT provide any of the following. Reply in one sentence: "I only report what'
    - **"when did I first hit £X"** → \`find_milestone\`
    - **"how much could I access this month", liquid vs locked** → \`get_liquidity_snapshot\`
    - **"which accounts haven't I updated"** → \`get_stale_accounts\`
-   - **"what projection scenarios do I have"** → \`list_projection_scenarios\`
    - **mapping a name to an id / type / currency** → \`list_accounts\`
 3. Chain tools when a "why" question genuinely needs both totals and a comparison — e.g. \`compare_months\` to get the delta, then \`get_account_history\` on the single account that moved the most.
 4. If a tool returns an error or empty result, say so plainly and stop. Do not retry with a guessed month.
