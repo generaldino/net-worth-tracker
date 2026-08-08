@@ -51,7 +51,17 @@ export function WhyItChanged({
     const growth = netChange - saved;
     const savingsRate = income > 0 ? (saved / income) * 100 : null;
 
-    return { netChange, saved, growth, income, spend, savingsRate };
+    // If the window starts before income/spending were tracked, the split
+    // only covers the tracked era — say so instead of implying full coverage.
+    const firstTrackedIdx = data.sourceData.findIndex(
+      (m) =>
+        ((m["Total Expenditure"] as number) || 0) !== 0 ||
+        ((m["Total Income"] as number) || 0) !== 0,
+    );
+    const trackedSince =
+      firstTrackedIdx > 0 ? data.sourceData[firstTrackedIdx].month : null;
+
+    return { netChange, saved, growth, income, spend, savingsRate, trackedSince };
   }, [data]);
 
   if (!stats) return null;
@@ -127,6 +137,14 @@ export function WhyItChanged({
             <TrendingUp className="size-3.5" />
             You kept {isMasked ? "••" : Math.round(stats.savingsRate)}% of what
             you earned — that&apos;s the part you control.
+          </p>
+        )}
+
+        {stats.trackedSince && (
+          <p className="text-[11px] text-muted-foreground">
+            Income &amp; spending are tracked from {stats.trackedSince} — the
+            saved-vs-growth split covers that era; earlier net worth change
+            shows under markets &amp; growth.
           </p>
         )}
 

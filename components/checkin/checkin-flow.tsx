@@ -249,6 +249,14 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
               Where the change came from
             </h2>
             <dl className="space-y-2.5 text-sm">
+              {!summary.spendTracked && (
+                <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                  No spending recorded for this month yet — import a statement
+                  or add expenses on the Budget page and the saved-vs-growth
+                  split will complete itself.
+                </p>
+              )}
+              {summary.spendTracked && (
               <div className="flex items-baseline justify-between gap-3">
                 <dt>
                   You saved
@@ -268,7 +276,8 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
                   {mask(formatCurrencyAmount(summary.saved, "GBP"))}
                 </dd>
               </div>
-              {summary.growth !== null && (
+              )}
+              {summary.spendTracked && summary.growth !== null && (
                 <div className="flex items-baseline justify-between gap-3">
                   <dt>
                     Markets &amp; growth
@@ -288,7 +297,7 @@ export function CheckinFlow({ data }: CheckinFlowProps) {
                   </dd>
                 </div>
               )}
-              {summary.plannedSpendGbp !== null && (
+              {summary.spendTracked && summary.plannedSpendGbp !== null && (
                 <div className="flex items-baseline justify-between gap-3">
                   <dt>
                     Spending vs plan

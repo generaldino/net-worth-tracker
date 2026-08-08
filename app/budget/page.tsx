@@ -66,6 +66,10 @@ export default async function BudgetPage({
           categoryAverages={budgetData.categoryAverages}
           history={budgetData.history}
           runway={budgetData.runway}
+          spendTrackedSince={budgetData.spendTrackedSince}
+          topMerchants={budgetData.topMerchants}
+          categorySparklines={budgetData.categorySparklines}
+          sparklineMonths={budgetData.sparklineMonths}
         />
       </div>
     </div>

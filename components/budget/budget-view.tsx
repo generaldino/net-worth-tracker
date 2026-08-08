@@ -5,14 +5,25 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   Loader2,
+  MoreHorizontal,
   Pencil,
   Plus,
   Receipt,
+  Rows3,
+  Tags,
   Trash2,
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -46,13 +57,16 @@ import { CategoriesManager } from "@/components/budget/categories-manager";
 import { ExpenseDialog } from "@/components/budget/expense-dialog";
 import { ImportDialog } from "@/components/budget/import-dialog";
 import { ReviewPanel } from "@/components/budget/review-panel";
+import { CompositionBar } from "@/components/budget/composition-bar";
+import { TopMerchants } from "@/components/budget/top-merchants";
+import { CategoryDrilldown } from "@/components/budget/category-drilldown";
 import {
   CategoryBars,
   type CategoryTotalRow,
 } from "@/components/budget/category-bars";
 import { deleteExpense, type ExpenseRow } from "@/app/actions/expenses";
 import type { CategoryRow } from "@/app/actions/expense-categories";
-import type { BudgetHistoryPoint, BudgetPageData } from "@/app/actions/budget";
+import type { BudgetPageData } from "@/app/actions/budget";
 
 const HistoryChart = dynamic(
   () => import("@/components/budget/history-chart").then((m) => m.HistoryChart),
@@ -74,11 +88,14 @@ interface BudgetViewProps {
   uncategorisedCount: number;
   incomeTotalGbp: number;
   categoryAverages: Record<string, number>;
-  history: BudgetHistoryPoint[];
+  history: BudgetPageData["history"];
   runway: BudgetPageData["runway"];
+  spendTrackedSince: string | null;
+  topMerchants: BudgetPageData["topMerchants"];
+  categorySparklines: Record<string, number[]>;
+  sparklineMonths: string[];
 }
 
-const ALL_CATEGORIES = "__all__";
 const UNCATEGORISED = "__uncategorised__";
 
 function formatMonthLabel(month: string): string {
@@ -112,6 +129,10 @@ export function BudgetView({
   categoryAverages,
   history,
   runway,
+  spendTrackedSince,
+  topMerchants,
+  categorySparklines,
+  sparklineMonths,
 }: BudgetViewProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -119,20 +140,15 @@ export function BudgetView({
   const [editRow, setEditRow] = useState<ExpenseRow | null>(null);
   const [deleteRow, setDeleteRow] = useState<ExpenseRow | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
+  /** Category id or "__uncategorised__" — drives the in-place drill-down. */
+  const [drillKey, setDrillKey] = useState<string | null>(null);
+  const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [showCategoriesManager, setShowCategoriesManager] = useState(false);
 
   const categoriesById = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
     [categories],
   );
-
-  const visibleExpenses = useMemo(() => {
-    if (categoryFilter === ALL_CATEGORIES) return expenses;
-    if (categoryFilter === UNCATEGORISED) {
-      return expenses.filter((e) => e.categoryId === null);
-    }
-    return expenses.filter((e) => e.categoryId === categoryFilter);
-  }, [expenses, categoryFilter]);
 
   // Spend excludes categories flagged "not spending" (card payments/transfers).
   const monthSpend = useMemo(
@@ -174,7 +190,56 @@ export function BudgetView({
     };
   }, [month, plannedTotal, monthSpend]);
 
+  // One computed sentence: the biggest mover against its own 3-month average.
+  const insight = useMemo(() => {
+    let best: { name: string; spent: number; avg: number; delta: number } | null =
+      null;
+    for (const t of categoryTotals) {
+      if (t.excludeFromSpend || !t.categoryId) continue;
+      const avg = categoryAverages[t.categoryId];
+      if (!avg || avg <= 0) continue;
+      const delta = t.total - avg;
+      // Ignore noise: a mover must be at least £20 and 15% off its average.
+      if (Math.abs(delta) < Math.max(20, avg * 0.15)) continue;
+      if (!best || Math.abs(delta) > Math.abs(best.delta)) {
+        best = { name: t.name, spent: t.total, avg, delta };
+      }
+    }
+    return best;
+  }, [categoryTotals, categoryAverages]);
+
+  // Drill-down data for the selected category.
+  const drill = useMemo(() => {
+    if (!drillKey) return null;
+    const category =
+      drillKey === UNCATEGORISED ? null : (categoriesById.get(drillKey) ?? null);
+    if (drillKey !== UNCATEGORISED && !category) return null;
+    const rows = expenses.filter((e) =>
+      drillKey === UNCATEGORISED
+        ? e.categoryId === null
+        : e.categoryId === drillKey,
+    );
+    const totalRow = categoryTotals.find(
+      (t) => (t.categoryId ?? UNCATEGORISED) === drillKey,
+    );
+    return {
+      category,
+      rows,
+      totalGbp: totalRow?.total ?? 0,
+      avgGbp: categoryAverages[drillKey] ?? null,
+      sparkline: categorySparklines[drillKey] ?? null,
+    };
+  }, [
+    drillKey,
+    categoriesById,
+    expenses,
+    categoryTotals,
+    categoryAverages,
+    categorySparklines,
+  ]);
+
   const changeMonth = (next: string) => {
+    setDrillKey(null);
     router.push(`/budget?month=${next}`);
   };
 
@@ -207,32 +272,20 @@ export function BudgetView({
     setDeleteRow(null);
   };
 
+  const monthLabel = formatMonthLabel(month);
+  const isEmpty = expenses.length === 0;
+
   return (
     <div className="space-y-6">
-      <header className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-muted-foreground" />
-            <h1 className="text-xl sm:text-2xl font-semibold">Budget</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload className="size-4" />
-              <span className="hidden sm:inline">Import CSV</span>
-            </Button>
-            <Button size="sm" onClick={openAdd}>
-              <Plus className="size-4" />
-              <span className="hidden sm:inline">Add expense</span>
-            </Button>
-          </div>
+      {/* Header: title, month, maintenance menu */}
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Receipt className="h-5 w-5 text-muted-foreground" />
+          <h1 className="text-xl sm:text-2xl font-semibold">Budget</h1>
         </div>
-      </header>
-
-      {/* Month + the plan-vs-actual summary */}
-      <div className="space-y-3 rounded-xl border bg-card p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
           <Select value={month} onValueChange={changeMonth}>
-            <SelectTrigger className="h-9 w-[190px]">
+            <SelectTrigger className="h-9 w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -243,87 +296,122 @@ export function BudgetView({
               ))}
             </SelectContent>
           </Select>
-
-          {uncategorisedCount > 0 && (
-            <Button
-              variant={categoryFilter === UNCATEGORISED ? "default" : "outline"}
-              size="sm"
-              className="h-8"
-              onClick={() =>
-                setCategoryFilter((prev) =>
-                  prev === UNCATEGORISED ? ALL_CATEGORIES : UNCATEGORISED,
-                )
-              }
-            >
-              {uncategorisedCount} uncategorised
-            </Button>
-          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="size-9" aria-label="Budget actions">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={openAdd}>
+                <Plus className="mr-2 size-4" />
+                Add expense
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                <Upload className="mr-2 size-4" />
+                Import CSV
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem
+                checked={showAllTransactions}
+                onCheckedChange={(v) => setShowAllTransactions(v === true)}
+              >
+                <Rows3 className="mr-2 size-4" />
+                All transactions
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showCategoriesManager}
+                onCheckedChange={(v) => setShowCategoriesManager(v === true)}
+              >
+                <Tags className="mr-2 size-4" />
+                Manage categories
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+      </header>
 
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className="text-3xl font-bold tabular-nums">
-            {formatCurrencyAmount(monthSpend, "GBP")}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            spent
-            {plannedTotal > 0 && (
-              <>
-                {" "}
-                of{" "}
-                <span className="font-medium text-foreground">
-                  {formatCurrencyAmount(plannedTotal, "GBP")}
-                </span>{" "}
-                planned
-              </>
-            )}
-          </span>
-          {pace && (
-            <Badge
-              variant="secondary"
-              className={cn(
-                "ml-1",
-                pace.over
-                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                  : pace.onTrack
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+      {/* The month at a glance */}
+      <div className="rounded-xl border bg-card p-4 sm:p-5">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+          <div>
+            <p className="text-xs text-muted-foreground">
+              Spent{plannedTotal > 0 ? " · planned" : ""}
+            </p>
+            <p className="text-2xl font-bold tabular-nums leading-tight">
+              {formatCurrencyAmount(monthSpend, "GBP")}
+              {plannedTotal > 0 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {" "}
+                  / {formatCurrencyAmount(plannedTotal, "GBP")}
+                </span>
               )}
-            >
-              {pace.over
-                ? "over budget"
-                : pace.onTrack
-                  ? "on track"
-                  : "running hot"}
-              {" · "}
-              {pace.daysLeft} day{pace.daysLeft === 1 ? "" : "s"} left
-            </Badge>
-          )}
-        </div>
-
-        {(incomeTotalGbp > 0 || monthSpend > 0) && (
-          <p className="text-sm text-muted-foreground">
-            Income{" "}
-            <span className="font-medium text-foreground tabular-nums">
+            </p>
+            {pace && (
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "mt-1",
+                  pace.over
+                    ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                    : pace.onTrack
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      : "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+                )}
+              >
+                {pace.over
+                  ? "over budget"
+                  : pace.onTrack
+                    ? "on track"
+                    : "running hot"}
+                {" · "}
+                {pace.daysLeft}d left
+              </Badge>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Income</p>
+            <p className="text-2xl font-bold tabular-nums leading-tight">
               {formatCurrencyAmount(incomeTotalGbp, "GBP")}
-            </span>
-            {" · "}kept{" "}
-            <span
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">
+              Kept{savingsRate !== null ? ` · ${savingsRate}% of income` : ""}
+            </p>
+            <p
               className={cn(
-                "font-medium tabular-nums",
+                "text-2xl font-bold tabular-nums leading-tight",
                 kept >= 0
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-red-600 dark:text-red-400",
               )}
             >
               {formatCurrencyAmount(kept, "GBP")}
-            </span>
-            {savingsRate !== null && <> ({savingsRate}% of income)</>}
-            {" — "}that&apos;s what grows your net worth.
+            </p>
+          </div>
+        </div>
+
+        {insight && (
+          <p className="mt-3 border-t pt-3 text-sm">
+            <span className="font-medium">Biggest change:</span>{" "}
+            {insight.name} —{" "}
+            <span
+              className={cn(
+                "font-semibold tabular-nums",
+                insight.delta > 0
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-emerald-600 dark:text-emerald-400",
+              )}
+            >
+              {formatCurrencyAmount(insight.spent, "GBP")}
+            </span>{" "}
+            vs your usual {formatCurrencyAmount(insight.avg, "GBP")}.
           </p>
         )}
 
         {runway && (
-          <p className="text-xs text-muted-foreground">
+          <p className="mt-2 text-xs text-muted-foreground">
             Your cash &amp; investments (
             {formatCurrencyAmount(runway.liquidGbp, "GBP")}) cover about{" "}
             <span className="font-medium text-foreground">
@@ -341,71 +429,95 @@ export function BudgetView({
       {/* Uncategorised review — merchant-grouped bulk categorisation */}
       <ReviewPanel expenses={expenses} categories={categories} />
 
-      {/* Plan vs actual, per category */}
-      <CategoryBars
-        categories={categories}
-        totals={categoryTotals}
-        averages={categoryAverages}
-        activeFilter={
-          categoryFilter === ALL_CATEGORIES || categoryFilter === UNCATEGORISED
-            ? null
-            : categoryFilter
-        }
-        onFilter={(id) => setCategoryFilter(id ?? ALL_CATEGORIES)}
-      />
-
-      {/* Expenses */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">
-            Expenses
-            {categoryFilter !== ALL_CATEGORIES && (
-              <Button
-                variant="link"
-                size="sm"
-                className="ml-2 h-auto p-0 text-xs"
-                onClick={() => setCategoryFilter(ALL_CATEGORIES)}
-              >
-                clear filter
-              </Button>
-            )}
-          </h2>
-          <span className="text-xs text-muted-foreground">
-            {visibleExpenses.length} of {expenses.length}
-          </span>
+      {/* Where it went */}
+      {isEmpty ? (
+        <div className="rounded-lg border border-dashed p-10 text-center">
+          <Receipt className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-3 text-sm font-medium">
+            No expenses for {monthLabel}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Import a card statement or add one by hand.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <Button onClick={() => setImportOpen(true)} size="sm" variant="outline">
+              <Upload className="size-4" />
+              Import CSV
+            </Button>
+            <Button onClick={openAdd} size="sm">
+              <Plus className="size-4" />
+              Add expense
+            </Button>
+          </div>
         </div>
-
-        {visibleExpenses.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center">
-            <Receipt className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="mt-3 text-sm font-medium">
-              {expenses.length === 0
-                ? "No expenses for this month"
-                : "No expenses match this filter"}
-            </p>
-            {expenses.length === 0 && (
-              <>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Import a card statement or add one by hand.
-                </p>
-                <div className="mt-4 flex items-center justify-center gap-2">
-                  <Button
-                    onClick={() => setImportOpen(true)}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Upload className="size-4" />
-                    Import CSV
-                  </Button>
-                  <Button onClick={openAdd} size="sm">
-                    <Plus className="size-4" />
-                    Add expense
-                  </Button>
-                </div>
-              </>
+      ) : (
+        <section className="space-y-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-lg font-semibold">Where it went</h2>
+            {uncategorisedCount > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setDrillKey((prev) =>
+                    prev === UNCATEGORISED ? null : UNCATEGORISED,
+                  )
+                }
+                className={cn(
+                  "text-xs text-muted-foreground underline-offset-2 hover:underline",
+                  drillKey === UNCATEGORISED && "font-semibold text-foreground",
+                )}
+              >
+                {uncategorisedCount} uncategorised
+              </button>
             )}
           </div>
-        ) : (
+
+          <CompositionBar
+            totals={categoryTotals}
+            activeFilter={drillKey}
+            onFilter={setDrillKey}
+          />
+
+          <CategoryBars
+            categories={categories}
+            totals={categoryTotals}
+            averages={categoryAverages}
+            activeFilter={
+              drillKey === UNCATEGORISED ? null : drillKey
+            }
+            onFilter={(id) => setDrillKey(id)}
+          />
+
+          {drill && (
+            <CategoryDrilldown
+              category={drill.category}
+              monthLabel={monthLabel}
+              expenses={drill.rows}
+              totalGbp={drill.totalGbp}
+              avgGbp={drill.avgGbp}
+              sparkline={drill.sparkline}
+              sparklineMonths={sparklineMonths}
+              onEdit={openEdit}
+              onDelete={setDeleteRow}
+              onClose={() => setDrillKey(null)}
+            />
+          )}
+        </section>
+      )}
+
+      {!isEmpty && <TopMerchants merchants={topMerchants} />}
+
+      <HistoryChart history={history} spendTrackedSince={spendTrackedSince} />
+
+      {/* All transactions — on demand, from the ⋯ menu */}
+      {showAllTransactions && !isEmpty && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold">All transactions</h2>
+            <span className="text-xs text-muted-foreground">
+              {expenses.length} in {monthLabel}
+            </span>
+          </div>
           <div className="rounded-lg border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -418,7 +530,7 @@ export function BudgetView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visibleExpenses.map((row) => {
+                {expenses.map((row) => {
                   const busy = pendingId === row.id;
                   const cat = row.categoryId
                     ? categoriesById.get(row.categoryId)
@@ -443,10 +555,7 @@ export function BudgetView({
                         {cat ? (
                           <span className="flex items-center gap-1.5 text-sm">
                             <span
-                              className={cn(
-                                "size-2 rounded-full",
-                                swatch(cat.color),
-                              )}
+                              className={cn("size-2 rounded-full", swatch(cat.color))}
                             />
                             {cat.name}
                           </span>
@@ -495,12 +604,11 @@ export function BudgetView({
               </TableBody>
             </Table>
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      <HistoryChart history={history} />
-
-      <CategoriesManager categories={categories} />
+      {/* Category admin — on demand, from the ⋯ menu */}
+      {showCategoriesManager && <CategoriesManager categories={categories} />}
 
       <ExpenseDialog
         open={dialogOpen}

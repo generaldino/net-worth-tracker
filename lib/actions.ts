@@ -404,43 +404,22 @@ export async function getFinancialMetrics() {
       incomeByMonthCurrency.set(row.month, monthMap);
     });
 
-    // Expenditure comes from the budget module's expenses. Months with no
-    // expense rows fall back to the legacy per-account `expenditure` column so
-    // history keeps working before/during the backfill.
+    // Expenditure comes from the budget module's expenses only. The legacy
+    // per-account `expenditure` column is judged unreliable and is no longer
+    // read — months before expense tracking simply have no spend data.
     const expenseTotalsByMonth = await getMonthlyExpenseTotals(
       accessibleUserIds,
     );
 
-    // Per-month legacy expenditure, used only where expenses have no rows.
-    const legacyExpenditureByMonth = new Map<string, Map<Currency, number>>();
-    entries.forEach((entry) => {
-      if (
-        entry.accountType !== "Current" &&
-        entry.accountType !== "Credit_Card"
-      ) {
-        return;
-      }
-      const currency = (entry.accountCurrency || "GBP") as Currency;
-      const expenditure = Number(entry.expenditure || 0);
-      const monthMap =
-        legacyExpenditureByMonth.get(entry.month) ?? new Map<Currency, number>();
-      monthMap.set(currency, (monthMap.get(currency) || 0) + expenditure);
-      legacyExpenditureByMonth.set(entry.month, monthMap);
-    });
-
-    /** Spend for a month: expenses if any exist, else the legacy column. */
     const expenditureForMonth = (month: string): Map<Currency, number> => {
       const fromExpenses = expenseTotalsByMonth.get(month);
       if (fromExpenses && fromExpenses.length > 0) {
         return new Map(fromExpenses.map((t) => [t.currency, t.amount]));
       }
-      return legacyExpenditureByMonth.get(month) ?? new Map();
+      return new Map();
     };
 
-    const allMonths = new Set<string>([
-      ...legacyExpenditureByMonth.keys(),
-      ...expenseTotalsByMonth.keys(),
-    ]);
+    const allMonths = new Set<string>([...expenseTotalsByMonth.keys()]);
 
     allMonths.forEach((month) => {
       const isYTDMonth = month.startsWith(currentYear);
@@ -1449,8 +1428,7 @@ export async function getChartData(
     }
 
     // Spend from the budget module. Like income streams these are
-    // household-level, so they are not narrowed by the account filters. Months
-    // with no expense rows fall back to the legacy per-account expenditure.
+    // household-level, so they are not narrowed by the account filters.
     const expenseTotalsByMonth = await getMonthlyExpenseTotals(
       accessibleUserIds,
     );
@@ -1781,7 +1759,6 @@ export async function getChartData(
       let capitalGains = 0;
       let totalWorkIncome = 0;
       let totalExpenditure = 0;
-      let legacyExpenditure = 0;
 
       // Per-account breakdowns (with currency info - amounts stored in original currency)
       const savingsAccounts: Array<{
@@ -1815,19 +1792,6 @@ export async function getChartData(
         if (!account) return;
 
         const accountCurrency = (account.currency || "GBP") as Currency;
-
-        // Legacy per-account expenditure, used only when this month has no
-        // rows in the budget module (see the fallback after this loop).
-        if (
-          account.type === "Current" ||
-          account.type === "Credit_Card"
-        ) {
-          legacyExpenditure += convertToGBPForMonth(
-            Number(entry.expenditure || 0),
-            accountCurrency,
-            month,
-          );
-        }
 
         // Calculate interest earned (if applicable) - convert to GBP
         if (account.type === "Savings" && entry.accountGrowth > 0) {
@@ -1870,9 +1834,8 @@ export async function getChartData(
         }
       });
 
-      // Spend comes from the budget module when this month has expense rows;
-      // otherwise fall back to the legacy per-account expenditure so historic
-      // months keep rendering before the backfill runs.
+      // Spend comes from the budget module only; months before expense
+      // tracking contribute no spend rather than an untrusted legacy number.
       const monthExpenses = expenseTotalsByMonth.get(month);
       if (monthExpenses && monthExpenses.length > 0) {
         for (const total of monthExpenses) {
@@ -1882,8 +1845,6 @@ export async function getChartData(
             month,
           );
         }
-      } else {
-        totalExpenditure = legacyExpenditure;
       }
 
       // Income comes from user-entered income streams for the month.
