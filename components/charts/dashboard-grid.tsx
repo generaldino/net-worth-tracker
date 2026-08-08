@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { filterChartDataByPeriod } from "./chart-shared";
+import {
+  filterChartDataByPeriod,
+  filterChartDataByVisibility,
+} from "./chart-shared";
 import { useDisplayCurrency } from "@/contexts/display-currency-context";
 import { useChartCurrencyConverter } from "@/lib/chart-currency-converter";
 import { useChartData } from "@/contexts/chart-data-context";
@@ -12,6 +15,7 @@ import { useUrlState } from "@/hooks/use-url-state";
 import { ChartErrorBoundary } from "./chart-error-boundary";
 import { WhyItChanged } from "./why-it-changed";
 import { MixBars } from "./mix-bars";
+import { AccountVisibilityFilter } from "./account-visibility-filter";
 import { cn } from "@/lib/utils";
 import type { NetWorthDelta } from "./net-worth-chart";
 
@@ -27,6 +31,9 @@ const NetWorthChart = dynamic(
 );
 
 const PERIOD_OPTIONS: Array<{ value: TimePeriod; label: string }> = [
+  { value: "1M", label: "1M" },
+  { value: "3M", label: "3M" },
+  { value: "6M", label: "6M" },
   { value: "1Y", label: "1Y" },
   { value: "all", label: "All" },
 ];
@@ -50,25 +57,84 @@ function periodLabel(period: TimePeriod): string {
   }
 }
 
+/** Comma-joined URL param ⇄ Set. Empty string means nothing hidden. */
+function parseSetParam(param: string): Set<string> {
+  return new Set(param.split(",").filter(Boolean));
+}
+
+function serializeSetParam(set: ReadonlySet<string>): string {
+  return Array.from(set).sort().join(",");
+}
+
 /**
  * The home screen: one number, one trend, the mix, and why it changed.
- * Everything reads the shared chart dataset; a single `period` URL param
- * drives all of it.
+ * A single `period` URL param drives the window; `hideTypes` /
+ * `hideAccounts` params let you view the position without, say, the
+ * pension — purely a view filter, nothing is modified.
  */
 export function DashboardGrid() {
   const rawData = useChartData();
   const { getChartCurrency } = useDisplayCurrency();
   const { convertChartData } = useChartCurrencyConverter();
   const [period, setPeriod] = useUrlState<TimePeriod>("period", "1Y");
+  const [hiddenTypesParam, setHiddenTypesParam] = useUrlState<string>(
+    "hideTypes",
+    "",
+  );
+  const [hiddenAccountsParam, setHiddenAccountsParam] = useUrlState<string>(
+    "hideAccounts",
+    "",
+  );
 
+  const hiddenTypes = useMemo(
+    () => parseSetParam(hiddenTypesParam),
+    [hiddenTypesParam],
+  );
+  const hiddenAccountIds = useMemo(
+    () => parseSetParam(hiddenAccountsParam),
+    [hiddenAccountsParam],
+  );
+
+  const toggleType = useCallback(
+    (type: string) => {
+      const next = new Set(hiddenTypes);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      setHiddenTypesParam(serializeSetParam(next));
+    },
+    [hiddenTypes, setHiddenTypesParam],
+  );
+
+  const toggleAccount = useCallback(
+    (accountId: string) => {
+      const next = new Set(hiddenAccountIds);
+      if (next.has(accountId)) next.delete(accountId);
+      else next.add(accountId);
+      setHiddenAccountsParam(serializeSetParam(next));
+    },
+    [hiddenAccountIds, setHiddenAccountsParam],
+  );
+
+  const resetVisibility = useCallback(() => {
+    setHiddenTypesParam("");
+    setHiddenAccountsParam("");
+  }, [setHiddenTypesParam, setHiddenAccountsParam]);
+
+  // Visibility first (so re-totalling sees raw balances), then currency
+  // conversion, then the time window.
   const convertedAll = useMemo(() => {
     if (!rawData) return null;
+    const visible = filterChartDataByVisibility(
+      rawData,
+      hiddenTypes,
+      hiddenAccountIds,
+    );
     const currency = getChartCurrency();
     return convertChartData(
-      rawData,
+      visible,
       currency === "BASE" ? "GBP" : (currency as Currency),
     );
-  }, [rawData, getChartCurrency, convertChartData]);
+  }, [rawData, hiddenTypes, hiddenAccountIds, getChartCurrency, convertChartData]);
 
   const chartData = useMemo(() => {
     if (!convertedAll) return null;
@@ -109,15 +175,25 @@ export function DashboardGrid() {
     return result;
   }, [convertedAll]);
 
-  if (!chartData) return null;
+  if (!chartData || !rawData) return null;
 
   const chartCurrency = (
     getChartCurrency() === "BASE" ? "GBP" : getChartCurrency()
   ) as Currency;
 
+  const isFiltered = hiddenTypes.size > 0 || hiddenAccountIds.size > 0;
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <AccountVisibilityFilter
+          accounts={rawData.accounts}
+          hiddenTypes={hiddenTypes}
+          hiddenAccountIds={hiddenAccountIds}
+          onToggleType={toggleType}
+          onToggleAccount={toggleAccount}
+          onReset={resetVisibility}
+        />
         <div
           className="inline-flex items-center rounded-lg border p-0.5"
           role="group"
@@ -130,7 +206,7 @@ export function DashboardGrid() {
               onClick={() => setPeriod(option.value)}
               aria-pressed={period === option.value}
               className={cn(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                "rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:px-3",
                 period === option.value
                   ? "bg-muted text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -156,6 +232,7 @@ export function DashboardGrid() {
             data={chartData}
             chartCurrency={chartCurrency}
             periodLabel={periodLabel(period)}
+            isFiltered={isFiltered}
           />
         </ChartErrorBoundary>
         <ChartErrorBoundary name="Your mix">
