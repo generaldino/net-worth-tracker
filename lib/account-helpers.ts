@@ -1,6 +1,72 @@
 import type { AccountType, AccountCategory } from "./types";
 
 /**
+ * Friendly display labels for account types. The enum values stay in the DB;
+ * users only ever see these.
+ */
+export const accountTypeLabels: Record<AccountType, string> = {
+  Current: "Bank account",
+  Savings: "Savings",
+  Investment: "Investments",
+  Stock: "Stocks",
+  Crypto: "Crypto",
+  Pension: "Pension",
+  Commodity: "Commodities",
+  Stock_options: "Stock options",
+  Credit_Card: "Credit card",
+  Loan: "Loan",
+  Asset: "Property & assets",
+};
+
+export function getAccountTypeLabel(type: AccountType): string {
+  return accountTypeLabels[type] ?? type.replace(/_/g, " ");
+}
+
+/** Liabilities subtract from net worth. */
+export function isLiabilityType(type: AccountType): boolean {
+  return type === "Credit_Card" || type === "Loan";
+}
+
+/**
+ * The four buckets the mix module shows. Everything a user needs for an
+ * allocation conversation, without eleven typed ledgers.
+ */
+export type MixBucket = "Cash" | "Invested" | "Property" | "Debt";
+
+export const mixBuckets: MixBucket[] = ["Cash", "Invested", "Property", "Debt"];
+
+export function getMixBucket(type: AccountType): MixBucket {
+  switch (type) {
+    case "Current":
+    case "Savings":
+      return "Cash";
+    case "Credit_Card":
+    case "Loan":
+      return "Debt";
+    case "Asset":
+      return "Property";
+    default:
+      // Investment, Stock, Crypto, Pension, Commodity, Stock_options
+      return "Invested";
+  }
+}
+
+/**
+ * Types you could realistically draw on within weeks. Pensions and physical
+ * assets are wealth, not spending money.
+ */
+export function isLiquidType(type: AccountType): boolean {
+  return (
+    type === "Current" ||
+    type === "Savings" ||
+    type === "Investment" ||
+    type === "Stock" ||
+    type === "Crypto" ||
+    type === "Commodity"
+  );
+}
+
+/**
  * Determines if an account type should show the Income field.
  * Only Current accounts have earned income.
  */
