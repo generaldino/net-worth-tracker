@@ -33,16 +33,25 @@ import type { Currency } from "@/lib/fx-rates";
 import { useMasking } from "@/contexts/masking-context";
 import { useWindowSize } from "@/hooks/use-window-size";
 
+export interface NetWorthDelta {
+  label: string;
+  abs: number;
+  pct: number | null;
+}
+
 interface NetWorthChartProps {
   data: ChartData;
   chartCurrency: Currency;
   heightClass?: string;
+  /** Small "vs last month / vs a year ago" badges under the headline. */
+  deltas?: NetWorthDelta[];
 }
 
 export function NetWorthChart({
   data,
   chartCurrency,
   heightClass = "h-[280px] sm:h-[320px]",
+  deltas,
 }: NetWorthChartProps) {
   const { width } = useWindowSize();
   const { isMasked } = useMasking();
@@ -147,6 +156,33 @@ export function NetWorthChart({
           {displayedMonth && (
             <div className="text-xs text-muted-foreground mt-0.5">
               {displayedMonth}
+            </div>
+          )}
+          {deltas && deltas.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {deltas.map((delta) => (
+                <span
+                  key={delta.label}
+                  className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums ${
+                    delta.abs >= 0
+                      ? "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400"
+                      : "bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400"
+                  }`}
+                >
+                  {delta.abs >= 0 ? "▲" : "▼"}{" "}
+                  {isMasked
+                    ? "••••"
+                    : formatCurrencyAmount(Math.abs(delta.abs), chartCurrency)}
+                  {delta.pct !== null && !isMasked && (
+                    <span className="font-normal">
+                      ({Math.abs(delta.pct).toFixed(1)}%)
+                    </span>
+                  )}
+                  <span className="font-normal text-muted-foreground">
+                    {delta.label}
+                  </span>
+                </span>
+              ))}
             </div>
           )}
           <ChartLegend
